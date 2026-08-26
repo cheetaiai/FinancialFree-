@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_financialfree",
+      "email": "Financial@free.com",
+      "password_hash": "ecd1c0fb4c257e0e796e3b83afcad0b90e01d0d81db12b6a25be023760cc0cd2d803e696cbec6486babfc15ecaaeb4353fdff5518cde62629dbca82b321682a9",
+      "salt": "002d6e0c6dd03544a2a6b5cc90d6bfa5",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-08-26T10:05:50.764Z"
+    }
+  ],
+  "people": [],
+  "transactions": [],
+  "reminders": []
+}
