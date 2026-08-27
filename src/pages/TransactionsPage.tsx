@@ -561,74 +561,87 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                {filteredTransactions.map(tx => {
-                  const isGiven = tx.transaction_type === 'given';
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {filteredTransactions.map((tx, idx) => {
+                    const isGiven = tx.transaction_type === 'given';
 
-                  return (
-                    <tr key={tx.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                        {formatIndianDate(tx.transaction_date)}
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        {tx.person_name}
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            isGiven
-                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                          }`}
-                        >
-                          {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}
-                          {isGiven ? 'Given' : 'Returned'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        {tx.payment_method}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate">{tx.purpose || tx.notes || '-'}</span>
-                          {tx.receipt_image && (
+                    return (
+                      <motion.tr
+                        key={tx.id}
+                        initial={{ opacity: 0, y: 8, scale: 0.99 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
+                        transition={{
+                          duration: 0.28,
+                          ease: [0.16, 1, 0.3, 1],
+                          delay: Math.min(idx * 0.02, 0.2)
+                        }}
+                        className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                          {formatIndianDate(tx.transaction_date)}
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                          {tx.person_name}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              isGiven
+                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            }`}
+                          >
+                            {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}
+                            {isGiven ? 'Given' : 'Returned'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                          {tx.payment_method}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{tx.purpose || tx.notes || '-'}</span>
+                            {tx.receipt_image && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-semibold cursor-pointer flex-shrink-0"
+                                title="View receipt attachment"
+                              >
+                                <ImageIcon size={12} />
+                                <span>Receipt</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className={`py-3.5 px-4 text-right font-black whitespace-nowrap ${
+                          isGiven ? 'text-slate-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-400'
+                        }`}>
+                          {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
-                              type="button"
-                              onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-semibold cursor-pointer flex-shrink-0"
-                              title="View receipt attachment"
+                              onClick={() => onEditTransaction(tx)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                              title="Edit Transaction"
                             >
-                              <ImageIcon size={12} />
-                              <span>Receipt</span>
+                              <Edit2 size={14} />
                             </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className={`py-3.5 px-4 text-right font-black whitespace-nowrap ${
-                        isGiven ? 'text-slate-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-400'
-                      }`}>
-                        {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => onEditTransaction(tx)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
-                            title="Edit Transaction"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTxId(tx.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Delete Transaction"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                            <button
+                              onClick={() => setDeleteTxId(tx.id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              title="Delete Transaction"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>

@@ -10,6 +10,34 @@ import {
 
 const app = express();
 
+// CORS and Preflight
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// URL Normalization for Vercel Serverless / standalone compatibility
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!req.url.startsWith('/api') && (
+    req.url.startsWith('/auth') ||
+    req.url.startsWith('/people') ||
+    req.url.startsWith('/transactions') ||
+    req.url.startsWith('/analytics') ||
+    req.url.startsWith('/reminders') ||
+    req.url.startsWith('/backup') ||
+    req.url.startsWith('/ai') ||
+    req.url.startsWith('/health')
+  )) {
+    req.url = `/api${req.url}`;
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -457,6 +485,17 @@ app.post('/api/ai/chat', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'AI Assistant failed' });
   }
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ error: `API route ${req.originalUrl || req.url} not found` });
+});
+
+// Global Express Error Handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled server error:', err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal server error occurred' });
 });
 
 export default app;
