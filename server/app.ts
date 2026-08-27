@@ -1,14 +1,15 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { db } from './db.ts';
+import { db } from './db';
 import {
   generateFinancialInsights,
   draftReminderMessage,
   chatFinancialAssistant,
   scanReceiptOrImage,
   analyzeGraphTrends
-} from './gemini.ts';
+} from './gemini';
 
 const app = express();
+const apiRouter = express.Router();
 
 // CORS and Preflight
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -17,23 +18,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
-  }
-  next();
-});
-
-// URL Normalization for Vercel Serverless / standalone compatibility
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (!req.url.startsWith('/api') && (
-    req.url.startsWith('/auth') ||
-    req.url.startsWith('/people') ||
-    req.url.startsWith('/transactions') ||
-    req.url.startsWith('/analytics') ||
-    req.url.startsWith('/reminders') ||
-    req.url.startsWith('/backup') ||
-    req.url.startsWith('/ai') ||
-    req.url.startsWith('/health')
-  )) {
-    req.url = `/api${req.url}`;
   }
   next();
 });
@@ -60,12 +44,12 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 // Health check
-app.get('/api/health', (req: Request, res: Response) => {
+apiRouter.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), app: 'FinancialFree' });
 });
 
 // ================= AUTH ROUTES =================
-app.post('/api/auth/login', (req: Request, res: Response) => {
+apiRouter.post('/auth/login', (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -83,17 +67,17 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/auth/me', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/auth/me', requireAuth, (req: Request, res: Response) => {
   res.json({ user: (req as any).user });
 });
 
-app.post('/api/auth/logout', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/auth/logout', requireAuth, (req: Request, res: Response) => {
   const token = (req as any).token;
   db.logout(token);
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
-app.post('/api/auth/change-password', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/auth/change-password', requireAuth, (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
@@ -113,7 +97,7 @@ app.post('/api/auth/change-password', requireAuth, (req: Request, res: Response)
 });
 
 // ================= PEOPLE ROUTES =================
-app.get('/api/people', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/people', requireAuth, (req: Request, res: Response) => {
   try {
     const { search, category, status } = req.query;
     const people = db.getPeople(search as string, category as string, status as string);
@@ -123,7 +107,7 @@ app.get('/api/people', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/people/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/people/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const data = db.getPersonById(req.params.id);
     if (!data) return res.status(404).json({ error: 'Person not found' });
@@ -133,7 +117,7 @@ app.get('/api/people/:id', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/people', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/people', requireAuth, (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const person = db.createPerson(req.body, userId);
@@ -143,7 +127,7 @@ app.post('/api/people', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/people/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.put('/people/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const updated = db.updatePerson(req.params.id, req.body);
     res.json(updated);
@@ -152,7 +136,7 @@ app.put('/api/people/:id', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/people/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/people/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const result = db.deletePerson(req.params.id);
     res.json(result);
@@ -161,7 +145,7 @@ app.delete('/api/people/:id', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/people/clear-all', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/people/clear-all', requireAuth, async (req: Request, res: Response) => {
   try {
     const result = await db.clearAllPeople();
     res.json(result);
@@ -171,7 +155,7 @@ app.post('/api/people/clear-all', requireAuth, async (req: Request, res: Respons
 });
 
 // ================= TRANSACTIONS ROUTES =================
-app.get('/api/transactions', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/transactions', requireAuth, (req: Request, res: Response) => {
   try {
     const filters = {
       person_id: req.query.person_id as string,
@@ -189,7 +173,7 @@ app.get('/api/transactions', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/transactions', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/transactions', requireAuth, (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const tx = db.createTransaction(req.body, userId);
@@ -199,7 +183,7 @@ app.post('/api/transactions', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/transactions/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.put('/transactions/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const updated = db.updateTransaction(req.params.id, req.body);
     res.json(updated);
@@ -208,7 +192,7 @@ app.put('/api/transactions/:id', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/transactions/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/transactions/:id', requireAuth, (req: Request, res: Response) => {
   try {
     const result = db.deleteTransaction(req.params.id);
     res.json(result);
@@ -217,21 +201,29 @@ app.delete('/api/transactions/:id', requireAuth, (req: Request, res: Response) =
   }
 });
 
-// ================= ANALYTICS & REPORTS ROUTES =================
-app.get('/api/analytics/dashboard', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/transactions/clear-all', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await db.clearAllTransactions();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to clear all transactions' });
+  }
+});
+
+// ================= ANALYTICS & SUMMARY ROUTES =================
+apiRouter.get('/analytics/dashboard', requireAuth, (req: Request, res: Response) => {
   try {
     const summary = db.getDashboardSummary();
     res.json(summary);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch dashboard metrics' });
+    res.status(500).json({ error: error.message || 'Failed to fetch dashboard summary' });
   }
 });
 
-app.get('/api/analytics/monthly', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/analytics/monthly', requireAuth, (req: Request, res: Response) => {
   try {
-    const now = new Date();
-    const year = req.query.year ? Number(req.query.year) : now.getFullYear();
-    const month = req.query.month ? Number(req.query.month) : now.getMonth() + 1;
+    const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+    const month = req.query.month ? Number(req.query.month) : (new Date().getMonth() + 1);
     const analytics = db.getMonthlyAnalytics(year, month);
     res.json(analytics);
   } catch (error: any) {
@@ -239,10 +231,9 @@ app.get('/api/analytics/monthly', requireAuth, (req: Request, res: Response) => 
   }
 });
 
-app.get('/api/analytics/yearly', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/analytics/yearly', requireAuth, (req: Request, res: Response) => {
   try {
-    const now = new Date();
-    const year = req.query.year ? Number(req.query.year) : now.getFullYear();
+    const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
     const analytics = db.getYearlyAnalytics(year);
     res.json(analytics);
   } catch (error: any) {
@@ -250,9 +241,9 @@ app.get('/api/analytics/yearly', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/analytics/financial-year', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/analytics/financial-year', requireAuth, (req: Request, res: Response) => {
   try {
-    const fy = (req.query.fy as string) || 'FY 2026-27';
+    const fy = req.query.fy as string | undefined;
     const analytics = db.getFinancialYearAnalytics(fy);
     res.json(analytics);
   } catch (error: any) {
@@ -260,7 +251,17 @@ app.get('/api/analytics/financial-year', requireAuth, (req: Request, res: Respon
   }
 });
 
-app.get('/api/analytics/periods', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/analytics/financial-years', requireAuth, (req: Request, res: Response) => {
+  try {
+    const fy = req.query.fy as string | undefined;
+    const analytics = db.getFinancialYearAnalytics(fy);
+    res.json(analytics);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch financial year analytics' });
+  }
+});
+
+apiRouter.get('/analytics/periods', requireAuth, (req: Request, res: Response) => {
   try {
     const periods = db.getAvailableYearsAndFys();
     res.json(periods);
@@ -269,8 +270,42 @@ app.get('/api/analytics/periods', requireAuth, (req: Request, res: Response) => 
   }
 });
 
+// ================= DATABASE & SYNC ROUTES =================
+apiRouter.get('/database/status', requireAuth, (req: Request, res: Response) => {
+  try {
+    const status = db.getStatus();
+    res.json({
+      status: 'online',
+      provider: 'Cloud Firestore & Local Mirror',
+      projectId: 'financialfree-c171e',
+      databaseId: '(default)',
+      isCloudSynced: status.isCloudSynced,
+      peopleCount: status.peopleCount,
+      txCount: status.txCount
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch database status' });
+  }
+});
+
+apiRouter.post('/database/sync', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await db.pushAllToFirestore();
+    const status = db.getStatus();
+    res.json({
+      success: true,
+      message: 'Database successfully synchronized with Cloud Firestore.',
+      isCloudSynced: status.isCloudSynced,
+      peopleCount: status.peopleCount,
+      txCount: status.txCount
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to sync database' });
+  }
+});
+
 // ================= REMINDERS ROUTES =================
-app.get('/api/reminders', requireAuth, (req: Request, res: Response) => {
+apiRouter.get('/reminders', requireAuth, (req: Request, res: Response) => {
   try {
     const reminders = db.getReminders();
     res.json(reminders);
@@ -279,7 +314,7 @@ app.get('/api/reminders', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/reminders', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/reminders', requireAuth, (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const reminder = db.createReminder(req.body, userId);
@@ -289,116 +324,81 @@ app.post('/api/reminders', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-app.patch('/api/reminders/:id/status', requireAuth, (req: Request, res: Response) => {
+apiRouter.patch('/reminders/:id/status', requireAuth, (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-    const updated = db.updateReminderStatus(req.params.id, status);
+    const updated = db.updateReminder(req.params.id, { status });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to update reminder status' });
+  }
+});
+
+apiRouter.put('/reminders/:id', requireAuth, (req: Request, res: Response) => {
+  try {
+    const updated = db.updateReminder(req.params.id, req.body);
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update reminder' });
   }
 });
 
-app.delete('/api/reminders/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/reminders/:id', requireAuth, (req: Request, res: Response) => {
   try {
-    const success = db.deleteReminder(req.params.id);
-    res.json({ success });
+    const result = db.deleteReminder(req.params.id);
+    res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete reminder' });
   }
 });
 
-// ================= BACKUP & EXPORT ROUTES =================
-app.get('/api/database/status', requireAuth, (req: Request, res: Response) => {
-  res.json({
-    status: 'connected',
-    provider: 'Cloud Firestore & Realtime Database',
-    projectId: 'financialfree-c171e',
-    databaseId: '(default)',
-    databaseURL: 'https://financialfree-c171e-default-rtdb.asia-southeast1.firebasedatabase.app',
-    ...db.getStatus()
-  });
-});
-
-app.post('/api/database/sync', requireAuth, async (req: Request, res: Response) => {
+// ================= BACKUP & RESTORE ROUTES =================
+apiRouter.get('/backup/export', requireAuth, (req: Request, res: Response) => {
   try {
-    await db.syncWithFirestore();
-    res.json({ success: true, message: 'Cloud database synchronized successfully', ...db.getStatus() });
+    const data = db.exportAllData();
+    res.json(data);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Sync failed' });
+    res.status(500).json({ error: error.message || 'Failed to export backup data' });
   }
 });
 
-app.get('/api/backup/export', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/backup/import', requireAuth, (req: Request, res: Response) => {
   try {
-    const backup = db.exportBackup();
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="FinancialFree_Backup_${new Date().toISOString().split('T')[0]}.json"`
-    );
-    res.json(backup);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Backup export failed' });
-  }
-});
-
-app.post('/api/backup/import', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const result = await db.importBackup(req.body);
+    const result = db.importAllData(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
+    }
     res.json(result);
   } catch (error: any) {
-    res.status(400).json({ error: error.message || 'Backup import failed' });
+    res.status(500).json({ error: error.message || 'Failed to import backup data' });
   }
 });
 
-app.get('/api/export/csv', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/backup/reset', requireAuth, (req: Request, res: Response) => {
   try {
-    const type = (req.query.type as string) || 'transactions';
-    if (type === 'people') {
-      const people = db.getPeople();
-      let csv =
-        'Person ID,Full Name,Phone,Email,Category,Total Given (INR),Total Returned (INR),Remaining Balance (INR),Status,Last Transaction\n';
-      for (const p of people) {
-        csv += `"${p.id}","${p.full_name}","${p.phone}","${p.email || ''}","${p.category || ''}",${p.total_given || 0},${p.total_returned || 0},${p.remaining_balance || 0},"${p.status}","${p.last_transaction_date || ''}"\n`;
-      }
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="FinancialFree_People_${new Date().toISOString().split('T')[0]}.csv"`
-      );
-      return res.send(csv);
-    } else {
-      const txs = db.getTransactions({});
-      let csv =
-        'Transaction ID,Date,Person Name,Type,Amount (INR),Payment Method,Month,Year,Financial Year,Purpose,Notes\n';
-      for (const t of txs) {
-        csv += `"${t.id}","${t.transaction_date}","${t.person_name || ''}","${t.transaction_type}",${t.amount},"${t.payment_method}",${t.month},${t.year},"${t.financial_year || ''}","${(t.purpose || '').replace(/"/g, '""')}","${(t.notes || '').replace(/"/g, '""')}"\n`;
-      }
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="FinancialFree_Transactions_${new Date().toISOString().split('T')[0]}.csv"`
-      );
-      return res.send(csv);
-    }
+    const result = db.resetToSampleData();
+    res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'CSV export failed' });
+    res.status(500).json({ error: error.message || 'Failed to reset data' });
   }
 });
 
-// ================= AI ROUTES =================
-app.get('/api/ai/insights', requireAuth, async (req: Request, res: Response) => {
+// ================= AI COPILOT & OCR ROUTES =================
+apiRouter.get('/ai/insights', requireAuth, async (req: Request, res: Response) => {
   try {
     const rawData = db.getRawDataForAI();
-    const insights = await generateFinancialInsights(rawData);
+    const insights = await generateFinancialInsights({
+      summary: rawData.summary,
+      people: rawData.people,
+      transactions: rawData.transactions
+    });
     res.json({ insights });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to generate AI insights' });
+    res.status(500).json({ error: error.message || 'Failed to generate financial insights' });
   }
 });
 
-app.post('/api/ai/scan-image', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/ai/scan-image', requireAuth, async (req: Request, res: Response) => {
   try {
     const { image, mimeType } = req.body;
     if (!image) {
@@ -412,7 +412,7 @@ app.post('/api/ai/scan-image', requireAuth, async (req: Request, res: Response) 
   }
 });
 
-app.post('/api/ai/scan-receipt', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/ai/scan-receipt', requireAuth, async (req: Request, res: Response) => {
   try {
     const { image, mimeType } = req.body;
     if (!image) {
@@ -426,7 +426,7 @@ app.post('/api/ai/scan-receipt', requireAuth, async (req: Request, res: Response
   }
 });
 
-app.post('/api/ai/draft-reminder', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/ai/draft-reminder', requireAuth, async (req: Request, res: Response) => {
   try {
     const { person_id, tone } = req.body;
     const personData = db.getPersonById(person_id);
@@ -445,7 +445,7 @@ app.post('/api/ai/draft-reminder', requireAuth, async (req: Request, res: Respon
   }
 });
 
-app.post('/api/ai/analyze-graph', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/ai/analyze-graph', requireAuth, async (req: Request, res: Response) => {
   try {
     const { type, graphData, currencySymbol } = req.body;
     if (!graphData) {
@@ -464,7 +464,7 @@ app.post('/api/ai/analyze-graph', requireAuth, async (req: Request, res: Respons
   }
 });
 
-app.post('/api/ai/chat', requireAuth, async (req: Request, res: Response) => {
+apiRouter.post('/ai/chat', requireAuth, async (req: Request, res: Response) => {
   try {
     const { message, history, image, mimeType } = req.body;
     if (!message && !image) return res.status(400).json({ error: 'Message or image is required' });
@@ -487,9 +487,12 @@ app.post('/api/ai/chat', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// 404 handler for API routes
-app.use('/api/*', (req: Request, res: Response) => {
-  res.status(404).json({ error: `API route ${req.originalUrl || req.url} not found` });
+// Mount router on /api
+app.use('/api', apiRouter);
+
+// 404 handler ONLY for /api requests
+app.use('/api', (req: Request, res: Response) => {
+  res.status(404).json({ error: `API route ${req.method} ${req.originalUrl || req.url} not found` });
 });
 
 // Global Express Error Handler
@@ -498,4 +501,5 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error occurred' });
 });
 
+export { apiRouter };
 export default app;

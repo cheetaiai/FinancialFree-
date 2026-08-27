@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { Person, Transaction, Reminder, User, DashboardSummary, MonthlyAnalytics, YearlyAnalytics, FinancialYearAnalytics, BackupData } from '../src/types';
-import { firestoreRest } from './firestore.ts';
+import { firestoreRest } from './firestore';
 
 interface DatabaseSchema {
   users: Array<{
@@ -150,7 +150,7 @@ class DatabaseService {
     }
   }
 
-  private async pushAllToFirestore(): Promise<void> {
+  public async pushAllToFirestore(): Promise<void> {
     try {
       // Push users
       for (const u of this.data.users) {
@@ -168,8 +168,9 @@ class DatabaseService {
       for (const r of this.data.reminders) {
         await firestoreRest.setDoc('reminders', r.id, r);
       }
+      this.isCloudSynced = true;
     } catch (err: any) {
-      console.warn('Initial seed push to Firestore notice:', err.message || err);
+      console.warn('Sync push to Firestore notice:', err.message || err);
     }
   }
 
@@ -191,71 +192,88 @@ class DatabaseService {
 
   private ensureAdminCredentials() {
     const auth = hashPassword('FinancialFree@321');
-    const existingUser = this.data.users.find(u => 
-      u.email.toLowerCase() === 'financial@free.com' || 
-      u.email.toLowerCase() === 'financialfree@com' ||
-      u.id === 'usr_admin_financialfree'
-    );
-
-    if (existingUser) {
-      existingUser.email = 'Financial@free.com';
-      existingUser.password_hash = auth.hash;
-      existingUser.salt = auth.salt;
-      existingUser.updated_at = new Date().toISOString();
-    } else {
-      this.data.users.push({
-        id: 'usr_admin_financialfree',
-        email: 'Financial@free.com',
-        password_hash: auth.hash,
-        salt: auth.salt,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    }
-
-    // Also ensure startup.cheetaiaistudio.com@gmail.com if present
-    const cheetaUser = this.data.users.find(u => u.email.toLowerCase() === 'startup.cheetaiaistudio.com@gmail.com');
-    if (!cheetaUser) {
-      this.data.users.push({
-        id: 'usr_cheeta_admin',
+    const adminDefs = [
+      {
+        id: 'usr_admin_cheeta',
         email: 'startup.cheetaiaistudio.com@gmail.com',
-        password_hash: auth.hash,
-        salt: auth.salt,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
+        aliases: ['startup.cheetaiaistudio.com@gmail.com']
+      },
+      {
+        id: 'usr_admin_financialfree',
+        email: 'financiFinancial@free.com',
+        aliases: ['financifinancial@free.com', 'financial@free.com', 'financialfree@com', 'financial@free.com']
+      },
+      {
+        id: 'usr_admin_noorjahan',
+        email: 'noorjahan77027@gmail.com',
+        aliases: ['noorjahan77027@gmail.com']
+      }
+    ];
+
+    for (const def of adminDefs) {
+      const existingUser = this.data.users.find(u => 
+        u.id === def.id || 
+        def.aliases.some(alias => u.email.toLowerCase() === alias.toLowerCase())
+      );
+
+      if (existingUser) {
+        existingUser.email = def.email;
+        existingUser.password_hash = auth.hash;
+        existingUser.salt = auth.salt;
+        existingUser.updated_at = new Date().toISOString();
+      } else {
+        this.data.users.push({
+          id: def.id,
+          email: def.email,
+          password_hash: auth.hash,
+          salt: auth.salt,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
     }
 
     this.saveToFile();
-    try {
-      firestoreRest.setDoc('users', 'usr_admin_financialfree', this.data.users[0]).catch(() => {});
-    } catch {
-      // ignore
+
+    // Push each admin to Firestore in background
+    for (const u of this.data.users) {
+      firestoreRest.setDoc('users', u.id, u).catch(() => {});
     }
   }
 
   private seedInitialData() {
     const defaultAuth = hashPassword('FinancialFree@321');
-    const adminUser = {
-      id: 'usr_admin_financialfree',
-      email: 'Financial@free.com',
-      password_hash: defaultAuth.hash,
-      salt: defaultAuth.salt,
-      created_at: new Date('2026-01-01T00:00:00Z').toISOString(),
-      updated_at: new Date('2026-01-01T00:00:00Z').toISOString()
-    };
+    const nowIso = new Date().toISOString();
 
-    const cheetaUser = {
-      id: 'usr_cheeta_admin',
+    const user1 = {
+      id: 'usr_admin_cheeta',
       email: 'startup.cheetaiaistudio.com@gmail.com',
       password_hash: defaultAuth.hash,
       salt: defaultAuth.salt,
-      created_at: new Date('2026-01-01T00:00:00Z').toISOString(),
-      updated_at: new Date('2026-01-01T00:00:00Z').toISOString()
+      created_at: nowIso,
+      updated_at: nowIso
+    };
+
+    const user2 = {
+      id: 'usr_admin_financialfree',
+      email: 'financiFinancial@free.com',
+      password_hash: defaultAuth.hash,
+      salt: defaultAuth.salt,
+      created_at: nowIso,
+      updated_at: nowIso
+    };
+
+    const user3 = {
+      id: 'usr_admin_noorjahan',
+      email: 'noorjahan77027@gmail.com',
+      password_hash: defaultAuth.hash,
+      salt: defaultAuth.salt,
+      created_at: nowIso,
+      updated_at: nowIso
     };
 
     this.data = {
-      users: [adminUser, cheetaUser],
+      users: [user1, user2, user3],
       people: [],
       transactions: [],
       reminders: []
@@ -270,12 +288,28 @@ class DatabaseService {
 
     this.ensureAdminCredentials();
 
-    let user = this.data.users.find(u => u.email.toLowerCase() === cleanEmail);
+    // Check if email matches any of the 3 authorized admin emails or their aliases
+    const authorizedAliases = [
+      'startup.cheetaiaistudio.com@gmail.com',
+      'financifinancial@free.com',
+      'financial@free.com',
+      'financialfree@com',
+      'noorjahan77027@gmail.com'
+    ];
+
+    if (!authorizedAliases.includes(cleanEmail)) {
+      return null;
+    }
+
+    let user = this.data.users.find(u => 
+      u.email.toLowerCase() === cleanEmail ||
+      (cleanEmail === 'financial@free.com' && u.email.toLowerCase() === 'financifinancial@free.com') ||
+      (cleanEmail === 'financifinancial@free.com' && u.email.toLowerCase() === 'financial@free.com')
+    );
+
     if (!user) {
-      if (cleanEmail === 'financial@free.com' || cleanEmail === 'financialfree@com' || cleanEmail === 'startup.cheetaiaistudio.com@gmail.com') {
-        this.ensureAdminCredentials();
-        user = this.data.users.find(u => u.email.toLowerCase() === cleanEmail);
-      }
+      this.ensureAdminCredentials();
+      user = this.data.users.find(u => u.email.toLowerCase() === cleanEmail);
     }
 
     if (!user) return null;
@@ -742,6 +776,23 @@ class DatabaseService {
     return { success: true, message: 'Transaction deleted successfully.' };
   }
 
+  public async clearAllTransactions(): Promise<{ success: boolean; deletedTransactions: number }> {
+    const countTxs = this.data.transactions.length;
+    const txIds = this.data.transactions.map(t => t.id);
+
+    this.data.transactions = [];
+    this.saveToFile();
+
+    for (const tId of txIds) {
+      await firestoreRest.deleteDoc('transactions', tId).catch(() => {});
+    }
+
+    return {
+      success: true,
+      deletedTransactions: countTxs
+    };
+  }
+
   // --- Reminders Operations ---
   public getReminders(): Reminder[] {
     const peopleMap = new Map<string, string>(this.data.people.map(p => [p.id, p.full_name]));
@@ -792,6 +843,19 @@ class DatabaseService {
     // Persist to Cloud Firestore
     firestoreRest.setDoc('reminders', id, rem).catch(() => {});
 
+    return rem;
+  }
+
+  public updateReminder(id: string, data: Partial<Reminder>): Reminder {
+    const rem = this.data.reminders.find(r => r.id === id);
+    if (!rem) throw new Error('Reminder not found.');
+    if (data.status) rem.status = data.status;
+    if (data.note !== undefined) rem.note = data.note;
+    if (data.reminder_date) rem.reminder_date = data.reminder_date;
+    rem.updated_at = new Date().toISOString();
+    this.saveToFile();
+
+    firestoreRest.setDoc('reminders', id, rem).catch(() => {});
     return rem;
   }
 
@@ -913,8 +977,11 @@ class DatabaseService {
     };
   }
 
-  public getMonthlyAnalytics(year: number, month: number): MonthlyAnalytics {
-    const txs = this.getTransactions({ year, month });
+  public getMonthlyAnalytics(year?: number, month?: number): MonthlyAnalytics {
+    const now = new Date();
+    const curYear = year || now.getFullYear();
+    const curMonth = month || (now.getMonth() + 1);
+    const txs = this.getTransactions({ year: curYear, month: curMonth });
     let totalGiven = 0;
     let totalReturned = 0;
 
@@ -958,9 +1025,9 @@ class DatabaseService {
     });
 
     return {
-      month,
-      month_name: MONTH_NAMES[month - 1],
-      year,
+      month: curMonth,
+      month_name: MONTH_NAMES[curMonth - 1],
+      year: curYear,
       total_given: totalGiven,
       total_returned: totalReturned,
       net_balance: totalGiven - totalReturned,
@@ -972,8 +1039,9 @@ class DatabaseService {
     };
   }
 
-  public getYearlyAnalytics(year: number): YearlyAnalytics {
-    const yearTxs = this.getTransactions({ year });
+  public getYearlyAnalytics(year?: number): YearlyAnalytics {
+    const curYear = year || new Date().getFullYear();
+    const yearTxs = this.getTransactions({ year: curYear });
     let totalGiven = 0;
     let totalReturned = 0;
 
@@ -1017,7 +1085,7 @@ class DatabaseService {
     }
 
     return {
-      year,
+      year: curYear,
       total_given: totalGiven,
       total_returned: totalReturned,
       total_pending: Math.max(0, totalGiven - totalReturned),
@@ -1028,12 +1096,13 @@ class DatabaseService {
     };
   }
 
-  public getFinancialYearAnalytics(financialYear: string): FinancialYearAnalytics {
-    const parts = financialYear.replace('FY ', '').split('-');
+  public getFinancialYearAnalytics(financialYear?: string): FinancialYearAnalytics {
+    const curFy = financialYear || calculateFinancialYear(new Date().toISOString().split('T')[0]).fy;
+    const parts = curFy.replace('FY ', '').split('-');
     const startYear = parseInt(parts[0], 10);
     const endYear = startYear + 1;
 
-    const fyTxs = this.getTransactions({ financial_year: financialYear });
+    const fyTxs = this.getTransactions({ financial_year: curFy });
     let totalGiven = 0;
     let totalReturned = 0;
 
@@ -1077,7 +1146,7 @@ class DatabaseService {
     });
 
     return {
-      financial_year: financialYear,
+      financial_year: curFy,
       start_year: startYear,
       end_year: endYear,
       total_given: totalGiven,
@@ -1125,6 +1194,10 @@ class DatabaseService {
     };
   }
 
+  public exportAllData(): BackupData {
+    return this.exportBackup();
+  }
+
   public async importBackup(payload: BackupData): Promise<{ success: boolean; peopleCount: number; txCount: number }> {
     if (!payload.people || !Array.isArray(payload.people) || !payload.transactions || !Array.isArray(payload.transactions)) {
       throw new Error('Invalid backup file structure: missing people or transactions arrays.');
@@ -1143,6 +1216,21 @@ class DatabaseService {
       peopleCount: payload.people.length,
       txCount: payload.transactions.length
     };
+  }
+
+  public importAllData(payload: BackupData): { success: boolean; message?: string } {
+    try {
+      this.importBackup(payload).catch(() => {});
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  }
+
+  public resetToSampleData(): { success: boolean; message: string } {
+    this.seedInitialData();
+    this.saveToFile();
+    return { success: true, message: 'Database reset successfully' };
   }
 
   public getRawDataForAI(): { people: Person[]; transactions: Transaction[]; summary: DashboardSummary } {
