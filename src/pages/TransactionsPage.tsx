@@ -283,7 +283,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by person name, purpose, notes, or amount..."
+              placeholder="Search transactions by person name, purpose, or notes..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 rounded-2xl liquid-glass-secondary border border-slate-200/80 dark:border-white/10 text-slate-900 dark:text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -293,6 +293,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                title="Clear search"
               >
                 <X size={14} />
               </button>
@@ -403,21 +404,21 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                 {/* Person Dropdown */}
                 <div>
                   <label className="block text-[11px] uppercase font-bold text-slate-400 mb-1">Filter by Person</label>
-                  <LiquidDropdown
+                  <LiquidDropdown<string>
                     placeholder="All People"
                     options={[
                       { value: 'all', label: 'All People' },
                       ...people.map(p => ({ value: p.id, label: p.full_name }))
                     ]}
                     value={selectedPersonId}
-                    onChange={setSelectedPersonId}
+                    onChange={v => setSelectedPersonId(v)}
                   />
                 </div>
 
                 {/* Payment Method */}
                 <div>
                   <label className="block text-[11px] uppercase font-bold text-slate-400 mb-1">Payment Method</label>
-                  <LiquidDropdown
+                  <LiquidDropdown<string>
                     placeholder="All Methods"
                     options={[
                       { value: 'all', label: 'All Payment Methods' },
@@ -427,21 +428,21 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                       { value: 'Other', label: 'Other' }
                     ]}
                     value={selectedMethod}
-                    onChange={setSelectedMethod}
+                    onChange={v => setSelectedMethod(v)}
                   />
                 </div>
 
                 {/* Financial Year Period */}
                 <div>
                   <label className="block text-[11px] uppercase font-bold text-slate-400 mb-1">Financial Year</label>
-                  <LiquidDropdown
+                  <LiquidDropdown<string>
                     placeholder="All FY Periods"
                     options={[
                       { value: 'all', label: 'All FY Periods' },
                       ...availableFys.map(fy => ({ value: fy, label: fy }))
                     ]}
                     value={selectedFy}
-                    onChange={setSelectedFy}
+                    onChange={v => setSelectedFy(v)}
                   />
                 </div>
               </div>

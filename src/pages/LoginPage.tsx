@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'motion/react';
-import { Wallet, Lock, Mail, ArrowRight, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
+import { Wallet, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import { LiquidGlassCard } from '../components/ui/LiquidGlassCard';
 import { LiquidButton } from '../components/ui/LiquidButton';
 

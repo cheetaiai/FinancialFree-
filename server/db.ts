@@ -185,6 +185,19 @@ class DatabaseService {
       });
     }
 
+    // Also ensure startup.cheetaiaistudio.com@gmail.com if present
+    const cheetaUser = this.data.users.find(u => u.email.toLowerCase() === 'startup.cheetaiaistudio.com@gmail.com');
+    if (!cheetaUser) {
+      this.data.users.push({
+        id: 'usr_cheeta_admin',
+        email: 'startup.cheetaiaistudio.com@gmail.com',
+        password_hash: auth.hash,
+        salt: auth.salt,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+
     this.saveToFile();
     firestoreRest.setDoc('users', 'usr_admin_financialfree', this.data.users[0]).catch(() => {});
   }

@@ -12,13 +12,12 @@ interface FirebaseConfig {
 }
 
 export let firebaseConfig: FirebaseConfig = {
-  projectId: 'gen-lang-client-0289825951',
-  appId: '1:1058802017296:web:a86c8e469287cadfe71695',
-  apiKey: 'AIzaSyDsaL_zEBz8SbLnTvvhwxYAR_V_A6fU7yU',
-  authDomain: 'gen-lang-client-0289825951.firebaseapp.com',
-  firestoreDatabaseId: 'ai-studio-financialfree-3a870ab5-7f77-495e-adb9-543690ead6fd',
-  storageBucket: 'gen-lang-client-0289825951.firebasestorage.app',
-  messagingSenderId: '1058802017296'
+  projectId: 'financialfree-c171e',
+  appId: '1:696948243469:web:35b8aef4e4612c92002944',
+  apiKey: 'AIzaSyDL-B5oHnSA3WixMdnwLgGA2_Q1wRDencQ',
+  authDomain: 'financialfree-c171e.firebaseapp.com',
+  storageBucket: 'financialfree-c171e.firebasestorage.app',
+  messagingSenderId: '696948243469'
 };
 
 try {

@@ -273,7 +273,7 @@ export const SettingsPage: React.FC = () => {
             </LiquidButton>
 
             <LiquidButton
-              variant="rose"
+              variant="destructive"
               size="sm"
               onClick={() => setIsClearPeopleModalOpen(true)}
               icon={<UserX size={14} />}
