@@ -276,28 +276,38 @@ export async function analyzeGraphTrends(params: {
   const curr = params.currencySymbol || '₹';
 
   const systemPrompt = `You are a Senior Financial Risk Auditor and Money Flow Analyst for the FinancialFree personal lending ledger application.
-Your job is to perform an in-depth, expert visual data analysis of the Money Given vs. Money Returned graph data provided.
+Your job is to perform an exhaustive, in-depth, expert visual and transactional data analysis of the Money Given vs. Money Returned (Taken) graph and timeline data provided.
 
-CRITICAL INSTRUCTIONS:
-1. Provide a crisp, structured, executive-level report formatted in clean Markdown.
-2. Structure your analysis with these clear sections:
-   - **📊 Graph Trajectory & Flow Dynamics**: Analyze the visual curve/bars of Money Given (outflow) vs Money Returned (inflow). Mention key spikes, peak months/days, and net cash flow delta.
-   - **⚖️ Lending vs Recovery Health**: Calculate and evaluate the recovery ratio, repayment speed, and whether recovery is keeping pace with new outlays.
-   - **⚠️ Exposure & Risk Hotspots**: Identify high risk concentrations, unpaid overhang, or prolonged negative net-flow trends.
-   - **💡 Actionable Recovery Strategy**: Concrete recommendations (e.g. optimal follow-up timing, staggering new lending, setting structured installment agreements).
-3. Be specific with figures, percentages, and amounts. Always format amounts with currency symbol ${curr}.
-4. Keep the tone sharp, professional, encouraging, and highly practical.`;
+CRITICAL MANDATORY INSTRUCTIONS:
+1. Deliver a comprehensive, highly detailed analysis formatted in clean Markdown.
+2. YOU MUST EXPLICITLY INCLUDE:
+   - **👥 People Activity & Counterparty Breakdown**:
+     * Exact count and names of people to whom money was GIVEN (lent out) during this period with individual amounts.
+     * Exact count and names of people who RETURNED money (repayments taken back) during this period with individual amounts.
+     * Net status of each person involved.
+   - **📊 Visual Graph Trajectory & Flow Dynamics**:
+     * Detailed analysis of the chart bars/trends (outflow vs. repayment inflow).
+     * Peak weeks/intervals/months and exact cash flow delta.
+   - **⚖️ Repayment Velocity & Portfolio Health**:
+     * Recovery percentage (${curr} returned vs ${curr} given).
+     * Capital lock-in risk assessment and liquidity velocity.
+   - **📋 Detailed Tabular Audit Breakdown**:
+     * Include a formatted Markdown table summarizing: Counterparty Name | Money Given | Money Returned | Net Change | Status
+   - **💡 Actionable Recovery Strategy**:
+     * Concrete, highly practical steps to follow up on outstanding balances, optimize repayment timings (e.g. salary dates, month-end cycles), and protect cash flow.
+3. Be exact with figures, percentages, and amounts. Always prefix amounts with the currency symbol ${curr}.
+4. Provide a rich, thorough analysis without truncating important details.`;
 
-  const userPrompt = `Please analyze this ${params.type.toUpperCase()} graph dataset for Money Given and Taken (Returned):
+  const userPrompt = `Please generate an exhaustive, detailed AI Graph & Money Flow Analysis for this ${params.type.toUpperCase()} dataset:
 \`\`\`json
 ${JSON.stringify(params.graphData, null, 2)}
 \`\`\`
-Provide a deep financial trend analysis, explaining the visual patterns in the chart and what they indicate for the user's financial recovery.`;
+Ensure complete details on how many people took money, how many people returned money, individual borrower names and amounts, graph curve interpretations, and recovery actions.`;
 
   const aiResult = await generateUnifiedAI({
     systemPrompt,
     userPrompt,
-    temperature: 0.4
+    temperature: 0.3
   });
 
   if (aiResult && aiResult.text) {
@@ -311,53 +321,119 @@ Provide a deep financial trend analysis, explaining the visual patterns in the c
 
 function generateDeterministicGraphAnalysis(type: string, data: any, curr: string): string {
   if (type === 'monthly') {
-    const given = data.total_given || 0;
-    const returned = data.total_returned || 0;
-    const net = data.net_flow || (given - returned);
-    const recovery = given > 0 ? Math.round((returned / given) * 100) : 0;
-    const activeCount = data.people_involved?.length || 0;
+    const given = Number(data.total_given) || 0;
+    const returned = Number(data.total_returned) || 0;
+    const net = Number(data.net_flow) || (given - returned);
+    const recovery = given > 0 ? Math.round((returned / given) * 100) : (returned > 0 ? 100 : 0);
+    const peopleList: Array<{ name: string; given: number; returned: number }> = data.people_involved || [];
 
-    return `### 📊 Monthly Flow & Graph Dynamics
-- **Lending Outflow**: ${curr}${given.toLocaleString('en-IN')} was given out during this month.
-- **Repayment Inflow**: ${curr}${returned.toLocaleString('en-IN')} was recovered (**${recovery}% monthly recovery rate**).
-- **Net Position**: A net delta of ${curr}${Math.abs(net).toLocaleString('en-IN')} (${net > 0 ? 'net increase in pending exposure' : 'positive net recovery surplus'}).
+    const peopleGiven = peopleList.filter(p => (Number(p.given) || 0) > 0);
+    const peopleReturned = peopleList.filter(p => (Number(p.returned) || 0) > 0);
 
-### ⚖️ Activity & Exposure Breakdown
-- **Active Counterparties**: ${activeCount} borrower(s) engaged in transactions this month.
-- **Trajectory Insight**: ${recovery >= 80 ? 'Excellent cash flow balance — repayments are closely matching or exceeding new lending.' : recovery >= 40 ? 'Moderate recovery velocity — monitor outstanding balances due for follow-up.' : 'High outflow phase — prioritize sending friendly reminders to recover current dues before issuing new loans.'}
+    const monthLabel = data.month_name ? `${data.month_name} ${data.year || ''}` : 'Current Month';
 
-### 💡 Tactical Recommendations
-1. **Target Overdue Settlements**: Schedule polite WhatsApp follow-ups for loans exceeding 30 days.
-2. **Align with Month-End Cycles**: Inquire about repayments around salary dates (1st–5th of next month).
-3. **Verify Receipts**: Keep digital proof of UPI transactions logged to prevent reconciliation discrepancies.`;
+    let tableRows = '';
+    if (peopleList.length > 0) {
+      tableRows = peopleList.map(p => {
+        const pGiven = Number(p.given) || 0;
+        const pRet = Number(p.returned) || 0;
+        const pNet = pGiven - pRet;
+        const pStatus = pNet <= 0 ? '✅ Fully Returned' : pRet > 0 ? '🔄 Partial Payment' : '⏳ Outflow Lent';
+        return `| **${p.name}** | ${curr}${pGiven.toLocaleString('en-IN')} | ${curr}${pRet.toLocaleString('en-IN')} | ${curr}${Math.abs(pNet).toLocaleString('en-IN')} (${pNet > 0 ? 'Pending' : 'Settled'}) | ${pStatus} |`;
+      }).join('\n');
+    }
+
+    return `### 👥 People & Counterparty Participation (${monthLabel})
+- **People Given Money**: **${peopleGiven.length} person(s)** received loans (${curr}${given.toLocaleString('en-IN')} total).
+  ${peopleGiven.length > 0 ? peopleGiven.map(p => `  * **${p.name}**: ${curr}${(Number(p.given) || 0).toLocaleString('en-IN')}`).join('\n') : '  * None'}
+- **People Returning Money**: **${peopleReturned.length} person(s)** made repayments (${curr}${returned.toLocaleString('en-IN')} recovered).
+  ${peopleReturned.length > 0 ? peopleReturned.map(p => `  * **${p.name}**: ${curr}${(Number(p.returned) || 0).toLocaleString('en-IN')}`).join('\n') : '  * None'}
+- **Overall Unique Active Borrowers**: **${peopleList.length} total person(s)** engaged in transactions this month.
+
+### 📊 Monthly Flow & Graph Dynamics
+- **Total Money Lent (Outflow)**: **${curr}${given.toLocaleString('en-IN')}**
+- **Total Money Returned (Inflow)**: **${curr}${returned.toLocaleString('en-IN')}**
+- **Recovery Efficiency**: **${recovery}%** repayment rate for this cycle.
+- **Net Balance Shift**: **${curr}${Math.abs(net).toLocaleString('en-IN')}** ${net > 0 ? '(Net increase in capital locked in loans)' : '(Net positive cash surplus recovered)'}.
+
+${tableRows ? `### 📋 Counterparty Audit Table
+| Counterparty | Money Given | Money Returned | Net Position | Cycle Status |
+| :--- | :--- | :--- | :--- | :--- |
+${tableRows}
+` : ''}
+
+### ⚖️ Repayment Velocity & Risk Assessment
+- **Cash Flow Index**: ${recovery >= 80 ? '🟢 **High Velocity**: Inflows are keeping strong pace with newly issued loans.' : recovery >= 40 ? '🟡 **Moderate Velocity**: Balanced repayment cadence, but several open balances require active monitoring.' : '🔴 **High Capital Lock-In**: Outflows significantly exceed returned funds. Restrict fresh lending until pending payments settle.'}
+- **Peak Flow Interval**: Transaction activity shows concentration around early-to-mid month disbursement cycles.
+
+### 💡 Tactical Action Plan
+1. **Targeted Follow-Ups**: Send polite WhatsApp/SMS reminder nudges to borrowers with pending amounts above ${curr}1,000.
+2. **Align with Salary Windows**: Schedule settlement follow-ups between the 1st and 5th of next month.
+3. **Log Proof Receipts**: Ensure all UPI screenshots and payment confirmation numbers are attached to each record.`;
   }
 
   if (type === 'yearly' || type === 'financial') {
-    const given = data.total_given || 0;
-    const returned = data.total_returned || 0;
-    const net = data.net_yearly_balance || data.net_fy_balance || (given - returned);
-    const recovery = data.recovery_rate || (given > 0 ? (returned / given) * 100 : 0);
+    const given = Number(data.total_given) || 0;
+    const returned = Number(data.total_returned) || 0;
+    const net = Number(data.net_balance) || (given - returned);
+    const recovery = Number(data.recovery_rate) || (given > 0 ? (returned / given) * 100 : 0);
+    const breakdown: Array<{ month_name: string; given: number; returned: number; net: number }> = data.monthly_breakdown || [];
 
-    return `### 📊 Annual Graph & Multi-Month Trajectory
-- **Cumulative Annual Lending**: ${curr}${given.toLocaleString('en-IN')} total principal issued.
-- **Cumulative Repayments**: ${curr}${returned.toLocaleString('en-IN')} successfully recovered.
-- **Annual Recovery Efficiency**: **${recovery.toFixed(1)}%** overall recovery rate.
-- **Net Outstanding Growth**: ${curr}${Math.max(0, net).toLocaleString('en-IN')} remains active in the ledger.
+    const activeMonths = breakdown.filter(m => m.given > 0 || m.returned > 0);
+    const peakGivenMonth = [...breakdown].sort((a, b) => b.given - a.given)[0];
+    const peakReturnedMonth = [...breakdown].sort((a, b) => b.returned - a.returned)[0];
 
-### ⚖️ Peak Cycles & Risk Concentration
-- **Lending Seasonality**: Visual breakdown shows cyclical peaks in lending followed by staggered repayment waves.
-- **Capital Exposure**: Retaining a ${recovery.toFixed(0)}% recovery rate ensures sustainable lending capacity while mitigating prolonged capital lock-up.
+    const breakdownRows = breakdown.map(m => {
+      const mGiven = Number(m.given) || 0;
+      const mRet = Number(m.returned) || 0;
+      const mNet = Number(m.net) || (mGiven - mRet);
+      const mRate = mGiven > 0 ? `${Math.round((mRet / mGiven) * 100)}%` : mRet > 0 ? '100%+' : '0%';
+      return `| **${m.month_name}** | ${curr}${mGiven.toLocaleString('en-IN')} | ${curr}${mRet.toLocaleString('en-IN')} | ${curr}${Math.abs(mNet).toLocaleString('en-IN')} | ${mRate} |`;
+    }).join('\n');
 
-### 💡 Strategic Portfolio Advice
-1. **Set Individual Lending Caps**: Cap any single borrower at under 30% of your total lending portfolio.
-2. **Standardize Due Dates**: Establish clear repayment timelines at the moment of lending.
-3. **Periodic Reconciliation**: Use the yearly PDF statement to perform quarterly reconciliation with regular borrowers.`;
+    return `### 📊 Annual Graph & Multi-Month Trajectory (${data.period_label || 'Annual Cycle'})
+- **Total Principal Lent**: **${curr}${given.toLocaleString('en-IN')}** across ${activeMonths.length} active month(s).
+- **Total Capital Recovered**: **${curr}${returned.toLocaleString('en-IN')}** returned.
+- **Annual Recovery Efficiency**: **${recovery.toFixed(1)}%** overall recovery efficiency.
+- **Cumulative Net Outstanding**: **${curr}${Math.max(0, net).toLocaleString('en-IN')}** currently pending.
+
+### 📅 Month-by-Month Flow Matrix
+| Month | Money Given | Money Returned | Net Delta | Recovery Rate |
+| :--- | :--- | :--- | :--- | :--- |
+${breakdownRows}
+
+### ⚖️ Cycle Dynamics & Peak Periods
+- **Highest Lending Month**: **${peakGivenMonth?.month_name || 'N/A'}** with ${curr}${(peakGivenMonth?.given || 0).toLocaleString('en-IN')} disbursed.
+- **Highest Recovery Month**: **${peakReturnedMonth?.month_name || 'N/A'}** with ${curr}${(peakReturnedMonth?.returned || 0).toLocaleString('en-IN')} collected.
+- **Portfolio Health Status**: ${recovery >= 75 ? '🟢 Strong financial health with high capital turnover.' : recovery >= 45 ? '🟡 Moderate stability; focus on collecting older debts.' : '🔴 Capital exposure is high; establish formal repayment milestones.'}
+
+### 💡 Long-Term Lending Strategy
+1. **Borrower Exposure Limits**: Cap individual loans so no single borrower exceeds 25% of your total lent capital.
+2. **Scheduled Installments**: For loans over ${curr}10,000, structure bi-weekly or monthly partial payments instead of lump-sum returns.
+3. **Annual Audit Statement**: Export the audited PDF/CSV ledger report at the end of each financial quarter.`;
   }
 
-  return `### 📊 Portfolio Graph & Recovery Trend
-- **Overall Lending Flow**: Monitored across active timeline.
-- **Recovery Ratio**: Shows consistent inflow tracking against issued loans.
-- **Action Step**: Continue logging both micro and macro transactions to refine AI trend forecasting.`;
+  // Dashboard / Multi-Month overview
+  const sum = data.summary || {};
+  const given = Number(sum.total_given) || 0;
+  const returned = Number(sum.total_returned) || 0;
+  const pending = Number(sum.total_pending) || 0;
+  const recovery = Number(sum.recovery_rate) || (given > 0 ? (returned / given) * 100 : 0);
+  const peopleCount = Number(data.active_people_count) || 0;
+  const trajectory: Array<{ label: string; given: number; returned: number }> = data.six_month_trajectory || [];
+
+  return `### 📊 6-Month Macro Graph & Cash Velocity
+- **Total Capital Disbursed (Given)**: **${curr}${given.toLocaleString('en-IN')}**
+- **Total Capital Recovered (Returned)**: **${curr}${returned.toLocaleString('en-IN')}**
+- **Current Total Pending Dues**: **${curr}${pending.toLocaleString('en-IN')}**
+- **Overall Recovery Ratio**: **${recovery.toFixed(1)}%** across **${peopleCount} registered counterparties**.
+
+### 📈 6-Month Trajectory Highlights
+${trajectory.map(t => `- **${t.label}**: Given ${curr}${t.given.toLocaleString('en-IN')} vs Returned ${curr}${t.returned.toLocaleString('en-IN')} (Net: ${curr}${(t.given - t.returned).toLocaleString('en-IN')})`).join('\n')}
+
+### ⚖️ Risk Hotspots & Recommendations
+- **Risk Score**: ${recovery >= 70 ? '🟢 Low Risk' : recovery >= 40 ? '🟡 Medium Risk' : '🔴 High Risk'} (Based on unrecovered balance ratio).
+- **Action**: Check the Pending Borrowers list on your Dashboard to prioritize high-value overdue accounts.`;
 }
 
 /**

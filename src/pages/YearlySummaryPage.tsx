@@ -321,27 +321,27 @@ export const YearlySummaryPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-black/5 dark:border-white/10 text-slate-400 text-[11px] uppercase font-bold tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[11px] uppercase font-bold tracking-wider">
                 <th className="pb-3 px-3">Month</th>
                 <th className="pb-3 px-3 text-right">Money Given</th>
                 <th className="pb-3 px-3 text-right">Money Returned</th>
                 <th className="pb-3 px-3 text-right">Net Flow</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5 dark:divide-white/5">
+            <tbody className="divide-y divide-slate-200 dark:divide-white/5">
               {monthsList.map((m, idx) => (
-                <tr key={idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
-                  <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02]">
+                  <td className="py-3 px-3 font-bold text-slate-950 dark:text-white">
                     {m.month_name}
                   </td>
-                  <td className="py-3 px-3 text-right font-medium text-slate-800 dark:text-slate-200">
+                  <td className="py-3 px-3 text-right font-medium text-slate-900 dark:text-slate-200">
                     {formatAmount(m.given)}
                   </td>
-                  <td className="py-3 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                  <td className="py-3 px-3 text-right font-medium text-emerald-700 dark:text-emerald-400">
                     {formatAmount(m.returned)}
                   </td>
                   <td className={`py-3 px-3 text-right font-black ${
-                    m.net > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'
+                    m.net > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-950 dark:text-white'
                   }`}>
                     {formatAmount(m.net)}
                   </td>

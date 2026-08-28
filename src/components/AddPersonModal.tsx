@@ -124,6 +124,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError('');
 
     if (!fullName.trim()) {

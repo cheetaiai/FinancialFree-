@@ -18,17 +18,21 @@ interface DatabaseSchema {
   reminders: Reminder[];
 }
 
-function getDatabaseFilePath(): { dir: string; file: string } {
+function getDatabaseFilePaths(): Array<{ dir: string; file: string }> {
+  const paths: Array<{ dir: string; file: string }> = [];
   try {
-    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-      const tmpDir = path.join('/tmp', 'financialfree-data');
-      return { dir: tmpDir, file: path.join(tmpDir, 'database.json') };
-    }
     const localDir = path.join(process.cwd(), 'data');
-    return { dir: localDir, file: path.join(localDir, 'database.json') };
+    paths.push({ dir: localDir, file: path.join(localDir, 'database.json') });
   } catch {
-    return { dir: '/tmp', file: '/tmp/database.json' };
+    // ignore
   }
+  try {
+    const tmpDir = path.join('/tmp', 'financialfree-data');
+    paths.push({ dir: tmpDir, file: path.join(tmpDir, 'database.json') });
+  } catch {
+    // ignore
+  }
+  return paths;
 }
 
 // Helper to hash password
@@ -89,24 +93,32 @@ class DatabaseService {
     this.seedInitialData();
 
     try {
-      const { dir, file } = getDatabaseFilePath();
-      if (!fs.existsSync(dir)) {
-        try {
-          fs.mkdirSync(dir, { recursive: true });
-        } catch {
-          // ignore directory creation error in read-only environment
-        }
-      }
-
-      if (fs.existsSync(file)) {
-        try {
-          const fileContent = fs.readFileSync(file, 'utf-8');
-          const parsed = JSON.parse(fileContent);
-          if (parsed && Array.isArray(parsed.users)) {
-            this.data = parsed;
+      const paths = getDatabaseFilePaths();
+      for (const { dir, file } of paths) {
+        if (!fs.existsSync(dir)) {
+          try {
+            fs.mkdirSync(dir, { recursive: true });
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore corrupted or unreadable cache file
+        }
+
+        if (fs.existsSync(file)) {
+          try {
+            const fileContent = fs.readFileSync(file, 'utf-8');
+            const parsed = JSON.parse(fileContent);
+            if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
+              this.data = {
+                users: parsed.users || [],
+                people: Array.isArray(parsed.people) ? parsed.people : [],
+                transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+                reminders: Array.isArray(parsed.reminders) ? parsed.reminders : []
+              };
+              break;
+            }
+          } catch {
+            // ignore corrupted cache file
+          }
         }
       }
     } catch (err) {
@@ -129,21 +141,59 @@ class DatabaseService {
   public async syncWithFirestore(): Promise<void> {
     try {
       // 1. Fetch Collections
-      const cloudUsers = await firestoreRest.getCollection('users');
       const cloudPeople = (await firestoreRest.getCollection('people')) as Person[];
       const cloudTransactions = (await firestoreRest.getCollection('transactions')) as Transaction[];
       const cloudReminders = (await firestoreRest.getCollection('reminders')) as Reminder[];
 
-      if (cloudUsers.length > 0 || cloudPeople.length > 0 || cloudTransactions.length > 0) {
-        if (cloudUsers.length > 0) this.data.users = cloudUsers;
-        if (cloudPeople.length > 0) this.data.people = cloudPeople;
-        if (cloudTransactions.length > 0) this.data.transactions = cloudTransactions;
-        if (cloudReminders.length > 0) this.data.reminders = cloudReminders;
-        this.saveToFile();
-      } else {
-        await this.pushAllToFirestore();
+      // Merge people safely (do not delete local data if cloud is empty)
+      if (Array.isArray(cloudPeople) && cloudPeople.length > 0) {
+        for (const cp of cloudPeople) {
+          const idx = this.data.people.findIndex(p => p.id === cp.id || (p.full_name.toLowerCase() === cp.full_name.toLowerCase() && (!p.phone || !cp.phone || p.phone === cp.phone)));
+          if (idx === -1) {
+            this.data.people.push(cp);
+          } else {
+            const localUpdated = new Date(this.data.people[idx].updated_at || 0).getTime();
+            const cloudUpdated = new Date(cp.updated_at || 0).getTime();
+            if (cloudUpdated >= localUpdated) {
+              this.data.people[idx] = cp;
+            }
+          }
+        }
       }
 
+      // Merge transactions safely
+      if (Array.isArray(cloudTransactions) && cloudTransactions.length > 0) {
+        for (const ct of cloudTransactions) {
+          const idx = this.data.transactions.findIndex(t => t.id === ct.id);
+          if (idx === -1) {
+            this.data.transactions.push(ct);
+          } else {
+            const localUpdated = new Date(this.data.transactions[idx].updated_at || 0).getTime();
+            const cloudUpdated = new Date(ct.updated_at || 0).getTime();
+            if (cloudUpdated >= localUpdated) {
+              this.data.transactions[idx] = ct;
+            }
+          }
+        }
+      }
+
+      // Merge reminders safely
+      if (Array.isArray(cloudReminders) && cloudReminders.length > 0) {
+        for (const cr of cloudReminders) {
+          const idx = this.data.reminders.findIndex(r => r.id === cr.id);
+          if (idx === -1) {
+            this.data.reminders.push(cr);
+          } else {
+            this.data.reminders[idx] = cr;
+          }
+        }
+      }
+
+      this.ensureAdminCredentials();
+      this.saveToFile();
+
+      // Push all records to ensure Firestore is completely in sync with local
+      await this.pushAllToFirestore();
       this.isCloudSynced = true;
     } catch (error: any) {
       console.warn('Firestore sync notice:', error.message || error);
@@ -176,15 +226,17 @@ class DatabaseService {
 
   private saveToFile() {
     try {
-      const { dir, file } = getDatabaseFilePath();
-      if (!fs.existsSync(dir)) {
+      const paths = getDatabaseFilePaths();
+      for (const { dir, file } of paths) {
         try {
-          fs.mkdirSync(dir, { recursive: true });
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          fs.writeFileSync(file, JSON.stringify(this.data, null, 2), 'utf-8');
         } catch {
-          // ignore
+          // ignore single path write failures
         }
       }
-      fs.writeFileSync(file, JSON.stringify(this.data, null, 2), 'utf-8');
     } catch {
       // In-memory fallback if disk write is not allowed in serverless
     }
@@ -492,16 +544,47 @@ class DatabaseService {
       throw new Error('Full name is required');
     }
 
+    const cleanName = data.full_name.trim();
+    const cleanPhone = data.phone?.trim() || '';
+
+    // Check for duplicate person to prevent adding the same person twice
+    const existingIndex = this.data.people.findIndex(p =>
+      p.full_name.toLowerCase() === cleanName.toLowerCase() &&
+      (!cleanPhone || !p.phone || p.phone === cleanPhone)
+    );
+
+    if (existingIndex !== -1) {
+      // Seamlessly update existing person's details instead of creating a duplicate duplicate record
+      const existing = this.data.people[existingIndex];
+      const updated: Person = {
+        ...existing,
+        full_name: cleanName,
+        phone: cleanPhone || existing.phone,
+        email: data.email?.trim() || existing.email,
+        address: data.address?.trim() || existing.address,
+        notes: data.notes?.trim() || existing.notes,
+        category: data.category || existing.category,
+        avatar_color: data.avatar_color || existing.avatar_color,
+        avatar_url: data.avatar_url !== undefined ? data.avatar_url : existing.avatar_url,
+        updated_at: new Date().toISOString()
+      };
+      this.data.people[existingIndex] = updated;
+      this.saveToFile();
+      firestoreRest.setDoc('people', updated.id, updated).catch(() => {});
+      return this.enrichPerson(updated);
+    }
+
     const newPerson: Person = {
       id: 'per_' + crypto.randomBytes(8).toString('hex'),
       user_id: userId,
-      full_name: data.full_name.trim(),
-      phone: data.phone?.trim() || '',
+      full_name: cleanName,
+      phone: cleanPhone,
       email: data.email?.trim() || '',
       address: data.address?.trim() || '',
       notes: data.notes?.trim() || '',
-      category: data.category || 'General',
+      category: data.category || 'Friends',
       avatar_color: data.avatar_color || '#3B82F6',
+      avatar_url: data.avatar_url || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -531,6 +614,7 @@ class DatabaseService {
       notes: data.notes !== undefined ? data.notes.trim() : existing.notes,
       category: data.category || existing.category,
       avatar_color: data.avatar_color || existing.avatar_color,
+      avatar_url: data.avatar_url !== undefined ? data.avatar_url : existing.avatar_url,
       updated_at: new Date().toISOString()
     };
 
@@ -659,6 +743,7 @@ class DatabaseService {
     payment_method: any;
     purpose?: string;
     notes?: string;
+    receipt_image?: string;
   }, userId: string): Transaction {
     if (!data.person_id) throw new Error('Please select a person.');
     const person = this.data.people.find(p => p.id === data.person_id);
@@ -699,6 +784,7 @@ class DatabaseService {
       payment_method: data.payment_method || 'UPI',
       purpose: data.purpose?.trim() || '',
       notes: data.notes?.trim() || '',
+      receipt_image: data.receipt_image || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -751,6 +837,7 @@ class DatabaseService {
       payment_method: data.payment_method || existing.payment_method,
       purpose: data.purpose !== undefined ? data.purpose.trim() : existing.purpose,
       notes: data.notes !== undefined ? data.notes.trim() : existing.notes,
+      receipt_image: data.receipt_image !== undefined ? data.receipt_image : existing.receipt_image,
       updated_at: new Date().toISOString()
     };
 

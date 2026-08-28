@@ -186,7 +186,7 @@ export const MonthlySummaryPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <LiquidGlassCard variant="primary" hoverEffect>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400">
               Money Given this Month
             </span>
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -196,12 +196,12 @@ export const MonthlySummaryPage: React.FC = () => {
           <div className="text-2xl font-black text-slate-900 dark:text-white">
             {formatAmount(totalGiven)}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Outflow lent in {MONTH_NAMES[selectedMonth - 1]}</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">Outflow lent in {MONTH_NAMES[selectedMonth - 1]}</div>
         </LiquidGlassCard>
 
         <LiquidGlassCard variant="primary" hoverEffect>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400">
               Money Returned this Month
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -211,12 +211,12 @@ export const MonthlySummaryPage: React.FC = () => {
           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
             {formatAmount(totalReturned)}
           </div>
-          <div className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-1">Inflow recovered in {MONTH_NAMES[selectedMonth - 1]}</div>
+          <div className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 font-medium">Inflow recovered in {MONTH_NAMES[selectedMonth - 1]}</div>
         </LiquidGlassCard>
 
         <LiquidGlassCard variant="primary" hoverEffect>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400">
               Net Monthly Balance
             </span>
             <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -226,7 +226,7 @@ export const MonthlySummaryPage: React.FC = () => {
           <div className={`text-2xl font-black ${netMonthly > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
             {formatAmount(netMonthly)}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Net pending change this month</div>
+          <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">Net pending change this month</div>
         </LiquidGlassCard>
       </div>
 
@@ -324,7 +324,7 @@ export const MonthlySummaryPage: React.FC = () => {
               Borrower Activity in {MONTH_NAMES[selectedMonth - 1]}
             </h3>
           </div>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
             {analytics?.people_involved?.length || 0} People Active
           </span>
         </div>
@@ -334,24 +334,24 @@ export const MonthlySummaryPage: React.FC = () => {
             {analytics.people_involved.map((person, idx) => (
               <div
                 key={idx}
-                className="p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10 flex items-center justify-between"
+                className="p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200 dark:border-white/10 flex items-center justify-between"
               >
                 <div className="font-bold text-sm text-slate-900 dark:text-white">
                   {person.name}
                 </div>
                 <div className="text-right space-y-0.5">
-                  <div className="text-xs text-slate-500">
-                    Given: <strong className="text-slate-800 dark:text-slate-200">{formatAmount(person.given)}</strong>
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
+                    Given: <strong className="text-slate-950 dark:text-white font-bold">{formatAmount(person.given)}</strong>
                   </div>
-                  <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                    Returned: <strong>{formatAmount(person.returned)}</strong>
+                  <div className="text-xs text-emerald-700 dark:text-emerald-400">
+                    Returned: <strong className="font-bold">{formatAmount(person.returned)}</strong>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-400 text-xs">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
             No borrower transactions logged in {MONTH_NAMES[selectedMonth - 1]} {selectedYear}.
           </div>
         )}
@@ -372,7 +372,7 @@ export const MonthlySummaryPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-black/5 dark:border-white/10 text-slate-400 text-[11px] uppercase font-bold tracking-wider">
+                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[11px] uppercase font-bold tracking-wider">
                   <th className="pb-3 px-3">Date</th>
                   <th className="pb-3 px-3">Person</th>
                   <th className="pb-3 px-3">Type</th>
@@ -381,32 +381,32 @@ export const MonthlySummaryPage: React.FC = () => {
                   <th className="pb-3 px-3 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/5 dark:divide-white/5">
+              <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                 {analytics.transactions.map(tx => {
                   const isGiven = tx.transaction_type === 'given';
                   return (
-                    <tr key={tx.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
-                      <td className="py-3 px-3 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                    <tr key={tx.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02]">
+                      <td className="py-3 px-3 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap">
                         {formatIndianDate(tx.transaction_date)}
                       </td>
-                      <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-3 font-bold text-slate-950 dark:text-white">
                         {tx.person_name}
                       </td>
                       <td className="py-3 px-3">
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                          isGiven ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          isGiven ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold'
                         }`}>
                           {isGiven ? 'Given' : 'Returned'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
+                      <td className="py-3 px-3 text-slate-700 dark:text-slate-300">
                         {tx.payment_method}
                       </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
+                      <td className="py-3 px-3 text-slate-700 dark:text-slate-300">
                         {tx.purpose || '-'}
                       </td>
                       <td className={`py-3 px-3 text-right font-black ${
-                        isGiven ? 'text-slate-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-400'
+                        isGiven ? 'text-slate-950 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'
                       }`}>
                         {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
                       </td>
@@ -417,7 +417,7 @@ export const MonthlySummaryPage: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-400 text-xs">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
             No entries for this month.
           </div>
         )}

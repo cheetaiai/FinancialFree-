@@ -509,8 +509,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <LiquidGlassCard variant="primary" className="p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Money Given</div>
-            <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-0.5">
+            <div className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Total Money Given</div>
+            <div className="text-lg sm:text-xl font-black text-slate-950 dark:text-white mt-0.5">
               {formatAmount(filteredGiven)}
             </div>
           </div>
@@ -521,8 +521,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
         <LiquidGlassCard variant="primary" className="p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Returned</div>
-            <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+            <div className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Total Returned</div>
+            <div className="text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
               {formatAmount(filteredReturned)}
             </div>
           </div>
@@ -533,8 +533,8 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
         <LiquidGlassCard variant="primary" className="p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Net Outstanding Dues</div>
-            <div className={`text-lg sm:text-xl font-black mt-0.5 ${filteredNet > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+            <div className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Net Outstanding Dues</div>
+            <div className={`text-lg sm:text-xl font-black mt-0.5 ${filteredNet > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-950 dark:text-white'}`}>
               {formatAmount(filteredNet)}
             </div>
           </div>
@@ -550,7 +550,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-black/5 dark:border-white/10 text-slate-400 text-[11px] uppercase font-bold tracking-wider bg-black/[0.02] dark:bg-white/[0.02]">
+                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[11px] uppercase font-bold tracking-wider bg-slate-50/80 dark:bg-white/[0.02]">
                   <th className="py-3.5 px-4">Date</th>
                   <th className="py-3.5 px-4">Person</th>
                   <th className="py-3.5 px-4">Type</th>
@@ -560,7 +560,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/5 dark:divide-white/5">
+              <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {filteredTransactions.map((tx, idx) => {
                     const isGiven = tx.transaction_type === 'given';
@@ -576,37 +576,37 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           ease: [0.16, 1, 0.3, 1],
                           delay: Math.min(idx * 0.02, 0.2)
                         }}
-                        className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                        className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
                       >
-                        <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap">
                           {formatIndianDate(tx.transaction_date)}
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-bold text-slate-950 dark:text-white whitespace-nowrap">
                           {tx.person_name}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                               isGiven
-                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
+                                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                             }`}
                           >
                             {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}
                             {isGiven ? 'Given' : 'Returned'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                           {tx.payment_method}
                         </td>
-                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
+                        <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 max-w-xs">
                           <div className="flex items-center gap-2">
                             <span className="truncate">{tx.purpose || tx.notes || '-'}</span>
                             {tx.receipt_image && (
                               <button
                                 type="button"
                                 onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-semibold cursor-pointer flex-shrink-0"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-bold cursor-pointer flex-shrink-0"
                                 title="View receipt attachment"
                               >
                                 <ImageIcon size={12} />
@@ -616,7 +616,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           </div>
                         </td>
                         <td className={`py-3.5 px-4 text-right font-black whitespace-nowrap ${
-                          isGiven ? 'text-slate-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-400'
+                          isGiven ? 'text-slate-950 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'
                         }`}>
                           {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
                         </td>
@@ -624,14 +624,14 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => onEditTransaction(tx)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
                               title="Edit Transaction"
                             >
                               <Edit2 size={14} />
                             </button>
                             <button
                               onClick={() => setDeleteTxId(tx.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                               title="Delete Transaction"
                             >
                               <Trash2 size={14} />
@@ -646,7 +646,7 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
             </table>
           </div>
         ) : (
-          <div className="p-12 text-center text-slate-400 text-xs">
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
             <Search size={28} className="mx-auto mb-2 opacity-40 text-slate-400" />
             <p className="font-medium">No transactions match your search and filter criteria.</p>
             {hasActiveFilters && (
