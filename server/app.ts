@@ -5,7 +5,8 @@ import {
   draftReminderMessage,
   chatFinancialAssistant,
   scanReceiptOrImage,
-  analyzeGraphTrends
+  analyzeGraphTrends,
+  suggestTransactionCategoryAndPurpose
 } from './gemini';
 
 const app = express();
@@ -67,6 +68,20 @@ apiRouter.post('/auth/login', (req: Request, res: Response) => {
   }
 });
 
+apiRouter.post('/auth/firebase-login', (req: Request, res: Response) => {
+  try {
+    const { uid, email, displayName } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: 'Firebase UID is required' });
+    }
+
+    const authResult = db.loginWithFirebase({ uid, email, displayName });
+    res.json(authResult);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Firebase login error' });
+  }
+});
+
 apiRouter.get('/auth/me', requireAuth, (req: Request, res: Response) => {
   res.json({ user: (req as any).user });
 });
@@ -117,28 +132,28 @@ apiRouter.get('/people/:id', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-apiRouter.post('/people', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/people', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const person = db.createPerson(req.body, userId);
+    const person = await db.createPerson(req.body, userId);
     res.status(201).json(person);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to create person' });
   }
 });
 
-apiRouter.put('/people/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.put('/people/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const updated = db.updatePerson(req.params.id, req.body);
+    const updated = await db.updatePerson(req.params.id, req.body);
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update person' });
   }
 });
 
-apiRouter.delete('/people/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/people/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const result = db.deletePerson(req.params.id);
+    const result = await db.deletePerson(req.params.id);
     res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete person' });
@@ -173,28 +188,28 @@ apiRouter.get('/transactions', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-apiRouter.post('/transactions', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/transactions', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const tx = db.createTransaction(req.body, userId);
+    const tx = await db.createTransaction(req.body, userId);
     res.status(201).json(tx);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to create transaction' });
   }
 });
 
-apiRouter.put('/transactions/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.put('/transactions/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const updated = db.updateTransaction(req.params.id, req.body);
+    const updated = await db.updateTransaction(req.params.id, req.body);
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update transaction' });
   }
 });
 
-apiRouter.delete('/transactions/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/transactions/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const result = db.deleteTransaction(req.params.id);
+    const result = await db.deleteTransaction(req.params.id);
     res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete transaction' });
@@ -314,38 +329,38 @@ apiRouter.get('/reminders', requireAuth, (req: Request, res: Response) => {
   }
 });
 
-apiRouter.post('/reminders', requireAuth, (req: Request, res: Response) => {
+apiRouter.post('/reminders', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const reminder = db.createReminder(req.body, userId);
+    const reminder = await db.createReminder(req.body, userId);
     res.status(201).json(reminder);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to create reminder' });
   }
 });
 
-apiRouter.patch('/reminders/:id/status', requireAuth, (req: Request, res: Response) => {
+apiRouter.patch('/reminders/:id/status', requireAuth, async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-    const updated = db.updateReminder(req.params.id, { status });
+    const updated = await db.updateReminder(req.params.id, { status });
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update reminder status' });
   }
 });
 
-apiRouter.put('/reminders/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.put('/reminders/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const updated = db.updateReminder(req.params.id, req.body);
+    const updated = await db.updateReminder(req.params.id, req.body);
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update reminder' });
   }
 });
 
-apiRouter.delete('/reminders/:id', requireAuth, (req: Request, res: Response) => {
+apiRouter.delete('/reminders/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const result = db.deleteReminder(req.params.id);
+    const result = await db.deleteReminder(req.params.id);
     res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to delete reminder' });
@@ -384,6 +399,23 @@ apiRouter.post('/backup/reset', requireAuth, (req: Request, res: Response) => {
 });
 
 // ================= AI COPILOT & OCR ROUTES =================
+apiRouter.post('/ai/suggest-transaction-meta', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { type, amount, description, notes, personName, personCategory } = req.body;
+    const result = await suggestTransactionCategoryAndPurpose({
+      type: type || 'given',
+      amount: amount ? Number(amount) : undefined,
+      description,
+      notes,
+      personName,
+      personCategory
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to suggest transaction metadata' });
+  }
+});
+
 apiRouter.get('/ai/insights', requireAuth, async (req: Request, res: Response) => {
   try {
     const rawData = db.getRawDataForAI();
@@ -487,12 +519,16 @@ apiRouter.post('/ai/chat', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// Mount router on /api
+// Mount router on /api and root fallback (ensures compatibility with both container and Vercel serverless routing)
 app.use('/api', apiRouter);
+app.use(apiRouter);
 
-// 404 handler ONLY for /api requests
-app.use('/api', (req: Request, res: Response) => {
-  res.status(404).json({ error: `API route ${req.method} ${req.originalUrl || req.url} not found` });
+// 404 handler ONLY for API requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.url.startsWith('/api') || req.url.startsWith('/auth') || req.url.startsWith('/people') || req.url.startsWith('/transactions') || req.url.startsWith('/summary') || req.url.startsWith('/reminders')) {
+    return res.status(404).json({ error: `API route ${req.method} ${req.originalUrl || req.url} not found` });
+  }
+  next();
 });
 
 // Global Express Error Handler

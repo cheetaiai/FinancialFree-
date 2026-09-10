@@ -51,6 +51,34 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
   }
 }
 
+const SESSION_SECRET = process.env.SESSION_SECRET || 'financialfree_master_jwt_secret_2026_safe';
+
+export function createSignedToken(userId: string, email: string): string {
+  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+  const payloadStr = JSON.stringify({ userId, email, expiresAt });
+  const payloadB64 = Buffer.from(payloadStr).toString('base64url');
+  const signature = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+  return `ff_jwt.${payloadB64}.${signature}`;
+}
+
+export function verifySignedToken(token: string): { userId: string; email: string; expiresAt: number } | null {
+  if (!token || !token.startsWith('ff_jwt.')) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [, payloadB64, signature] = parts;
+  const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+  if (signature !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (!payload.userId || !payload.expiresAt || Date.now() > payload.expiresAt) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 // Helper to calculate Indian Financial Year
 export function calculateFinancialYear(dateStr: string): { fy: string; month: number; year: number } {
   const date = new Date(dateStr);
@@ -374,7 +402,47 @@ class DatabaseService {
 
     if (!isValid) return null;
 
-    const token = 'ff_tok_' + crypto.randomBytes(32).toString('hex');
+    // Generate stateless cryptographic HMAC-signed token
+    const token = createSignedToken(user.id, user.email);
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    this.sessions.set(token, { userId: user.id, email: user.email, expiresAt });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }
+    };
+  }
+
+  public loginWithFirebase(firebaseData: { uid: string; email?: string | null; displayName?: string | null }): { token: string; user: User } {
+    const email = (firebaseData.email || `${firebaseData.uid}@financialfree.app`).trim().toLowerCase();
+
+    this.ensureAdminCredentials();
+
+    let user = this.data.users.find(u => u.email.toLowerCase() === email || u.id === `usr_fb_${firebaseData.uid}`);
+    const nowIso = new Date().toISOString();
+
+    if (!user) {
+      const auth = hashPassword(crypto.randomBytes(16).toString('hex'));
+      user = {
+        id: `usr_fb_${firebaseData.uid}`,
+        email,
+        password_hash: auth.hash,
+        salt: auth.salt,
+        created_at: nowIso,
+        updated_at: nowIso
+      };
+      this.data.users.push(user);
+      this.saveToFile();
+      firestoreRest.setDoc('users', user.id, user).catch(() => {});
+    }
+
+    // Generate stateless cryptographic HMAC-signed token
+    const token = createSignedToken(user.id, user.email);
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
     this.sessions.set(token, { userId: user.id, email: user.email, expiresAt });
 
@@ -390,20 +458,47 @@ class DatabaseService {
   }
 
   public verifyToken(token: string): User | null {
+    if (!token) return null;
+
+    // 1. Check in-memory session if active
     const session = this.sessions.get(token);
-    if (!session) return null;
-    if (Date.now() > session.expiresAt) {
-      this.sessions.delete(token);
-      return null;
+    if (session && Date.now() <= session.expiresAt) {
+      const user = this.data.users.find(u => u.id === session.userId);
+      if (user) {
+        return {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          updated_at: user.updated_at
+        };
+      }
     }
-    const user = this.data.users.find(u => u.id === session.userId);
-    if (!user) return null;
-    return {
-      id: user.id,
-      email: user.email,
-      created_at: user.created_at,
-      updated_at: user.updated_at
-    };
+
+    // 2. Stateless HMAC token verification (resilient across page reloads, server restarts & lambdas)
+    const verified = verifySignedToken(token);
+    if (verified) {
+      let user = this.data.users.find(u => u.id === verified.userId || u.email.toLowerCase() === verified.email.toLowerCase());
+      if (!user) {
+        this.ensureAdminCredentials();
+        user = this.data.users.find(u => u.email.toLowerCase() === verified.email.toLowerCase());
+      }
+      if (user) {
+        return {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          updated_at: user.updated_at
+        };
+      }
+      return {
+        id: verified.userId,
+        email: verified.email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    return null;
   }
 
   public logout(token: string) {
@@ -539,7 +634,7 @@ class DatabaseService {
     return { person, transactions, reminders };
   }
 
-  public createPerson(data: Partial<Person>, userId: string): Person {
+  public async createPerson(data: Partial<Person>, userId: string): Promise<Person> {
     if (!data.full_name || !data.full_name.trim()) {
       throw new Error('Full name is required');
     }
@@ -554,7 +649,7 @@ class DatabaseService {
     );
 
     if (existingIndex !== -1) {
-      // Seamlessly update existing person's details instead of creating a duplicate duplicate record
+      // Seamlessly update existing person's details instead of creating a duplicate record
       const existing = this.data.people[existingIndex];
       const updated: Person = {
         ...existing,
@@ -570,7 +665,7 @@ class DatabaseService {
       };
       this.data.people[existingIndex] = updated;
       this.saveToFile();
-      firestoreRest.setDoc('people', updated.id, updated).catch(() => {});
+      await firestoreRest.setDoc('people', updated.id, updated).catch(() => {});
       return this.enrichPerson(updated);
     }
 
@@ -592,15 +687,15 @@ class DatabaseService {
     this.data.people.push(newPerson);
     this.saveToFile();
 
-    // Persist to Cloud Firestore
-    firestoreRest.setDoc('people', newPerson.id, newPerson).catch((err) => {
+    // Persist to Cloud Firestore and await to ensure no data loss across reloads/lambdas
+    await firestoreRest.setDoc('people', newPerson.id, newPerson).catch((err) => {
       console.warn('Firestore setDoc notice for new person:', err.message || err);
     });
 
     return this.enrichPerson(newPerson);
   }
 
-  public updatePerson(id: string, data: Partial<Person>): Person {
+  public async updatePerson(id: string, data: Partial<Person>): Promise<Person> {
     const index = this.data.people.findIndex(p => p.id === id);
     if (index === -1) throw new Error('Person not found');
 
@@ -622,14 +717,14 @@ class DatabaseService {
     this.saveToFile();
 
     // Persist to Cloud Firestore
-    firestoreRest.setDoc('people', id, updated).catch((err) => {
+    await firestoreRest.setDoc('people', id, updated).catch((err) => {
       console.warn('Firestore setDoc notice for update person:', err.message || err);
     });
 
     return this.enrichPerson(this.data.people[index]);
   }
 
-  public deletePerson(id: string): { success: boolean; deletedTransactions: number } {
+  public async deletePerson(id: string): Promise<{ success: boolean; deletedTransactions: number }> {
     const personIndex = this.data.people.findIndex(p => p.id === id);
     if (personIndex === -1) throw new Error('Person not found');
 
@@ -643,12 +738,12 @@ class DatabaseService {
     this.saveToFile();
 
     // Delete from Cloud Firestore
-    firestoreRest.deleteDoc('people', id).catch(() => {});
+    await firestoreRest.deleteDoc('people', id).catch(() => {});
     for (const t of txsToDelete) {
-      firestoreRest.deleteDoc('transactions', t.id).catch(() => {});
+      await firestoreRest.deleteDoc('transactions', t.id).catch(() => {});
     }
     for (const r of remindersToDelete) {
-      firestoreRest.deleteDoc('reminders', r.id).catch(() => {});
+      await firestoreRest.deleteDoc('reminders', r.id).catch(() => {});
     }
 
     return { success: true, deletedTransactions: txsToDelete.length };
@@ -735,16 +830,17 @@ class DatabaseService {
     return list.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
-  public createTransaction(data: {
+  public async createTransaction(data: {
     person_id: string;
     transaction_type: 'given' | 'returned';
     amount: number;
     transaction_date: string;
     payment_method: any;
+    category?: string;
     purpose?: string;
     notes?: string;
     receipt_image?: string;
-  }, userId: string): Transaction {
+  }, userId: string): Promise<Transaction> {
     if (!data.person_id) throw new Error('Please select a person.');
     const person = this.data.people.find(p => p.id === data.person_id);
     if (!person) throw new Error('Selected person does not exist.');
@@ -782,6 +878,7 @@ class DatabaseService {
       year,
       financial_year: fy,
       payment_method: data.payment_method || 'UPI',
+      category: data.category?.trim() || '',
       purpose: data.purpose?.trim() || '',
       notes: data.notes?.trim() || '',
       receipt_image: data.receipt_image || '',
@@ -792,13 +889,15 @@ class DatabaseService {
     this.data.transactions.push(newTx);
     this.saveToFile();
 
-    // Persist to Cloud Firestore
-    firestoreRest.setDoc('transactions', newTx.id, newTx).catch(() => {});
+    // Persist to Cloud Firestore and await
+    await firestoreRest.setDoc('transactions', newTx.id, newTx).catch((err) => {
+      console.warn('Firestore setDoc notice for new transaction:', err.message || err);
+    });
 
     return newTx;
   }
 
-  public updateTransaction(id: string, data: Partial<Transaction>): Transaction {
+  public async updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction> {
     const index = this.data.transactions.findIndex(t => t.id === id);
     if (index === -1) throw new Error('Transaction not found.');
 
@@ -835,6 +934,7 @@ class DatabaseService {
       year,
       financial_year: fy,
       payment_method: data.payment_method || existing.payment_method,
+      category: data.category !== undefined ? data.category.trim() : existing.category,
       purpose: data.purpose !== undefined ? data.purpose.trim() : existing.purpose,
       notes: data.notes !== undefined ? data.notes.trim() : existing.notes,
       receipt_image: data.receipt_image !== undefined ? data.receipt_image : existing.receipt_image,
@@ -844,21 +944,23 @@ class DatabaseService {
     this.data.transactions[index] = updated;
     this.saveToFile();
 
-    // Persist to Cloud Firestore
-    firestoreRest.setDoc('transactions', id, updated).catch(() => {});
+    // Persist to Cloud Firestore and await
+    await firestoreRest.setDoc('transactions', id, updated).catch((err) => {
+      console.warn('Firestore setDoc notice for update transaction:', err.message || err);
+    });
 
     return this.data.transactions[index];
   }
 
-  public deleteTransaction(id: string): { success: boolean; message: string } {
+  public async deleteTransaction(id: string): Promise<{ success: boolean; message: string }> {
     const index = this.data.transactions.findIndex(t => t.id === id);
     if (index === -1) throw new Error('Transaction not found.');
 
     this.data.transactions.splice(index, 1);
     this.saveToFile();
 
-    // Delete from Cloud Firestore
-    firestoreRest.deleteDoc('transactions', id).catch(() => {});
+    // Delete from Cloud Firestore and await
+    await firestoreRest.deleteDoc('transactions', id).catch(() => {});
 
     return { success: true, message: 'Transaction deleted successfully.' };
   }
@@ -889,7 +991,7 @@ class DatabaseService {
     })).sort((a, b) => new Date(a.reminder_date).getTime() - new Date(b.reminder_date).getTime());
   }
 
-  public createReminder(data: { person_id: string; reminder_date: string; note?: string }, userId: string): Reminder {
+  public async createReminder(data: { person_id: string; reminder_date: string; note?: string }, userId: string): Promise<Reminder> {
     const person = this.data.people.find(p => p.id === data.person_id);
     if (!person) throw new Error('Person not found.');
 
@@ -914,26 +1016,26 @@ class DatabaseService {
     this.data.reminders.push(newReminder);
     this.saveToFile();
 
-    // Persist to Cloud Firestore
-    firestoreRest.setDoc('reminders', newReminder.id, newReminder).catch(() => {});
+    // Persist to Cloud Firestore and await
+    await firestoreRest.setDoc('reminders', newReminder.id, newReminder).catch(() => {});
 
     return newReminder;
   }
 
-  public updateReminderStatus(id: string, status: 'pending' | 'completed' | 'dismissed'): Reminder {
+  public async updateReminderStatus(id: string, status: 'pending' | 'completed' | 'dismissed'): Promise<Reminder> {
     const rem = this.data.reminders.find(r => r.id === id);
     if (!rem) throw new Error('Reminder not found.');
     rem.status = status;
     rem.updated_at = new Date().toISOString();
     this.saveToFile();
 
-    // Persist to Cloud Firestore
-    firestoreRest.setDoc('reminders', id, rem).catch(() => {});
+    // Persist to Cloud Firestore and await
+    await firestoreRest.setDoc('reminders', id, rem).catch(() => {});
 
     return rem;
   }
 
-  public updateReminder(id: string, data: Partial<Reminder>): Reminder {
+  public async updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder> {
     const rem = this.data.reminders.find(r => r.id === id);
     if (!rem) throw new Error('Reminder not found.');
     if (data.status) rem.status = data.status;
@@ -942,18 +1044,18 @@ class DatabaseService {
     rem.updated_at = new Date().toISOString();
     this.saveToFile();
 
-    firestoreRest.setDoc('reminders', id, rem).catch(() => {});
+    await firestoreRest.setDoc('reminders', id, rem).catch(() => {});
     return rem;
   }
 
-  public deleteReminder(id: string): boolean {
+  public async deleteReminder(id: string): Promise<boolean> {
     const index = this.data.reminders.findIndex(r => r.id === id);
     if (index === -1) return false;
     this.data.reminders.splice(index, 1);
     this.saveToFile();
 
-    // Delete from Cloud Firestore
-    firestoreRest.deleteDoc('reminders', id).catch(() => {});
+    // Delete from Cloud Firestore and await
+    await firestoreRest.deleteDoc('reminders', id).catch(() => {});
 
     return true;
   }

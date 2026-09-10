@@ -5,11 +5,12 @@ import { LiquidButton } from './ui/LiquidButton';
 import { LiquidDropdown } from './ui/LiquidDropdown';
 import { LiquidDatePicker } from './ui/LiquidDatePicker';
 import { LiquidSegmentedControl } from './ui/LiquidSegmentedControl';
-import { Person, Transaction, TransactionType, PaymentMethod } from '../types';
+import { Person, Transaction, TransactionType, PaymentMethod, AiTransactionSuggestion } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { formatINR, getFinancialYearFromDate } from '../lib/formatters';
-import { ArrowUpRight, ArrowDownLeft, AlertCircle, Sparkles, Camera, Image as ImageIcon, X, CheckCircle2, UserPlus, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, AlertCircle, Sparkles, Camera, Image as ImageIcon, X, CheckCircle2, UserPlus, RefreshCw, Wand2, Tag, Check, Video } from 'lucide-react';
+import { CameraCaptureModal } from './camera/CameraCaptureModal';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -43,13 +44,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [amount, setAmount] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [category, setCategory] = useState<string>('');
   const [purpose, setPurpose] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [receiptImage, setReceiptImage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // AI Category & Purpose Suggestion State
+  const [isSuggestingAi, setIsSuggestingAi] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<AiTransactionSuggestion | null>(null);
+
   // AI Image Scanner State
   const [isScanning, setIsScanning] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [detectedPersonName, setDetectedPersonName] = useState<string | null>(null);
   const [scanSummary, setScanSummary] = useState<string | null>(null);
 
@@ -60,6 +67,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setErrorMessage('');
       setScanSummary(null);
       setDetectedPersonName(null);
+      setAiSuggestion(null);
       api.getPeople()
         .then(data => {
           setPeople(data);
@@ -82,22 +90,113 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setAmount(editTransaction.amount.toString());
       setDate(editTransaction.transaction_date);
       setPaymentMethod(editTransaction.payment_method);
+      setCategory(editTransaction.category || '');
       setPurpose(editTransaction.purpose || '');
       setNotes(editTransaction.notes || '');
       setReceiptImage(editTransaction.receipt_image || '');
+      setAiSuggestion(null);
     } else {
       setType(initialType);
       if (initialPersonId) setPersonId(initialPersonId);
       setAmount('');
       setDate(new Date().toISOString().split('T')[0]);
       setPaymentMethod('UPI');
+      setCategory('');
       setPurpose('');
       setNotes('');
       setReceiptImage('');
+      setAiSuggestion(null);
     }
   }, [editTransaction, initialType, initialPersonId, isOpen]);
 
-  // Scan Receipt or Payment Screenshot to Auto-Fill
+  // AI Auto-Suggest Category & Purpose
+  const handleAiAutoSuggest = async () => {
+    if (isSuggestingAi) return;
+    setIsSuggestingAi(true);
+    setErrorMessage('');
+    try {
+      const selectedPerson = people.find(p => p.id === personId);
+      const parsedAmount = parseFloat(amount);
+      const res = await api.suggestTransactionMeta({
+        type,
+        amount: !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined,
+        description: purpose || notes,
+        notes,
+        personName: selectedPerson?.full_name,
+        personCategory: selectedPerson?.category
+      });
+      setAiSuggestion(res);
+      if (res.category && (!category || category === 'Other')) {
+        setCategory(res.category);
+      }
+      if (res.purpose && !purpose) {
+        setPurpose(res.purpose);
+      }
+      showToast(`AI suggested category "${res.category}" & purpose`, 'info');
+    } catch (err: any) {
+      showToast(err.message || 'AI suggestion currently unavailable', 'error');
+    } finally {
+      setIsSuggestingAi(false);
+    }
+  };
+
+  // Process base64 image (from live camera snapshot or file upload)
+  const processScannedBase64 = async (base64: string, mimeType: string = 'image/jpeg') => {
+    setIsScanning(true);
+    setErrorMessage('');
+    setScanSummary(null);
+    setDetectedPersonName(null);
+    setReceiptImage(base64);
+
+    try {
+      const result = await api.scanReceiptOrImage(base64, mimeType);
+
+      if (result.amount) {
+        setAmount(result.amount.toString());
+      }
+      if (result.transaction_type) {
+        setType(result.transaction_type);
+      }
+      if (result.transaction_date) {
+        setDate(result.transaction_date);
+      }
+      if (result.payment_method) {
+        setPaymentMethod(result.payment_method);
+      }
+      if (result.purpose) {
+        setPurpose(result.purpose);
+      }
+      if (result.notes) {
+        setNotes(result.notes);
+      }
+
+      // Match or propose person
+      if (result.person_name) {
+        const matched = people.find(
+          p => p.full_name.toLowerCase().includes(result.person_name!.toLowerCase()) ||
+               result.person_name!.toLowerCase().includes(p.full_name.toLowerCase())
+        );
+        if (matched) {
+          setPersonId(matched.id);
+          setScanSummary(`Auto-matched person: ${matched.full_name}`);
+        } else {
+          setDetectedPersonName(result.person_name);
+          setScanSummary(`Detected amount ₹${result.amount || ''} for "${result.person_name}".`);
+        }
+      } else {
+        setScanSummary(result.confidence_summary || 'Receipt scanned. Money amount and details auto-filled.');
+      }
+
+      showToast('Receipt scanned & fields auto-filled!', 'success');
+    } catch (err: any) {
+      console.error('Scan error:', err);
+      setErrorMessage('Could not auto-scan receipt details. You can enter them manually.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Scan Receipt or Payment Screenshot from File Upload
   const handleReceiptImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,62 +206,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
-    setIsScanning(true);
-    setErrorMessage('');
-    setScanSummary(null);
-    setDetectedPersonName(null);
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
-      setReceiptImage(base64);
-
-      try {
-        const result = await api.scanReceiptOrImage(base64, file.type || 'image/jpeg');
-
-        if (result.amount) {
-          setAmount(result.amount.toString());
-        }
-        if (result.transaction_type) {
-          setType(result.transaction_type);
-        }
-        if (result.transaction_date) {
-          setDate(result.transaction_date);
-        }
-        if (result.payment_method) {
-          setPaymentMethod(result.payment_method);
-        }
-        if (result.purpose) {
-          setPurpose(result.purpose);
-        }
-        if (result.notes) {
-          setNotes(result.notes);
-        }
-
-        // Match or propose person
-        if (result.person_name) {
-          const matched = people.find(
-            p => p.full_name.toLowerCase().includes(result.person_name!.toLowerCase()) ||
-                 result.person_name!.toLowerCase().includes(p.full_name.toLowerCase())
-          );
-          if (matched) {
-            setPersonId(matched.id);
-            setScanSummary(`Auto-matched person: ${matched.full_name}`);
-          } else {
-            setDetectedPersonName(result.person_name);
-            setScanSummary(`Detected amount ₹${result.amount || ''} for "${result.person_name}".`);
-          }
-        } else {
-          setScanSummary(result.confidence_summary || 'Receipt scanned. Money amount and details auto-filled.');
-        }
-
-        showToast('Receipt scanned & fields auto-filled!', 'success');
-      } catch (err: any) {
-        console.error('Scan error:', err);
-        setErrorMessage('Could not auto-scan receipt details. You can enter them manually.');
-      } finally {
-        setIsScanning(false);
-      }
+      await processScannedBase64(base64, file.type || 'image/jpeg');
     };
     reader.readAsDataURL(file);
   };
@@ -226,6 +273,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           amount: numAmount,
           transaction_date: date,
           payment_method: paymentMethod,
+          category: category.trim(),
           purpose: purpose.trim(),
           notes: notes.trim(),
           receipt_image: receiptImage
@@ -240,6 +288,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           amount: numAmount,
           transaction_date: date,
           payment_method: paymentMethod,
+          category: category.trim(),
           purpose: purpose.trim(),
           notes: notes.trim(),
           ...(receiptImage ? { receipt_image: receiptImage } : {})
@@ -325,15 +374,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               onChange={handleReceiptImageUpload}
             />
 
-            <button
-              type="button"
-              disabled={isScanning}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Camera size={14} />
-              <span>{receiptImage ? 'Re-scan Image' : 'Upload & Auto-Fill'}</span>
-            </button>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                disabled={isScanning}
+                onClick={() => setIsCameraModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Camera size={14} />
+                <span>Live Camera</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isScanning}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                <ImageIcon size={14} />
+                <span>{receiptImage ? 'Re-upload' : 'Upload'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Image preview & scan status */}
@@ -481,11 +542,184 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           Auto-mapped Financial Period: <span className="text-slate-600 dark:text-slate-300 font-medium">{calculatedFy}</span>
         </div>
 
+        {/* Category & AI Suggestion Button */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5 ml-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Transaction Category
+            </label>
+            <button
+              type="button"
+              onClick={handleAiAutoSuggest}
+              disabled={isSuggestingAi}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-[11px] font-semibold shadow-sm shadow-purple-500/20 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <Wand2 size={12} className={isSuggestingAi ? 'animate-spin' : ''} />
+              <span>{isSuggestingAi ? 'AI Analyzing...' : 'AI Auto-Suggest Category & Purpose'}</span>
+            </button>
+          </div>
+
+          <div className="relative">
+            <Tag size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              list="category-suggestions"
+              placeholder="e.g. Emergency Medical, Rent & Housing, Personal Loan..."
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-2xl liquid-glass-secondary border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white text-sm glass-input transition-all"
+            />
+            <datalist id="category-suggestions">
+              <option value="Personal Loan" />
+              <option value="Emergency Medical" />
+              <option value="Rent & Housing" />
+              <option value="Education & Fees" />
+              <option value="Travel & Transport" />
+              <option value="Food & Groceries" />
+              <option value="Repairs & Electronics" />
+              <option value="Business Advance" />
+              <option value="Family Assistance" />
+              <option value="Friend Support" />
+              <option value="Instalment Return" />
+              <option value="Full Settlement" />
+            </datalist>
+          </div>
+
+          {/* Quick Category Chips */}
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {(type === 'returned' 
+              ? ['Instalment Return', 'Full Settlement', 'Partial Settlement', 'Personal Loan'] 
+              : ['Personal Loan', 'Emergency Medical', 'Rent & Housing', 'Business Advance', 'Family Assistance']
+            ).map(cat => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                  category === cat
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Suggestion Panel (when suggested) */}
+        {aiSuggestion && (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-500/15 via-indigo-500/10 to-blue-500/15 border border-purple-500/30 shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900 dark:text-purple-200">
+                <Sparkles size={14} className="text-purple-500" />
+                <span>AI Recommendation</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiSuggestion(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-0.5"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {aiSuggestion.confidenceSummary && (
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 italic">
+                "{aiSuggestion.confidenceSummary}"
+              </p>
+            )}
+
+            {/* Suggested Categories */}
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 block mb-1">
+                Suggested Categories (Click to apply)
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {aiSuggestion.categories.map((c, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setCategory(c);
+                      showToast(`Applied category: ${c}`, 'info');
+                    }}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                      category === c
+                        ? 'bg-purple-600 text-white font-semibold shadow-sm'
+                        : 'bg-white/80 dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-purple-300/40 hover:bg-purple-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {category === c && <Check size={12} />}
+                    <span>{c}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Suggested Purposes */}
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 block mb-1">
+                Suggested Purposes (Click to apply)
+              </span>
+              <div className="space-y-1">
+                {aiSuggestion.purposes.map((p, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setPurpose(p);
+                      showToast(`Applied purpose: "${p}"`, 'info');
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all flex items-center justify-between ${
+                      purpose === p
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-indigo-200/50 dark:border-white/10 hover:bg-indigo-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span>{p}</span>
+                    {purpose === p && <Check size={13} className="flex-shrink-0 ml-2" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* One-Click Apply All */}
+            <div className="pt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategory(aiSuggestion.category);
+                  setPurpose(aiSuggestion.purpose);
+                  showToast('Applied AI category & purpose!', 'success');
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                <CheckCircle2 size={13} />
+                <span>Apply Best Suggestions</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Purpose / Reason */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 ml-1">
-            Purpose / Description (Optional)
-          </label>
+          <div className="flex items-center justify-between mb-1.5 ml-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Purpose / Description (Optional)
+            </label>
+            {!aiSuggestion && (
+              <button
+                type="button"
+                onClick={handleAiAutoSuggest}
+                disabled={isSuggestingAi}
+                className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Sparkles size={12} />
+                <span>Suggest with AI</span>
+              </button>
+            )}
+          </div>
           <input
             type="text"
             placeholder={type === 'given' ? 'e.g. Medical emergency advance, laptop repair' : 'e.g. First instalment return, full settlement'}
@@ -539,6 +773,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </LiquidButton>
         </div>
       </form>
+
+      {/* Hardware / Live Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={(imgDataUrl) => processScannedBase64(imgDataUrl, 'image/jpeg')}
+      />
     </LiquidModal>
   );
 };

@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Sparkles, Sun, Moon, Laptop, LogOut, Key, ShieldCheck, Wallet, Settings, Bell } from 'lucide-react';
+import { Sparkles, Sun, Moon, Laptop, LogOut, Key, ShieldCheck, Wallet, Settings, Bell, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LiquidModal } from '../ui/LiquidModal';
 import { LiquidButton } from '../ui/LiquidButton';
 import { TabType } from './BottomNavigation';
+import { AppLogo } from '../common/AppLogo';
 
 interface NavbarProps {
   onOpenAiDrawer: () => void;
   onNavigateTab?: (tab: TabType) => void;
   currentTab?: TabType;
+  onOpenWalkthrough?: () => void;
+  onLogoutRequest?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAiDrawer, onNavigateTab, currentTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenAiDrawer,
+  onNavigateTab,
+  currentTab,
+  onOpenWalkthrough,
+  onLogoutRequest
+}) => {
   const { user, logout, changePassword } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -56,9 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiDrawer, onNavigateTab, c
           onClick={() => onNavigateTab && onNavigateTab('dashboard')}
           className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 flex-shrink-0">
-            <Wallet size={18} className="stroke-[2.2] sm:w-5 sm:h-5" />
-          </div>
+          <AppLogo size="sm" animate={true} />
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
@@ -66,8 +73,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiDrawer, onNavigateTab, c
               </h1>
               <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span className="hidden xs:inline">Cloud Saved</span>
-                <span className="xs:hidden">Cloud</span>
+                <span className="hidden xs:inline">Cloud + Local</span>
+                <span className="xs:hidden">Saved</span>
               </span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden md:block">
@@ -78,6 +85,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiDrawer, onNavigateTab, c
 
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Quick 3-Step Walkthrough Tour Shortcut */}
+          {onOpenWalkthrough && (
+            <button
+              onClick={onOpenWalkthrough}
+              className="p-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer hidden sm:flex items-center gap-1"
+              title="3-Step App Overview & Features"
+            >
+              <Compass size={17} className="text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 hidden lg:inline">Tour</span>
+            </button>
+          )}
+
           {/* Quick Settings Shortcut Icon (especially handy on mobile and tablet) */}
           {onNavigateTab && (
             <button
@@ -127,7 +146,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiDrawer, onNavigateTab, c
             </button>
 
             <button
-              onClick={logout}
+              onClick={() => {
+                if (onLogoutRequest) {
+                  onLogoutRequest();
+                } else {
+                  logout();
+                }
+              }}
               className="p-1.5 sm:p-2 rounded-2xl hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 cursor-pointer transition-colors"
               title="Logout"
             >

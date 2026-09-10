@@ -39,6 +39,7 @@ import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { formatINR, formatIndianDate, MONTH_NAMES, MONTH_SHORT_NAMES } from '../lib/formatters';
+import { exportReportsPdf } from '../lib/pdfExport';
 
 export const ReportsPage: React.FC = () => {
   const { showToast } = useToast();
@@ -156,6 +157,41 @@ export const ReportsPage: React.FC = () => {
     .filter(t => t.transaction_type === 'returned')
     .reduce((sum, t) => sum + t.amount, 0);
   const reportNet = reportGiven - reportReturned;
+
+  // Export Formatted PDF
+  const handleExportPDF = () => {
+    try {
+      setIsExporting(true);
+      const selectedPerson = people.find(p => p.id === selectedPersonId);
+      let title = 'Financial Audit Ledger';
+      let periodLabel = 'All Time History';
+
+      if (selectedReportType === 'person') {
+        title = `Ledger Statement - ${selectedPerson?.full_name || 'Person'}`;
+        periodLabel = `Filtered for ${selectedPerson?.full_name || 'Individual'}`;
+      } else if (selectedReportType === 'pending') {
+        title = 'Pending Recoveries & Unsettled Accounts';
+        periodLabel = 'Active Unsettled Accounts';
+      } else if (selectedReportType === 'monthly') {
+        title = `Monthly Ledger - ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`;
+        periodLabel = `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`;
+      }
+
+      exportReportsPdf(reportTransactions, title, {
+        given: reportGiven,
+        returned: reportReturned,
+        net: reportNet,
+        totalCount: reportTransactions.length,
+        periodLabel
+      });
+
+      showToast('Formatted, print-ready PDF statement downloaded!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to export PDF', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Export CSV
   const handleExportCSV = () => {
@@ -289,12 +325,13 @@ export const ReportsPage: React.FC = () => {
 
         <div className="flex items-center gap-2 flex-wrap no-print">
           <LiquidButton
-            variant="secondary"
+            variant="primary"
             size="sm"
-            onClick={() => window.print()}
+            onClick={handleExportPDF}
             icon={<Printer size={15} />}
+            isLoading={isExporting}
           >
-            Print / PDF
+            Export Formatted PDF
           </LiquidButton>
           <LiquidButton
             variant="secondary"
@@ -306,7 +343,7 @@ export const ReportsPage: React.FC = () => {
             Export CSV
           </LiquidButton>
           <LiquidButton
-            variant="primary"
+            variant="secondary"
             size="sm"
             onClick={handleExportJSON}
             icon={<Download size={15} />}

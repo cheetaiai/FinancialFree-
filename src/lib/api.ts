@@ -1,6 +1,25 @@
-import { Person, Transaction, Reminder, DashboardSummary, MonthlyAnalytics, YearlyAnalytics, FinancialYearAnalytics, BackupData, User } from '../types';
+import { Person, Transaction, Reminder, DashboardSummary, MonthlyAnalytics, YearlyAnalytics, FinancialYearAnalytics, BackupData, User, AiTransactionSuggestion } from '../types';
 
 const TOKEN_KEY = 'financialfree_auth_token';
+const CACHE_PEOPLE_KEY = 'financialfree_cached_people';
+const CACHE_TXS_KEY = 'financialfree_cached_txs';
+
+function getLocalCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setLocalCache<T>(key: string, data: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -47,6 +66,12 @@ export const api = {
       body: JSON.stringify({ email, password })
     }),
 
+  firebaseLogin: (data: { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null; idToken?: string }) =>
+    request<{ token: string; user: User }>('/api/auth/firebase-login', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
   getCurrentUser: () =>
     request<{ user: User }>('/api/auth/me'),
 
@@ -60,41 +85,70 @@ export const api = {
     }),
 
   // People
-  getPeople: (params?: { search?: string; category?: string; status?: string }) => {
+  getPeople: async (params?: { search?: string; category?: string; status?: string }) => {
     const q = new URLSearchParams();
     if (params?.search) q.set('search', params.search);
     if (params?.category) q.set('category', params.category);
     if (params?.status) q.set('status', params.status);
-    return request<Person[]>(`/api/people?${q.toString()}`);
+
+    try {
+      const data = await request<Person[]>(`/api/people?${q.toString()}`);
+      if (!params || (!params.search && !params.category && !params.status)) {
+        setLocalCache(CACHE_PEOPLE_KEY, data);
+      }
+      return data;
+    } catch (err) {
+      if (!params || (!params.search && !params.category && !params.status)) {
+        const cached = getLocalCache<Person[]>(CACHE_PEOPLE_KEY);
+        if (cached && cached.length > 0) return cached;
+      }
+      throw err;
+    }
   },
 
   getPersonById: (id: string) =>
     request<{ person: Person; transactions: Transaction[]; reminders: Reminder[] }>(`/api/people/${id}`),
 
-  createPerson: (data: Partial<Person>) =>
-    request<Person>('/api/people', {
+  createPerson: async (data: Partial<Person>) => {
+    const person = await request<Person>('/api/people', {
       method: 'POST',
       body: JSON.stringify(data)
-    }),
+    });
+    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
+    setLocalCache(CACHE_PEOPLE_KEY, [person, ...current.filter(p => p.id !== person.id)]);
+    return person;
+  },
 
-  updatePerson: (id: string, data: Partial<Person>) =>
-    request<Person>(`/api/people/${id}`, {
+  updatePerson: async (id: string, data: Partial<Person>) => {
+    const updated = await request<Person>(`/api/people/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
-    }),
+    });
+    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
+    setLocalCache(CACHE_PEOPLE_KEY, current.map(p => p.id === id ? updated : p));
+    return updated;
+  },
 
-  deletePerson: (id: string) =>
-    request<{ success: boolean; deletedTransactions: number }>(`/api/people/${id}`, {
+  deletePerson: async (id: string) => {
+    const result = await request<{ success: boolean; deletedTransactions: number }>(`/api/people/${id}`, {
       method: 'DELETE'
-    }),
+    });
+    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
+    setLocalCache(CACHE_PEOPLE_KEY, current.filter(p => p.id !== id));
+    return result;
+  },
 
-  clearAllPeople: () =>
-    request<{ success: boolean; deletedPeople: number; deletedTransactions: number }>('/api/people/clear-all', {
+  clearAllPeople: async () => {
+    const result = await request<{ success: boolean; deletedPeople: number; deletedTransactions: number }>('/api/people/clear-all', {
       method: 'POST'
-    }),
+    });
+    setLocalCache(CACHE_PEOPLE_KEY, []);
+    setLocalCache(CACHE_TXS_KEY, []);
+    return result;
+  },
 
   // Transactions
-  getTransactions: (filters?: {
+  getTransactions: async (filters?: {
     person_id?: string;
     type?: string;
     month?: number;
@@ -111,33 +165,60 @@ export const api = {
     if (filters?.financial_year) q.set('financial_year', filters.financial_year);
     if (filters?.payment_method) q.set('payment_method', filters.payment_method);
     if (filters?.search) q.set('search', filters.search);
-    return request<Transaction[]>(`/api/transactions?${q.toString()}`);
+
+    try {
+      const data = await request<Transaction[]>(`/api/transactions?${q.toString()}`);
+      if (!filters || Object.keys(filters).length === 0) {
+        setLocalCache(CACHE_TXS_KEY, data);
+      }
+      return data;
+    } catch (err) {
+      if (!filters || Object.keys(filters).length === 0) {
+        const cached = getLocalCache<Transaction[]>(CACHE_TXS_KEY);
+        if (cached && cached.length > 0) return cached;
+      }
+      throw err;
+    }
   },
 
-  createTransaction: (data: {
+  createTransaction: async (data: {
     person_id: string;
     transaction_type: 'given' | 'returned';
     amount: number;
     transaction_date: string;
     payment_method: string;
+    category?: string;
     purpose?: string;
     notes?: string;
-  }) =>
-    request<Transaction>('/api/transactions', {
+    receipt_image?: string;
+  }) => {
+    const tx = await request<Transaction>('/api/transactions', {
       method: 'POST',
       body: JSON.stringify(data)
-    }),
+    });
+    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+    setLocalCache(CACHE_TXS_KEY, [tx, ...current.filter(t => t.id !== tx.id)]);
+    return tx;
+  },
 
-  updateTransaction: (id: string, data: Partial<Transaction>) =>
-    request<Transaction>(`/api/transactions/${id}`, {
+  updateTransaction: async (id: string, data: Partial<Transaction>) => {
+    const updated = await request<Transaction>(`/api/transactions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
-    }),
+    });
+    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+    setLocalCache(CACHE_TXS_KEY, current.map(t => t.id === id ? updated : t));
+    return updated;
+  },
 
-  deleteTransaction: (id: string) =>
-    request<{ success: boolean; message: string }>(`/api/transactions/${id}`, {
+  deleteTransaction: async (id: string) => {
+    const result = await request<{ success: boolean; message: string }>(`/api/transactions/${id}`, {
       method: 'DELETE'
-    }),
+    });
+    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+    setLocalCache(CACHE_TXS_KEY, current.filter(t => t.id !== id));
+    return result;
+  },
 
   // Analytics
   getDashboardSummary: () =>
@@ -245,5 +326,18 @@ export const api = {
     request<{ analysis: string; provider: string }>('/api/ai/analyze-graph', {
       method: 'POST',
       body: JSON.stringify({ type, graphData, currencySymbol })
+    }),
+
+  suggestTransactionMeta: (data: {
+    type: 'given' | 'returned';
+    amount?: number;
+    description?: string;
+    notes?: string;
+    personName?: string;
+    personCategory?: string;
+  }) =>
+    request<AiTransactionSuggestion>('/api/ai/suggest-transaction-meta', {
+      method: 'POST',
+      body: JSON.stringify(data)
     })
 };

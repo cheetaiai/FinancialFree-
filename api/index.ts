@@ -1,6 +1,13 @@
-import app, { apiRouter } from '../server/app';
+import app from '../server/app';
 
-// Ensure routes match whether Vercel preserves or strips /api prefix
-app.use(apiRouter);
+export default function handler(req: any, res: any) {
+  // Restore original request URL if rewritten by Vercel serverless edge
+  const matchedPath = req.headers['x-matched-path'] || req.headers['x-forwarded-uri'];
+  if (matchedPath && typeof matchedPath === 'string') {
+    if (req.url === '/' || req.url === '/api' || req.url === '') {
+      req.url = matchedPath;
+    }
+  }
+  return app(req, res);
+}
 
-export default app;

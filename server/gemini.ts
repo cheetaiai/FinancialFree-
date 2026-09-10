@@ -685,3 +685,194 @@ CAPABILITIES:
       `Ask me about graphs, debtors, recovery projections, or upload a payment receipt!`
   };
 }
+
+/**
+ * AI Auto-Suggest Category & Purpose based on Amount, Description, and Context
+ */
+export async function suggestTransactionCategoryAndPurpose(params: {
+  type: 'given' | 'returned';
+  amount?: number;
+  description?: string;
+  notes?: string;
+  personName?: string;
+  personCategory?: string;
+}): Promise<{
+  category: string;
+  purpose: string;
+  suggestedTags: string[];
+  categories: string[];
+  purposes: string[];
+  confidenceSummary?: string;
+}> {
+  const textContext = `${params.description || ''} ${params.notes || ''}`.trim();
+  const lowerText = textContext.toLowerCase();
+  const amount = params.amount || 0;
+  const isReturn = params.type === 'returned';
+
+  // Smart Heuristic Fallback
+  const heuristicCategories: string[] = [];
+  const heuristicPurposes: string[] = [];
+  const heuristicTags: string[] = [];
+  let primaryCategory = isReturn ? 'Loan Repayment' : 'Personal Loan';
+  let primaryPurpose = isReturn ? 'Return payment toward outstanding balance' : 'Personal loan assistance';
+
+  if (lowerText.match(/medic|hospit|doctor|health|clinic|pharma|surgery|pill|fever|ill/)) {
+    primaryCategory = 'Emergency Medical';
+    primaryPurpose = amount > 10000 ? 'Hospitalization and medical emergency advance' : 'Medicine and clinical consultation support';
+    heuristicCategories.push('Emergency Medical', 'Family Assistance', 'Healthcare');
+    heuristicPurposes.push(
+      'Hospitalization and treatment fees',
+      'Pharmacy prescriptions and medicine cost',
+      'Doctor consultation and medical diagnostics'
+    );
+    heuristicTags.push('medical', 'emergency', 'health');
+  } else if (lowerText.match(/rent|flat|room|pg|house|apart|tenant|owner|landlord|deposit/)) {
+    primaryCategory = 'Rent & Housing';
+    primaryPurpose = 'Monthly house rent and accommodation split';
+    heuristicCategories.push('Rent & Housing', 'Home Maintenance', 'Utilities');
+    heuristicPurposes.push(
+      'Monthly accommodation rent contribution',
+      'Apartment security deposit advance',
+      'Household utility bill settlement'
+    );
+    heuristicTags.push('rent', 'housing', 'monthly');
+  } else if (lowerText.match(/fee|school|college|exam|tuition|course|book|class|sem/)) {
+    primaryCategory = 'Education & Fees';
+    primaryPurpose = 'Academic semester fees and course materials';
+    heuristicCategories.push('Education & Fees', 'Student Support', 'Training');
+    heuristicPurposes.push(
+      'College semester tuition fee installment',
+      'Exam registration and coaching classes',
+      'Books, stationery and study resources'
+    );
+    heuristicTags.push('education', 'tuition', 'academic');
+  } else if (lowerText.match(/trip|travel|flight|train|irctc|ticket|hotel|cab|uber|ola|petrol|fuel|tour/)) {
+    primaryCategory = 'Travel & Transport';
+    primaryPurpose = 'Travel booking and transport expenses';
+    heuristicCategories.push('Travel & Transport', 'Fuel & Commute', 'Vacation');
+    heuristicPurposes.push(
+      'Flight/train ticket booking advance',
+      'Fuel and road trip travel split',
+      'Hotel lodging and vacation expenses'
+    );
+    heuristicTags.push('travel', 'transport', 'commute');
+  } else if (lowerText.match(/food|dinner|lunch|party|hotel|restaurant|grocer|swiggy|zomato|supermarket|kirana|rashan/)) {
+    primaryCategory = 'Food & Groceries';
+    primaryPurpose = 'Monthly grocery supplies and dining split';
+    heuristicCategories.push('Food & Groceries', 'Household Supplies', 'Dining');
+    heuristicPurposes.push(
+      'Monthly grocery and household essentials',
+      'Restaurant dining and food split',
+      'Kirana store provision bill'
+    );
+    heuristicTags.push('food', 'groceries', 'household');
+  } else if (lowerText.match(/laptop|phone|mobile|screen|repair|servi|device|comp|mechanic|car|bike/)) {
+    primaryCategory = 'Repairs & Electronics';
+    primaryPurpose = 'Device repair and servicing charges';
+    heuristicCategories.push('Repairs & Electronics', 'Hardware Maintenance', 'Equipment');
+    heuristicPurposes.push(
+      'Smartphone screen and battery replacement',
+      'Laptop servicing and software update',
+      'Vehicle servicing and maintenance'
+    );
+    heuristicTags.push('repairs', 'electronics', 'maintenance');
+  } else if (lowerText.match(/busin|shop|stock|goods|vendor|suppl|trade|invoic|client|order/)) {
+    primaryCategory = 'Business Advance';
+    primaryPurpose = 'Commercial inventory and vendor procurement';
+    heuristicCategories.push('Business Advance', 'Vendor Settlement', 'Working Capital');
+    heuristicPurposes.push(
+      'Raw material inventory purchase',
+      'Vendor advance for goods supply',
+      'Short-term commercial working capital'
+    );
+    heuristicTags.push('business', 'vendor', 'trade');
+  } else if (isReturn) {
+    if (amount > 0 && lowerText.match(/full|clear|settl|final|total|all/)) {
+      primaryCategory = 'Full Settlement';
+      primaryPurpose = 'Full outstanding loan balance clearance';
+      heuristicCategories.push('Full Settlement', 'Account Clearance', 'Final Payoff');
+      heuristicPurposes.push(
+        'Full outstanding balance payoff',
+        'Final settlement and account clearance',
+        'Lending ledger closing repayment'
+      );
+      heuristicTags.push('settlement', 'cleared', 'final');
+    } else {
+      primaryCategory = 'Instalment Return';
+      primaryPurpose = 'Monthly instalment repayment toward balance';
+      heuristicCategories.push('Instalment Return', 'Partial Settlement', 'Loan Payback');
+      heuristicPurposes.push(
+        'Monthly instalment repayment toward balance',
+        'Part payment against outstanding amount',
+        'UPI transfer towards loan recovery'
+      );
+      heuristicTags.push('instalment', 'repayment', 'part-payment');
+    }
+  } else {
+    heuristicCategories.push('Personal Loan', 'Friend Support', 'Family Assistance');
+    heuristicPurposes.push(
+      'Short-term emergency cash advance',
+      'Friendly financial support',
+      'Urgent personal expense assistance'
+    );
+    heuristicTags.push('personal', 'loan', 'friendly');
+  }
+
+  // Try AI Model with Gemini or Unified AI
+  const systemPrompt = `You are a financial accounting assistant. Given a transaction type, amount in Indian Rupees (INR), borrower context, and user description, classify the transaction into a standard category and generate a concise, refined purpose statement.
+Return ONLY a valid JSON object matching this schema:
+{
+  "category": "Short Category Name",
+  "purpose": "A concise, clear professional purpose description (under 12 words)",
+  "categories": ["Top Category", "Alternative 1", "Alternative 2"],
+  "purposes": ["Refined primary purpose", "Alternative short purpose", "Alternative detailed purpose"],
+  "suggestedTags": ["tag1", "tag2", "tag3"],
+  "confidenceSummary": "Brief 1-sentence explanation of the recommendation"
+}
+Categories to pick from: Emergency Medical, Rent & Housing, Education & Fees, Travel & Transport, Food & Groceries, Repairs & Electronics, Business Advance, Shopping & Equipment, Family Assistance, Friend Support, Personal Loan, Full Settlement, Instalment Return.`;
+
+  const userPrompt = `Transaction details:
+- Type: ${params.type === 'given' ? 'Money Given (Outflow loan)' : 'Money Returned (Inflow repayment)'}
+- Amount: ₹${amount || 'Not specified'}
+- Person Name: ${params.personName || 'Unspecified'}
+- Person Category: ${params.personCategory || 'Unspecified'}
+- User Provided Description: "${params.description || ''}"
+- User Notes: "${params.notes || ''}"
+
+Suggest the optimal category, refined purpose, and 3 alternatives. Output pure JSON only.`;
+
+  try {
+    const aiResult = await generateUnifiedAI({
+      systemPrompt,
+      userPrompt,
+      temperature: 0.3
+    });
+
+    if (aiResult && aiResult.text) {
+      const cleanJson = aiResult.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      if (parsed.category && parsed.purpose) {
+        return {
+          category: parsed.category,
+          purpose: parsed.purpose,
+          suggestedTags: Array.isArray(parsed.suggestedTags) && parsed.suggestedTags.length > 0 ? parsed.suggestedTags : heuristicTags,
+          categories: Array.isArray(parsed.categories) && parsed.categories.length > 0 ? parsed.categories : [parsed.category, ...heuristicCategories.slice(0, 2)],
+          purposes: Array.isArray(parsed.purposes) && parsed.purposes.length > 0 ? parsed.purposes : [parsed.purpose, ...heuristicPurposes.slice(0, 2)],
+          confidenceSummary: parsed.confidenceSummary || `AI auto-suggested based on amount and description.`
+        };
+      }
+    }
+  } catch (err) {
+    // Fall back to heuristics
+  }
+
+  return {
+    category: primaryCategory,
+    purpose: primaryPurpose,
+    suggestedTags: heuristicTags,
+    categories: heuristicCategories.length > 0 ? heuristicCategories : [primaryCategory],
+    purposes: heuristicPurposes.length > 0 ? heuristicPurposes : [primaryPurpose],
+    confidenceSummary: `Suggested based on keywords "${textContext || (isReturn ? 'repayment' : 'loan')}"`
+  };
+}

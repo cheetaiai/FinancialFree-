@@ -18,14 +18,24 @@ import { AddTransactionModal } from './components/AddTransactionModal';
 import { AddPersonModal } from './components/AddPersonModal';
 import { ReminderModal } from './components/ReminderModal';
 import { AiFinancialChatDrawer } from './components/AiFinancialChatDrawer';
+import { AppWalkthroughModal } from './components/onboarding/AppWalkthroughModal';
+import { LogoutAnimationModal } from './components/auth/LogoutAnimationModal';
 import { Person, Transaction, TransactionType } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, Sparkles, Bot } from 'lucide-react';
 
 const MainApp: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  // App Walkthrough state (opens on first launch or when clicked)
+  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(() => {
+    return localStorage.getItem('financialfree_walkthrough_seen') !== 'true';
+  });
+
+  // Logout animation state
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Modals state
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -54,7 +64,22 @@ const MainApp: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return (
+      <>
+        <LoginPage onOpenWalkthrough={() => setIsWalkthroughOpen(true)} />
+        <AppWalkthroughModal
+          isOpen={isWalkthroughOpen}
+          onClose={() => {
+            setIsWalkthroughOpen(false);
+            localStorage.setItem('financialfree_walkthrough_seen', 'true');
+          }}
+          onProceedToLogin={() => {
+            setIsWalkthroughOpen(false);
+            localStorage.setItem('financialfree_walkthrough_seen', 'true');
+          }}
+        />
+      </>
+    );
   }
 
   const handleOpenGiveModal = (personId?: string) => {
@@ -98,6 +123,8 @@ const MainApp: React.FC = () => {
           setCurrentTab(tab);
         }}
         currentTab={currentTab}
+        onOpenWalkthrough={() => setIsWalkthroughOpen(true)}
+        onLogoutRequest={() => setIsLoggingOut(true)}
       />
 
       {/* Main Content Area */}
@@ -152,7 +179,9 @@ const MainApp: React.FC = () => {
               <RemindersPage onOpenReminderModal={() => handleOpenReminder()} />
             )}
 
-            {currentTab === 'settings' && <SettingsPage />}
+            {currentTab === 'settings' && (
+              <SettingsPage onOpenWalkthrough={() => setIsWalkthroughOpen(true)} />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -221,6 +250,28 @@ const MainApp: React.FC = () => {
       <AiFinancialChatDrawer
         isOpen={isAiDrawerOpen}
         onClose={() => setIsAiDrawerOpen(false)}
+      />
+
+      {/* 3-Page Walkthrough Tour Modal (with Page-Turn Animations & Feature Highlights) */}
+      <AppWalkthroughModal
+        isOpen={isWalkthroughOpen}
+        onClose={() => {
+          setIsWalkthroughOpen(false);
+          localStorage.setItem('financialfree_walkthrough_seen', 'true');
+        }}
+        onProceedToLogin={() => {
+          setIsWalkthroughOpen(false);
+          localStorage.setItem('financialfree_walkthrough_seen', 'true');
+        }}
+      />
+
+      {/* Logout Animation Transition Modal */}
+      <LogoutAnimationModal
+        isOpen={isLoggingOut}
+        onFinished={() => {
+          setIsLoggingOut(false);
+          logout();
+        }}
       />
     </div>
   );

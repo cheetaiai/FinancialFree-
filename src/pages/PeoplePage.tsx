@@ -34,6 +34,7 @@ import { Person, Transaction, Reminder } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { formatINR, formatIndianDate, getStatusBadgeConfig } from '../lib/formatters';
+import { exportPeopleDirectoryPdf, exportPersonStatementPdf } from '../lib/pdfExport';
 
 interface PeoplePageProps {
   selectedPersonId?: string | null;
@@ -185,6 +186,17 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
               className="no-print"
             >
               Print Ledger
+            </LiquidButton>
+            <LiquidButton
+              variant="secondary"
+              size="sm"
+              icon={<Printer size={14} />}
+              onClick={() => {
+                exportPersonStatementPdf(person, transactions);
+                showToast(`Statement PDF downloaded for ${person.full_name}`, 'success');
+              }}
+            >
+              Export Statement (PDF)
             </LiquidButton>
             <LiquidButton
               variant="secondary"
@@ -472,6 +484,21 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <LiquidButton
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              exportPeopleDirectoryPdf(filteredPeople, {
+                status: statusFilter,
+                category: categoryFilter,
+                search: searchQuery
+              });
+              showToast(`People Directory PDF generated for ${filteredPeople.length} profiles`, 'success');
+            }}
+            icon={<Printer size={15} />}
+          >
+            Export Directory (PDF)
+          </LiquidButton>
           <LiquidButton
             variant="primary"
             size="sm"

@@ -31,8 +31,13 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { BackupData } from '../types';
+import { Compass, Sparkles } from 'lucide-react';
 
-export const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+  onOpenWalkthrough?: () => void;
+}
+
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough }) => {
   const { user, changePassword } = useAuth();
   const { theme, setTheme } = useTheme();
   const { currency, setCurrency, formatAmount, currencyConfig, currencies } = useCurrency();
@@ -238,30 +243,41 @@ export const SettingsPage: React.FC = () => {
         </div>
       </LiquidGlassCard>
 
-      {/* Cloud Database Storage & Data Reset Card */}
+      {/* Cloud Database & LocalStorage Dual Persistence Card */}
       <LiquidGlassCard variant="primary" className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
               <Cloud size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Persistent Cloud Database (Firestore)
+                  Dual Cloud & LocalStorage Persistence
                 </h3>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Active & Synced
+                  Cloud + LocalStorage Active
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                All newly added contacts, transaction ledgers, and reminders are permanently saved to Google Cloud Firestore.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                All records, lending receipts, and balances are mirrored across Google Cloud Firestore and browser LocalStorage.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {onOpenWalkthrough && (
+              <LiquidButton
+                variant="secondary"
+                size="sm"
+                onClick={onOpenWalkthrough}
+                icon={<Compass size={14} className="text-emerald-500" />}
+              >
+                Replay 3-Page Tour
+              </LiquidButton>
+            )}
+
             <LiquidButton
               variant="secondary"
               size="sm"

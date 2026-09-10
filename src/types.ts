@@ -45,6 +45,7 @@ export interface Transaction {
   year: number; // e.g. 2026
   financial_year?: string; // e.g. "FY 2026-27"
   payment_method: PaymentMethod;
+  category?: string;
   purpose?: string;
   notes?: string;
   receipt_image?: string;
@@ -52,6 +53,15 @@ export interface Transaction {
   updated_at: string;
   // Computed running balance in person's history
   running_balance?: number;
+}
+
+export interface AiTransactionSuggestion {
+  category: string;
+  purpose: string;
+  suggestedTags: string[];
+  categories: string[];
+  purposes: string[];
+  confidenceSummary?: string;
 }
 
 export interface ScannedFinancialData {

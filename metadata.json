@@ -1,7 +1,9 @@
 {
   "name": "FinancialFree",
   "description": "Personal money lending and return tracking system with Apple-inspired Liquid Glass UI, balance calculations, and multi-period analytics.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
