@@ -44,7 +44,11 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// Health check
+// Health & Root check
+apiRouter.get('/', (req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), app: 'FinancialFree', message: 'FinancialFree API is active and running' });
+});
+
 apiRouter.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), app: 'FinancialFree' });
 });

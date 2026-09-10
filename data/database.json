@@ -2,11 +2,35 @@
   "users": [
     {
       "id": "usr_admin_financialfree",
-      "email": "Financial@free.com",
-      "password_hash": "ecd1c0fb4c257e0e796e3b83afcad0b90e01d0d81db12b6a25be023760cc0cd2d803e696cbec6486babfc15ecaaeb4353fdff5518cde62629dbca82b321682a9",
-      "salt": "002d6e0c6dd03544a2a6b5cc90d6bfa5",
+      "email": "financiFinancial@free.com",
+      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
+      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
       "created_at": "2026-01-01T00:00:00.000Z",
-      "updated_at": "2026-08-26T10:05:50.764Z"
+      "updated_at": "2026-09-10T12:28:11.333Z"
+    },
+    {
+      "id": "usr_admin_cheeta",
+      "email": "startup.cheetaiaistudio.com@gmail.com",
+      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
+      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
+      "created_at": "2026-09-10T12:00:22.766Z",
+      "updated_at": "2026-09-10T12:28:11.333Z"
+    },
+    {
+      "id": "usr_admin_noorjahan",
+      "email": "noorjahan77027@gmail.com",
+      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
+      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
+      "created_at": "2026-09-10T12:00:22.766Z",
+      "updated_at": "2026-09-10T12:28:11.333Z"
+    },
+    {
+      "id": "usr_fb_kDsWMT7cvfhHmfAAWFKyRcVs8vm2",
+      "email": "shaikzakeer902@gmail.com",
+      "password_hash": "a53318234677ff71f8420a4dd51a50550a406abe1439946e90d413c4841e6b4b36987f5c0c4c4e2f538bc0e43b13a905afe70ad7a015eb778d5bdb6924e00546",
+      "salt": "9fc1c7c06fbafdc53b61a492f23fb457",
+      "created_at": "2026-09-10T12:26:06.027Z",
+      "updated_at": "2026-09-10T12:26:06.027Z"
     }
   ],
   "people": [],

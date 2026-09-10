@@ -1,4 +1,4 @@
-import app from '../server/app';
+import app from './app';
 
 export default function handler(req: any, res: any) {
   // Restore original request URL if rewritten by Vercel serverless edge
@@ -10,4 +10,3 @@ export default function handler(req: any, res: any) {
   }
   return app(req, res);
 }
-
