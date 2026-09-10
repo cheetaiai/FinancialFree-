@@ -1,8 +1,26 @@
-import { Person, Transaction, Reminder, DashboardSummary, MonthlyAnalytics, YearlyAnalytics, FinancialYearAnalytics, BackupData, User, AiTransactionSuggestion } from '../types';
+import {
+  Person,
+  Transaction,
+  Reminder,
+  DashboardSummary,
+  MonthlyAnalytics,
+  YearlyAnalytics,
+  FinancialYearAnalytics,
+  BackupData,
+  User,
+  AiTransactionSuggestion,
+  SyncStatus,
+  IntegrityServerReport,
+  DiscrepancyDetails
+} from '../types';
 
 const TOKEN_KEY = 'financialfree_auth_token';
 const CACHE_PEOPLE_KEY = 'financialfree_cached_people';
 const CACHE_TXS_KEY = 'financialfree_cached_txs';
+const VAULT_PEOPLE_KEY = 'financialfree_vault_people';
+const VAULT_TXS_KEY = 'financialfree_vault_txs';
+const VAULT_REMINDERS_KEY = 'financialfree_vault_reminders';
+const LAST_SYNC_KEY = 'financialfree_last_sync_timestamp';
 
 function getLocalCache<T>(key: string): T | null {
   try {
@@ -19,6 +37,113 @@ function setLocalCache<T>(key: string, data: T) {
   } catch {
     // ignore
   }
+}
+
+// ================= PERMANENT INDELIBLE LOCAL VAULT =================
+// The browser vault prevents any data loss from server restarts or temporary connectivity issues
+export const localVault = {
+  getPeople(): Person[] {
+    return getLocalCache<Person[]>(VAULT_PEOPLE_KEY) || getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
+  },
+  savePeople(people: Person[]) {
+    setLocalCache(VAULT_PEOPLE_KEY, people);
+    setLocalCache(CACHE_PEOPLE_KEY, people);
+  },
+  savePerson(person: Person) {
+    const list = this.getPeople();
+    const idx = list.findIndex(p => p.id === person.id);
+    if (idx !== -1) {
+      list[idx] = person;
+    } else {
+      list.unshift(person);
+    }
+    this.savePeople(list);
+  },
+  removePerson(id: string) {
+    const list = this.getPeople().filter(p => p.id !== id);
+    this.savePeople(list);
+    const txs = this.getTransactions().filter(t => t.person_id !== id);
+    this.saveTransactions(txs);
+  },
+  getTransactions(): Transaction[] {
+    return getLocalCache<Transaction[]>(VAULT_TXS_KEY) || getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+  },
+  saveTransactions(txs: Transaction[]) {
+    setLocalCache(VAULT_TXS_KEY, txs);
+    setLocalCache(CACHE_TXS_KEY, txs);
+  },
+  saveTransaction(tx: Transaction) {
+    const list = this.getTransactions();
+    const idx = list.findIndex(t => t.id === tx.id);
+    if (idx !== -1) {
+      list[idx] = tx;
+    } else {
+      list.unshift(tx);
+    }
+    this.saveTransactions(list);
+  },
+  removeTransaction(id: string) {
+    const list = this.getTransactions().filter(t => t.id !== id);
+    this.saveTransactions(list);
+  },
+  getReminders(): Reminder[] {
+    return getLocalCache<Reminder[]>(VAULT_REMINDERS_KEY) || [];
+  },
+  saveReminders(reminders: Reminder[]) {
+    setLocalCache(VAULT_REMINDERS_KEY, reminders);
+  },
+  saveReminder(reminder: Reminder) {
+    const list = this.getReminders();
+    const idx = list.findIndex(r => r.id === reminder.id);
+    if (idx !== -1) {
+      list[idx] = reminder;
+    } else {
+      list.unshift(reminder);
+    }
+    this.saveReminders(list);
+  },
+  removeReminder(id: string) {
+    const list = this.getReminders().filter(r => r.id !== id);
+    this.saveReminders(list);
+  },
+  getLastSync(): string | null {
+    return localStorage.getItem(LAST_SYNC_KEY);
+  },
+  setLastSync(timestamp: string) {
+    localStorage.setItem(LAST_SYNC_KEY, timestamp);
+  },
+  clearAll() {
+    localStorage.removeItem(VAULT_PEOPLE_KEY);
+    localStorage.removeItem(CACHE_PEOPLE_KEY);
+    localStorage.removeItem(VAULT_TXS_KEY);
+    localStorage.removeItem(CACHE_TXS_KEY);
+    localStorage.removeItem(VAULT_REMINDERS_KEY);
+  }
+};
+
+// ================= REAL-TIME SYNC EVENT SYSTEM =================
+export type SyncEvent =
+  | { type: 'start'; operation: string }
+  | { type: 'success'; operation: string; timestamp: Date; countInfo?: { peopleCount: number; txCount: number } }
+  | { type: 'error'; operation: string; error: string }
+  | { type: 'discrepancy'; details: DiscrepancyDetails };
+
+type SyncListener = (event: SyncEvent) => void;
+const syncListeners = new Set<SyncListener>();
+
+export function subscribeSyncEvents(listener: SyncListener): () => void {
+  syncListeners.add(listener);
+  return () => syncListeners.delete(listener);
+}
+
+export function notifySync(event: SyncEvent) {
+  syncListeners.forEach(fn => {
+    try {
+      fn(event);
+    } catch (e) {
+      console.error('Sync listener error:', e);
+    }
+  });
 }
 
 export function getStoredToken(): string | null {
@@ -94,12 +219,18 @@ export const api = {
     try {
       const data = await request<Person[]>(`/api/people?${q.toString()}`);
       if (!params || (!params.search && !params.category && !params.status)) {
-        setLocalCache(CACHE_PEOPLE_KEY, data);
+        const vaultPeople = localVault.getPeople();
+        // Crucial data-protection guard: Never overwrite local vault if server returns empty while vault has entries
+        if (data.length === 0 && vaultPeople.length > 0) {
+          console.warn('Server returned 0 people while local vault has', vaultPeople.length, 'people. Retaining local vault records.');
+          return vaultPeople;
+        }
+        localVault.savePeople(data);
       }
       return data;
     } catch (err) {
       if (!params || (!params.search && !params.category && !params.status)) {
-        const cached = getLocalCache<Person[]>(CACHE_PEOPLE_KEY);
+        const cached = localVault.getPeople();
         if (cached && cached.length > 0) return cached;
       }
       throw err;
@@ -110,41 +241,85 @@ export const api = {
     request<{ person: Person; transactions: Transaction[]; reminders: Reminder[] }>(`/api/people/${id}`),
 
   createPerson: async (data: Partial<Person>) => {
-    const person = await request<Person>('/api/people', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
-    setLocalCache(CACHE_PEOPLE_KEY, [person, ...current.filter(p => p.id !== person.id)]);
-    return person;
+    notifySync({ type: 'start', operation: `Saving ${data.full_name || 'person'}...` });
+    try {
+      const person = await request<Person>('/api/people', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      localVault.savePerson(person);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: `Added ${person.full_name}`,
+        timestamp: new Date()
+      });
+      return person;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Add person', error: err.message });
+      throw err;
+    }
   },
 
   updatePerson: async (id: string, data: Partial<Person>) => {
-    const updated = await request<Person>(`/api/people/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
-    setLocalCache(CACHE_PEOPLE_KEY, current.map(p => p.id === id ? updated : p));
-    return updated;
+    notifySync({ type: 'start', operation: `Updating ${data.full_name || 'person'}...` });
+    try {
+      const updated = await request<Person>(`/api/people/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      localVault.savePerson(updated);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: `Updated ${updated.full_name}`,
+        timestamp: new Date()
+      });
+      return updated;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Update person', error: err.message });
+      throw err;
+    }
   },
 
   deletePerson: async (id: string) => {
-    const result = await request<{ success: boolean; deletedTransactions: number }>(`/api/people/${id}`, {
-      method: 'DELETE'
-    });
-    const current = getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
-    setLocalCache(CACHE_PEOPLE_KEY, current.filter(p => p.id !== id));
-    return result;
+    notifySync({ type: 'start', operation: 'Deleting person & records...' });
+    try {
+      const result = await request<{ success: boolean; deletedTransactions: number }>(`/api/people/${id}`, {
+        method: 'DELETE'
+      });
+      localVault.removePerson(id);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: 'Person removed',
+        timestamp: new Date()
+      });
+      return result;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Delete person', error: err.message });
+      throw err;
+    }
   },
 
   clearAllPeople: async () => {
-    const result = await request<{ success: boolean; deletedPeople: number; deletedTransactions: number }>('/api/people/clear-all', {
-      method: 'POST'
-    });
-    setLocalCache(CACHE_PEOPLE_KEY, []);
-    setLocalCache(CACHE_TXS_KEY, []);
-    return result;
+    notifySync({ type: 'start', operation: 'Clearing all database records...' });
+    try {
+      const result = await request<{ success: boolean; deletedPeople: number; deletedTransactions: number }>('/api/people/clear-all', {
+        method: 'POST'
+      });
+      localVault.clearAll();
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: 'All records cleared',
+        timestamp: new Date()
+      });
+      return result;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Clear database', error: err.message });
+      throw err;
+    }
   },
 
   // Transactions
@@ -169,12 +344,18 @@ export const api = {
     try {
       const data = await request<Transaction[]>(`/api/transactions?${q.toString()}`);
       if (!filters || Object.keys(filters).length === 0) {
-        setLocalCache(CACHE_TXS_KEY, data);
+        const vaultTxs = localVault.getTransactions();
+        // Crucial data-protection guard: Never overwrite local vault if server returns empty while vault has entries
+        if (data.length === 0 && vaultTxs.length > 0) {
+          console.warn('Server returned 0 transactions while local vault has', vaultTxs.length, 'transactions. Retaining local vault records.');
+          return vaultTxs;
+        }
+        localVault.saveTransactions(data);
       }
       return data;
     } catch (err) {
       if (!filters || Object.keys(filters).length === 0) {
-        const cached = getLocalCache<Transaction[]>(CACHE_TXS_KEY);
+        const cached = localVault.getTransactions();
         if (cached && cached.length > 0) return cached;
       }
       throw err;
@@ -192,32 +373,68 @@ export const api = {
     notes?: string;
     receipt_image?: string;
   }) => {
-    const tx = await request<Transaction>('/api/transactions', {
-      method: 'POST',
-      body: JSON.stringify(data)
+    notifySync({
+      type: 'start',
+      operation: data.transaction_type === 'given' ? 'Recording money given...' : 'Recording return payment...'
     });
-    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
-    setLocalCache(CACHE_TXS_KEY, [tx, ...current.filter(t => t.id !== tx.id)]);
-    return tx;
+    try {
+      const tx = await request<Transaction>('/api/transactions', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      localVault.saveTransaction(tx);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: data.transaction_type === 'given' ? 'Money given committed' : 'Payment return committed',
+        timestamp: new Date()
+      });
+      return tx;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Save transaction', error: err.message });
+      throw err;
+    }
   },
 
   updateTransaction: async (id: string, data: Partial<Transaction>) => {
-    const updated = await request<Transaction>(`/api/transactions/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
-    setLocalCache(CACHE_TXS_KEY, current.map(t => t.id === id ? updated : t));
-    return updated;
+    notifySync({ type: 'start', operation: 'Updating transaction record...' });
+    try {
+      const updated = await request<Transaction>(`/api/transactions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      localVault.saveTransaction(updated);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: 'Transaction updated',
+        timestamp: new Date()
+      });
+      return updated;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Update transaction', error: err.message });
+      throw err;
+    }
   },
 
   deleteTransaction: async (id: string) => {
-    const result = await request<{ success: boolean; message: string }>(`/api/transactions/${id}`, {
-      method: 'DELETE'
-    });
-    const current = getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
-    setLocalCache(CACHE_TXS_KEY, current.filter(t => t.id !== id));
-    return result;
+    notifySync({ type: 'start', operation: 'Deleting transaction...' });
+    try {
+      const result = await request<{ success: boolean; message: string }>(`/api/transactions/${id}`, {
+        method: 'DELETE'
+      });
+      localVault.removeTransaction(id);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: 'Transaction deleted',
+        timestamp: new Date()
+      });
+      return result;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Delete transaction', error: err.message });
+      throw err;
+    }
   },
 
   // Analytics
@@ -250,41 +467,142 @@ export const api = {
   getReminders: () =>
     request<Reminder[]>('/api/reminders'),
 
-  createReminder: (data: { person_id: string; reminder_date: string; note?: string }) =>
-    request<Reminder>('/api/reminders', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+  createReminder: async (data: { person_id: string; reminder_date: string; note?: string }) => {
+    notifySync({ type: 'start', operation: 'Scheduling reminder...' });
+    try {
+      const reminder = await request<Reminder>('/api/reminders', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      localVault.saveReminder(reminder);
+      notifySync({ type: 'success', operation: 'Reminder saved', timestamp: new Date() });
+      return reminder;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Create reminder', error: err.message });
+      throw err;
+    }
+  },
 
-  updateReminderStatus: (id: string, status: 'completed' | 'dismissed' | 'pending') =>
-    request<Reminder>(`/api/reminders/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
-    }),
+  updateReminderStatus: async (id: string, status: 'completed' | 'dismissed' | 'pending') => {
+    notifySync({ type: 'start', operation: 'Updating reminder...' });
+    try {
+      const updated = await request<Reminder>(`/api/reminders/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      localVault.saveReminder(updated);
+      notifySync({ type: 'success', operation: 'Reminder updated', timestamp: new Date() });
+      return updated;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Update reminder', error: err.message });
+      throw err;
+    }
+  },
 
-  deleteReminder: (id: string) =>
-    request<{ success: boolean }>(`/api/reminders/${id}`, {
-      method: 'DELETE'
-    }),
+  deleteReminder: async (id: string) => {
+    notifySync({ type: 'start', operation: 'Removing reminder...' });
+    try {
+      const res = await request<{ success: boolean }>(`/api/reminders/${id}`, {
+        method: 'DELETE'
+      });
+      localVault.removeReminder(id);
+      notifySync({ type: 'success', operation: 'Reminder removed', timestamp: new Date() });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Delete reminder', error: err.message });
+      throw err;
+    }
+  },
 
   // Backup & Export
   exportBackup: () =>
     request<BackupData>('/api/backup/export'),
 
-  importBackup: (backup: BackupData) =>
-    request<{ success: boolean; peopleCount: number; txCount: number }>('/api/backup/import', {
-      method: 'POST',
-      body: JSON.stringify(backup)
-    }),
+  importBackup: async (backup: BackupData) => {
+    notifySync({ type: 'start', operation: 'Importing backup & synchronizing cloud...' });
+    try {
+      const res = await request<{ success: boolean; peopleCount: number; txCount: number }>('/api/backup/import', {
+        method: 'POST',
+        body: JSON.stringify(backup)
+      });
+      if (backup.people) localVault.savePeople(backup.people);
+      if (backup.transactions) localVault.saveTransactions(backup.transactions);
+      if (backup.reminders) localVault.saveReminders(backup.reminders);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: `Imported ${res.peopleCount} people and ${res.txCount} transactions`,
+        timestamp: new Date()
+      });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Import backup', error: err.message });
+      throw err;
+    }
+  },
 
   // Database & Cloud Sync
   getDatabaseStatus: () =>
     request<{ status: string; provider: string; projectId: string; databaseId: string; isCloudSynced: boolean; peopleCount: number; txCount: number }>('/api/database/status'),
 
-  syncDatabase: () =>
-    request<{ success: boolean; message: string; isCloudSynced: boolean; peopleCount: number; txCount: number }>('/api/database/sync', {
-      method: 'POST'
-    }),
+  syncDatabase: async () => {
+    notifySync({ type: 'start', operation: 'Pushing database to Cloud Firestore...' });
+    try {
+      const res = await request<{ success: boolean; message: string; isCloudSynced: boolean; peopleCount: number; txCount: number }>('/api/database/sync', {
+        method: 'POST'
+      });
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: 'Cloud Firestore synchronized',
+        timestamp: new Date()
+      });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Sync database', error: err.message });
+      throw err;
+    }
+  },
+
+  // Automated Data Integrity & Cloud Reconciliation
+  getIntegrityCheck: () =>
+    request<IntegrityServerReport>('/api/database/integrity-check'),
+
+  reconcileDatabase: async (payload: {
+    action: 'merge' | 'push_local' | 'pull_remote';
+    localPeople?: Person[];
+    localTransactions?: Transaction[];
+    localReminders?: Reminder[];
+  }) => {
+    notifySync({ type: 'start', operation: 'Reconciling local vault with Cloud database...' });
+    try {
+      const res = await request<{
+        success: boolean;
+        actionTaken: string;
+        peopleCount: number;
+        txCount: number;
+        people: Person[];
+        transactions: Transaction[];
+        reminders: Reminder[];
+      }>('/api/database/reconcile', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (res.people) localVault.savePeople(res.people);
+      if (res.transactions) localVault.saveTransactions(res.transactions);
+      if (res.reminders) localVault.saveReminders(res.reminders);
+      localVault.setLastSync(new Date().toISOString());
+      notifySync({
+        type: 'success',
+        operation: `Reconciled: ${res.peopleCount} members, ${res.txCount} transactions secured`,
+        timestamp: new Date()
+      });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Reconcile database', error: err.message });
+      throw err;
+    }
+  },
 
   // AI Assistant & Document Vision
   getAiInsights: () =>

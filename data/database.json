@@ -3,26 +3,26 @@
     {
       "id": "usr_admin_financialfree",
       "email": "financiFinancial@free.com",
-      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
-      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
+      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
+      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
       "created_at": "2026-01-01T00:00:00.000Z",
-      "updated_at": "2026-09-10T12:28:11.333Z"
+      "updated_at": "2026-09-10T13:45:00.894Z"
     },
     {
       "id": "usr_admin_cheeta",
       "email": "startup.cheetaiaistudio.com@gmail.com",
-      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
-      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
+      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
+      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-09-10T12:28:11.333Z"
+      "updated_at": "2026-09-10T13:45:00.894Z"
     },
     {
       "id": "usr_admin_noorjahan",
       "email": "noorjahan77027@gmail.com",
-      "password_hash": "fb859eba7ba69b28b07c58d201765ac60f4b216199079d03731a11e6a58026933cae039390b6b2137b2d1278c49108701ffa23889a43e125edec9903a461f265",
-      "salt": "dd9e732e55971c8ce2ca8a5be7e2b914",
+      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
+      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-09-10T12:28:11.333Z"
+      "updated_at": "2026-09-10T13:45:00.894Z"
     },
     {
       "id": "usr_fb_kDsWMT7cvfhHmfAAWFKyRcVs8vm2",
@@ -31,9 +31,40 @@
       "salt": "9fc1c7c06fbafdc53b61a492f23fb457",
       "created_at": "2026-09-10T12:26:06.027Z",
       "updated_at": "2026-09-10T12:26:06.027Z"
+    },
+    {
+      "id": "usr_fb_test-user-123",
+      "email": "test@example.com",
+      "password_hash": "7f54a7890fa35385e709b7249a00aee2108d676557cb718badf274018404c29bf9398f675e2a9a4cc32f41447e6fd446ad4714a0ac58a5db7ea0e936b2be2c87",
+      "salt": "fb649bdfbf4ccfd9f9a825a790ab0df7",
+      "created_at": "2026-09-10T13:45:00.896Z",
+      "updated_at": "2026-09-10T13:45:00.896Z"
     }
   ],
-  "people": [],
-  "transactions": [],
+  "people": [
+    {
+      "id": "p1",
+      "user_id": "u1",
+      "full_name": "Rohan Verma",
+      "phone": "9876543210",
+      "created_at": "2026-09-10T00:00:00.000Z",
+      "updated_at": "2026-09-10T00:00:00.000Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "t1",
+      "user_id": "u1",
+      "person_id": "p1",
+      "amount": 5000,
+      "transaction_type": "given",
+      "transaction_date": "2026-09-10",
+      "month": 9,
+      "year": 2026,
+      "payment_method": "UPI",
+      "created_at": "2026-09-10T00:00:00.000Z",
+      "updated_at": "2026-09-10T00:00:00.000Z"
+    }
+  ],
   "reminders": []
 }

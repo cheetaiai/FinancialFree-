@@ -323,6 +323,24 @@ apiRouter.post('/database/sync', requireAuth, async (req: Request, res: Response
   }
 });
 
+apiRouter.get('/database/integrity-check', requireAuth, (req: Request, res: Response) => {
+  try {
+    const report = db.getIntegrityReport();
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to perform integrity check' });
+  }
+});
+
+apiRouter.post('/database/reconcile', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await db.reconcileWithClient(req.body);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to reconcile database state' });
+  }
+});
+
 // ================= REMINDERS ROUTES =================
 apiRouter.get('/reminders', requireAuth, (req: Request, res: Response) => {
   try {

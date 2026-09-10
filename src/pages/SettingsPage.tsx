@@ -30,6 +30,7 @@ import { LiquidSegmentedControl } from '../components/ui/LiquidSegmentedControl'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
+import { useSync } from '../context/SyncContext';
 import { BackupData } from '../types';
 import { Compass, Sparkles } from 'lucide-react';
 
@@ -42,6 +43,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
   const { theme, setTheme } = useTheme();
   const { currency, setCurrency, formatAmount, currencyConfig, currencies } = useCurrency();
   const { showToast } = useToast();
+  const { runIntegrityCheck, setIsIntegrityModalOpen } = useSync();
 
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -277,6 +279,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
                 Replay 3-Page Tour
               </LiquidButton>
             )}
+
+            <LiquidButton
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                runIntegrityCheck(false);
+                setIsIntegrityModalOpen(true);
+              }}
+              icon={<ShieldCheck size={14} className="text-blue-500" />}
+            >
+              Data Integrity Check
+            </LiquidButton>
 
             <LiquidButton
               variant="secondary"

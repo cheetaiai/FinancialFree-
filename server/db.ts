@@ -1437,6 +1437,124 @@ class DatabaseService {
       txCount: this.data.transactions.length
     };
   }
+
+  public getIntegrityReport(): {
+    serverPeopleCount: number;
+    serverTxCount: number;
+    serverReminderCount: number;
+    serverPeople: Array<{ id: string; full_name: string; phone?: string; updated_at: string; remaining_balance: number }>;
+    serverTransactions: Array<{ id: string; person_id: string; amount: number; transaction_type: string; transaction_date: string; updated_at: string }>;
+    isCloudSynced: boolean;
+    timestamp: string;
+  } {
+    const enriched = this.data.people.map(p => this.enrichPerson(p));
+    return {
+      serverPeopleCount: this.data.people.length,
+      serverTxCount: this.data.transactions.length,
+      serverReminderCount: this.data.reminders.length,
+      serverPeople: enriched.map(p => ({
+        id: p.id,
+        full_name: p.full_name,
+        phone: p.phone,
+        updated_at: p.updated_at || p.created_at,
+        remaining_balance: p.remaining_balance || 0
+      })),
+      serverTransactions: this.data.transactions.map(t => ({
+        id: t.id,
+        person_id: t.person_id,
+        amount: t.amount,
+        transaction_type: t.transaction_type,
+        transaction_date: t.transaction_date,
+        updated_at: t.updated_at || t.created_at
+      })),
+      isCloudSynced: this.isCloudSynced,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  public async reconcileWithClient(payload: {
+    action: 'merge' | 'push_local' | 'pull_remote';
+    localPeople?: Person[];
+    localTransactions?: Transaction[];
+    localReminders?: Reminder[];
+  }): Promise<{
+    success: boolean;
+    actionTaken: string;
+    peopleCount: number;
+    txCount: number;
+    people: Person[];
+    transactions: Transaction[];
+    reminders: Reminder[];
+  }> {
+    const { action, localPeople = [], localTransactions = [], localReminders = [] } = payload;
+
+    if (action === 'push_local') {
+      this.data.people = localPeople;
+      this.data.transactions = localTransactions;
+      this.data.reminders = localReminders;
+    } else if (action === 'merge') {
+      // 1. Merge People
+      for (const lp of localPeople) {
+        if (!lp.full_name) continue;
+        const cleanName = lp.full_name.trim().toLowerCase();
+        const cleanPhone = (lp.phone || '').trim();
+        const existingIdx = this.data.people.findIndex(p =>
+          p.id === lp.id ||
+          (p.full_name.trim().toLowerCase() === cleanName && (!cleanPhone || !p.phone || p.phone.trim() === cleanPhone))
+        );
+        if (existingIdx === -1) {
+          this.data.people.push(lp);
+        } else {
+          const localUpdated = new Date(lp.updated_at || lp.created_at || 0).getTime();
+          const serverUpdated = new Date(this.data.people[existingIdx].updated_at || this.data.people[existingIdx].created_at || 0).getTime();
+          if (localUpdated >= serverUpdated) {
+            this.data.people[existingIdx] = { ...this.data.people[existingIdx], ...lp };
+          }
+        }
+      }
+
+      // 2. Merge Transactions
+      for (const lt of localTransactions) {
+        if (!lt.id || !lt.person_id) continue;
+        const existingIdx = this.data.transactions.findIndex(t => t.id === lt.id);
+        if (existingIdx === -1) {
+          this.data.transactions.push(lt);
+        } else {
+          const localUpdated = new Date(lt.updated_at || lt.created_at || 0).getTime();
+          const serverUpdated = new Date(this.data.transactions[existingIdx].updated_at || this.data.transactions[existingIdx].created_at || 0).getTime();
+          if (localUpdated >= serverUpdated) {
+            this.data.transactions[existingIdx] = { ...this.data.transactions[existingIdx], ...lt };
+          }
+        }
+      }
+
+      // 3. Merge Reminders
+      for (const lr of localReminders) {
+        if (!lr.id) continue;
+        const existingIdx = this.data.reminders.findIndex(r => r.id === lr.id);
+        if (existingIdx === -1) {
+          this.data.reminders.push(lr);
+        } else {
+          this.data.reminders[existingIdx] = { ...this.data.reminders[existingIdx], ...lr };
+        }
+      }
+    }
+
+    this.saveToFile();
+
+    // Push all to Firestore to ensure permanent cloud synchronization
+    await this.pushAllToFirestore().catch(() => {});
+
+    return {
+      success: true,
+      actionTaken: action,
+      peopleCount: this.data.people.length,
+      txCount: this.data.transactions.length,
+      people: this.getPeople(),
+      transactions: this.getTransactions({}),
+      reminders: this.getReminders()
+    };
+  }
 }
 
 export const db = new DatabaseService();

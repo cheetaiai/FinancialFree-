@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { SyncProvider, useSync } from './context/SyncContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PeoplePage } from './pages/PeoplePage';
@@ -20,12 +21,14 @@ import { ReminderModal } from './components/ReminderModal';
 import { AiFinancialChatDrawer } from './components/AiFinancialChatDrawer';
 import { AppWalkthroughModal } from './components/onboarding/AppWalkthroughModal';
 import { LogoutAnimationModal } from './components/auth/LogoutAnimationModal';
+import { DataIntegrityModal } from './components/DataIntegrityModal';
 import { Person, Transaction, TransactionType } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, Sparkles, Bot } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isLoading, logout } = useAuth();
+  const { runIntegrityCheck } = useSync();
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
@@ -53,6 +56,27 @@ const MainApp: React.FC = () => {
 
   // Refresh trigger for components
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Automated Data Integrity Check on App Load
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Trigger automated integrity check on app load to compare local cached records with remote Firestore state
+      const timer = setTimeout(() => {
+        runIntegrityCheck(true);
+      }, 1200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, runIntegrityCheck]);
+
+  // Reconciled listener
+  useEffect(() => {
+    const handleReconciled = () => {
+      setRefreshKey(k => k + 1);
+    };
+    window.addEventListener('financialfree_data_reconciled', handleReconciled);
+    return () => window.removeEventListener('financialfree_data_reconciled', handleReconciled);
+  }, []);
 
   if (isLoading) {
     return (
@@ -265,6 +289,9 @@ const MainApp: React.FC = () => {
         }}
       />
 
+      {/* Data Integrity & Cloud Reconciliation Modal */}
+      <DataIntegrityModal />
+
       {/* Logout Animation Transition Modal */}
       <LogoutAnimationModal
         isOpen={isLoggingOut}
@@ -282,9 +309,11 @@ export function App() {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-          <CurrencyProvider>
-            <MainApp />
-          </CurrencyProvider>
+          <SyncProvider>
+            <CurrencyProvider>
+              <MainApp />
+            </CurrencyProvider>
+          </SyncProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>

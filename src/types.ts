@@ -203,3 +203,29 @@ export interface BackupData {
   transactions: Transaction[];
   reminders: Reminder[];
 }
+
+export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'discrepancy' | 'offline' | 'error';
+
+export interface IntegrityServerReport {
+  serverPeopleCount: number;
+  serverTxCount: number;
+  serverReminderCount: number;
+  serverPeople: Array<{ id: string; full_name: string; phone?: string; updated_at: string; remaining_balance: number }>;
+  serverTransactions: Array<{ id: string; person_id: string; amount: number; transaction_type: string; transaction_date: string; updated_at: string }>;
+  isCloudSynced: boolean;
+  timestamp: string;
+}
+
+export interface DiscrepancyDetails {
+  hasDiscrepancy: boolean;
+  localPeopleCount: number;
+  serverPeopleCount: number;
+  localTxCount: number;
+  serverTxCount: number;
+  missingOnServerPeople: Person[];
+  missingOnLocalPeople: Array<{ id: string; full_name: string }>;
+  missingOnServerTxs: Transaction[];
+  missingOnLocalTxs: Array<{ id: string; amount: number; type: string }>;
+  summaryMessage: string;
+}
+
