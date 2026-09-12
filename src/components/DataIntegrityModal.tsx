@@ -22,6 +22,14 @@ export const DataIntegrityModal: React.FC = () => {
     integrityReport,
     discrepancyDetails,
     isReconciling,
+    backupStatus,
+    isBackingUp,
+    isRestoring,
+    nextBackupDueTime,
+    isAutoBackupActive,
+    autoBackupIntervalHours,
+    triggerCloudBackup,
+    restoreFromCloud,
     resolveDiscrepancy,
     runIntegrityCheck,
     forceCloudSync
@@ -144,6 +152,53 @@ export const DataIntegrityModal: React.FC = () => {
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
               Cloud persistence ensures multi-device access and cross-session durability.
             </p>
+          </div>
+        </div>
+
+        {/* Automated 24-Hour Backup Routine Status */}
+        <div className="p-4 rounded-2xl liquid-glass-secondary border border-blue-500/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Cloud size={15} />
+              </div>
+              <span className="text-sm font-semibold text-slate-800 dark:text-white">
+                Automated 24-Hour Cloud Snapshot
+              </span>
+            </div>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+              Active ({autoBackupIntervalHours || 24}h Interval)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-white/5 space-y-0.5">
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Last Backup Recorded</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {backupStatus?.timestamp ? new Date(backupStatus.timestamp).toLocaleString() : 'Secured on initialization'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-white/5 space-y-0.5">
+              <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Next Automatic Cycle</span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {nextBackupDueTime ? nextBackupDueTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Within 24 hours'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Provider: Google Cloud Firestore • Lifetime Safe
+            </span>
+            <button
+              type="button"
+              onClick={() => triggerCloudBackup()}
+              disabled={isBackingUp || isReconciling}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <RefreshCw size={12} className={isBackingUp ? 'animate-spin' : ''} />
+              <span>{isBackingUp ? 'Securing...' : 'Backup Now'}</span>
+            </button>
           </div>
         </div>
 

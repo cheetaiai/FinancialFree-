@@ -157,6 +157,12 @@ class DatabaseService {
     // Ensure authorized admin credentials always exist in data
     this.ensureAdminCredentials();
 
+    // Purge any legacy mock records (e.g. Rohan Verma) so only real people persist
+    this.data.people = this.data.people.filter(p => {
+      const n = (p.full_name || '').toLowerCase();
+      return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+    });
+
     // Trigger cloud synchronization in background (non-blocking)
     try {
       this.syncWithFirestore().catch(e => {
@@ -166,12 +172,12 @@ class DatabaseService {
       // ignore
     }
 
-    // Start automated periodic cloud backup routine (every 10 minutes)
+    // Start automated 24-hour periodic cloud backup routine
     setInterval(() => {
       this.pushCloudBackup().catch(err => {
-        console.warn('Automated periodic cloud backup notice:', err.message || err);
+        console.warn('Automated 24-hour periodic cloud backup notice:', err.message || err);
       });
-    }, 10 * 60 * 1000);
+    }, 24 * 60 * 60 * 1000);
   }
 
   public async syncWithFirestore(): Promise<void> {
@@ -196,6 +202,12 @@ class DatabaseService {
           }
         }
       }
+
+      // Purge any mock entries (e.g. Rohan Verma) that might be in cloud collection
+      this.data.people = this.data.people.filter(p => {
+        const n = (p.full_name || '').toLowerCase();
+        return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+      });
 
       // Merge transactions safely
       if (Array.isArray(cloudTransactions) && cloudTransactions.length > 0) {
@@ -696,6 +708,29 @@ class DatabaseService {
     };
 
     this.data.people.push(newPerson);
+
+    // If an initial opening amount was provided (e.g. from directory quick-add), create the opening given transaction
+    const openingAmount = Number((data as any).initial_amount || (data as any).amount || (data as any).total_given || 0);
+    if (openingAmount > 0) {
+      const now = new Date();
+      const openingTx: Transaction = {
+        id: 'tx_' + crypto.randomBytes(8).toString('hex'),
+        user_id: userId,
+        person_id: newPerson.id,
+        amount: openingAmount,
+        transaction_type: 'given',
+        transaction_date: now.toISOString().split('T')[0],
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        notes: data.notes || 'Opening balance',
+        payment_method: 'Cash',
+        created_at: now.toISOString(),
+        updated_at: now.toISOString()
+      };
+      this.data.transactions.push(openingTx);
+      firestoreRest.setDoc('transactions', openingTx.id, openingTx).catch(() => {});
+    }
+
     this.saveToFile();
 
     // Persist to Cloud Firestore and await to ensure no data loss across reloads/lambdas

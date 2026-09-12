@@ -17,18 +17,40 @@ interface AiFinancialChatDrawerProps {
   onOpenAddTransaction?: () => void;
 }
 
+const CHAT_STORAGE_KEY = 'financialfree_ai_chat_history';
+
 export const AiFinancialChatDrawer: React.FC<AiFinancialChatDrawerProps> = ({
   isOpen,
   onClose,
   onOpenAddTransaction
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'model',
-      text: "👋 Hello! I am your **FinancialFree AI Agent**.\n\nI can:\n• Analyze your live lending & recovery ledger in real-time\n• Read & scan payment receipts, UPI screenshots, or handwritten notes\n• Tell you who owes money, due dates, and recovery ratios\n• Draft courteous WhatsApp reminders\n\nHow can I help you today?"
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
     }
-  ]);
+    return [
+      {
+        id: 'welcome',
+        role: 'model',
+        text: "👋 Hello! I am your **FinancialFree AI Agent**.\n\nI can:\n• Analyze your live lending & recovery ledger in real-time\n• Read & scan payment receipts, UPI screenshots, or handwritten notes\n• Tell you who owes money, due dates, and recovery ratios\n• Draft courteous WhatsApp reminders\n\nHow can I help you today?"
+      }
+    ];
+  });
+
+  // Sync messages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore
+    }
+  }, [messages]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string>('');
@@ -115,6 +137,11 @@ export const AiFinancialChatDrawer: React.FC<AiFinancialChatDrawerProps> = ({
   };
 
   const clearChat = () => {
+    try {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setMessages([
       {
         id: 'welcome',

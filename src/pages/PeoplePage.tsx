@@ -540,8 +540,10 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
 
       {viewMode === 'directory' ? (
         <FinancialFreeDirectory
+          people={people}
           onSelectPerson={(id) => setActivePersonId(id)}
           onRefreshParent={fetchPeople}
+          onOpenAddPersonModal={onOpenAddPersonModal}
         />
       ) : (
         <>

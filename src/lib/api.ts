@@ -48,6 +48,12 @@ export const localVault = {
     const cached = getLocalCache<Person[]>(CACHE_PEOPLE_KEY);
     let list: Person[] = vault || cached || [];
 
+    // Filter out any mock/sample entries (e.g. Rohan Verma)
+    list = list.filter(p => {
+      const n = (p.full_name || '').toLowerCase();
+      return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+    });
+
     // Also ingest from legacy or standalone ff_people_directory if present
     const directory = getLocalCache<any[]>(FF_PEOPLE_DIRECTORY_KEY);
     if (Array.isArray(directory) && directory.length > 0) {
@@ -55,7 +61,9 @@ export const localVault = {
       for (const item of directory) {
         const name = item.name || item.full_name;
         if (!name) continue;
-        const exists = list.some(p => p.id === item.id || p.full_name.toLowerCase() === name.toLowerCase());
+        const lower = name.toLowerCase();
+        if (lower.includes('rohan') || lower.includes('verma') || lower.includes('varma') || item.id === '1') continue;
+        const exists = list.some(p => p.id === item.id || p.full_name.toLowerCase() === lower);
         if (!exists) {
           const amt = Number(item.amount || item.total_given || 0);
           list.push({
@@ -85,12 +93,16 @@ export const localVault = {
     return list;
   },
   savePeople(people: Person[]) {
-    setLocalCache(VAULT_PEOPLE_KEY, people);
-    setLocalCache(CACHE_PEOPLE_KEY, people);
+    const clean = people.filter(p => {
+      const n = (p.full_name || '').toLowerCase();
+      return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+    });
+    setLocalCache(VAULT_PEOPLE_KEY, clean);
+    setLocalCache(CACHE_PEOPLE_KEY, clean);
 
     // Keep ff_people_directory in perfect sync
     try {
-      const dirFormat = people.map(p => ({
+      const dirFormat = clean.map(p => ({
         id: p.id,
         name: p.full_name,
         category: p.category || 'General',
@@ -105,6 +117,8 @@ export const localVault = {
     }
   },
   savePerson(person: Person) {
+    const n = (person.full_name || '').toLowerCase();
+    if (n.includes('rohan') || n.includes('verma') || n.includes('varma') || person.id === '1') return;
     const list = this.getPeople();
     const idx = list.findIndex(p => p.id === person.id);
     if (idx !== -1) {
@@ -136,6 +150,28 @@ export const localVault = {
       list.unshift(tx);
     }
     this.saveTransactions(list);
+
+    // Immediately recalculate person in localVault so balance and status update without refresh
+    if (tx.person_id) {
+      const personList = this.getPeople();
+      const pIdx = personList.findIndex(p => p.id === tx.person_id);
+      if (pIdx !== -1) {
+        const personTxs = list.filter(t => t.person_id === tx.person_id);
+        const given = personTxs.filter(t => t.transaction_type === 'given').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const ret = personTxs.filter(t => t.transaction_type === 'returned').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const bal = Math.max(0, given - ret);
+        personList[pIdx] = {
+          ...personList[pIdx],
+          total_given: given,
+          total_returned: ret,
+          remaining_balance: bal,
+          transaction_count: personTxs.length,
+          status: bal === 0 ? 'Settled' : 'Pending',
+          updated_at: new Date().toISOString()
+        };
+        this.savePeople(personList);
+      }
+    }
   },
   removeTransaction(id: string) {
     const list = this.getTransactions().filter(t => t.id !== id);
@@ -292,8 +328,21 @@ export const api = {
     }
   },
 
-  getPersonById: (id: string) =>
-    request<{ person: Person; transactions: Transaction[]; reminders: Reminder[] }>(`/api/people/${id}`),
+  getPersonById: async (id: string) => {
+    try {
+      const data = await request<{ person: Person; transactions: Transaction[]; reminders: Reminder[] }>(`/api/people/${id}`);
+      return data;
+    } catch (err) {
+      // Local vault fallback
+      const person = localVault.getPeople().find(p => p.id === id);
+      if (person) {
+        const txs = localVault.getTransactions().filter(t => t.person_id === id);
+        const reminders = localVault.getReminders().filter(r => r.person_id === id);
+        return { person, transactions: txs, reminders };
+      }
+      throw err;
+    }
+  },
 
   createPerson: async (data: Partial<Person>) => {
     notifySync({ type: 'start', operation: `Saving ${data.full_name || 'person'}...` });

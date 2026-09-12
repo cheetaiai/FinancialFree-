@@ -26,10 +26,66 @@ export const AiGraphAnalysisCard: React.FC<AiGraphAnalysisCardProps> = ({
   const { showToast } = useToast();
   const { currencySymbol } = useCurrency();
   const [isOpen, setIsOpen] = useState<boolean>(true);
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [provider, setProvider] = useState<string>('');
+
+  // Generate deterministic cache key based on type and title
+  const cacheKey = `ff_ai_graph_analysis_${type}_${title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+
+  // Initialize analysis from localStorage so data is never lost on refresh
+  const [analysis, setAnalysis] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.analysis || null;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
+  const [provider, setProvider] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.provider || '';
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
+
+  const [savedTime, setSavedTime] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.timestamp || null;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+
+  const saveAnalysisToStorage = (analysisText: string, providerName: string) => {
+    try {
+      const now = new Date().toISOString();
+      localStorage.setItem(cacheKey, JSON.stringify({
+        analysis: analysisText,
+        provider: providerName,
+        timestamp: now
+      }));
+      setSavedTime(now);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleAnalyze = async () => {
     if (isLoading) return;
@@ -38,6 +94,7 @@ export const AiGraphAnalysisCard: React.FC<AiGraphAnalysisCardProps> = ({
       const res = await api.analyzeGraph(type, graphData, currencySymbol);
       setAnalysis(res.analysis);
       setProvider(res.provider || 'AI Engine');
+      saveAnalysisToStorage(res.analysis, res.provider || 'AI Engine');
       setIsOpen(true);
     } catch (err: any) {
       console.warn('AI analysis notice:', err);
@@ -46,7 +103,7 @@ export const AiGraphAnalysisCard: React.FC<AiGraphAnalysisCardProps> = ({
     }
   };
 
-  // Auto-run analysis when graphData changes or on first mount
+  // Auto-run analysis when graphData changes or on first mount ONLY if no saved analysis
   React.useEffect(() => {
     if (autoLoad && graphData && !analysis && !isLoading) {
       handleAnalyze();
@@ -60,8 +117,9 @@ export const AiGraphAnalysisCard: React.FC<AiGraphAnalysisCardProps> = ({
       const res = await api.analyzeGraph(type, graphData, currencySymbol);
       setAnalysis(res.analysis);
       setProvider(res.provider || 'AI Engine');
+      saveAnalysisToStorage(res.analysis, res.provider || 'AI Engine');
       setIsOpen(true);
-      showToast('AI Graph Analysis completed!', 'success');
+      showToast('AI Graph Analysis completed & saved!', 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to generate AI analysis', 'error');
     } finally {
@@ -86,13 +144,18 @@ export const AiGraphAnalysisCard: React.FC<AiGraphAnalysisCardProps> = ({
             <Sparkles size={18} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                 {title}
               </h3>
               {provider && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/20">
                   {provider}
+                </span>
+              )}
+              {savedTime && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title={`Analysis timestamp: ${savedTime}`}>
+                  Saved
                 </span>
               )}
             </div>

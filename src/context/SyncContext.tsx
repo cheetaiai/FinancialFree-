@@ -19,6 +19,9 @@ export interface CloudBackupInfo {
   provider: string;
 }
 
+const BACKUP_INTERVAL_24H_MS = 24 * 60 * 60 * 1000; // 24 Hours
+const AUTO_BACKUP_STORAGE_KEY = 'financialfree_last_auto_cloud_backup_timestamp';
+
 interface SyncContextType {
   syncState: SyncStatus;
   lastSavedTime: Date | null;
@@ -30,6 +33,9 @@ interface SyncContextType {
   backupStatus: CloudBackupInfo | null;
   isBackingUp: boolean;
   isRestoring: boolean;
+  nextBackupDueTime: Date | null;
+  isAutoBackupActive: boolean;
+  autoBackupIntervalHours: number;
   setIsIntegrityModalOpen: (open: boolean) => void;
   runIntegrityCheck: (promptIfDiscrepancy?: boolean) => Promise<DiscrepancyDetails | null>;
   resolveDiscrepancy: (action: 'merge' | 'push_local' | 'pull_remote') => Promise<boolean>;
@@ -55,6 +61,20 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [backupStatus, setBackupStatus] = useState<CloudBackupInfo | null>(null);
   const [isBackingUp, setIsBackingUp] = useState<boolean>(false);
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
+
+  // 24-Hour Automated Cloud Backup State
+  const [nextBackupDueTime, setNextBackupDueTime] = useState<Date | null>(() => {
+    try {
+      const stored = localStorage.getItem(AUTO_BACKUP_STORAGE_KEY);
+      if (stored) {
+        const last = parseInt(stored, 10);
+        return new Date(last + BACKUP_INTERVAL_24H_MS);
+      }
+    } catch {
+      // ignore
+    }
+    return new Date(Date.now() + BACKUP_INTERVAL_24H_MS);
+  });
 
   // Subscribe to real-time events triggered by API CRUD operations
   useEffect(() => {
@@ -258,6 +278,13 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         totalReturned: res.totalReturned,
         provider: 'Google Cloud Firestore'
       };
+      const nowMs = Date.now();
+      try {
+        localStorage.setItem(AUTO_BACKUP_STORAGE_KEY, nowMs.toString());
+        setNextBackupDueTime(new Date(nowMs + BACKUP_INTERVAL_24H_MS));
+      } catch {
+        // ignore
+      }
       setBackupStatus(updatedStatus);
       setSyncState('saved');
       setLastSavedTime(new Date(res.timestamp));
@@ -308,36 +335,70 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [fetchBackupStatus]);
 
-  // Automated Periodic Backup Routine
+  // Automated 24-Hour Cloud Backup Routine
   useEffect(() => {
-    // Initial fetch of backup status
+    // Initial fetch of cloud backup status
     fetchBackupStatus();
 
-    // Automated periodic background backup push (every 5 minutes)
-    const backupInterval = setInterval(() => {
-      // Only run if not currently syncing or reconciling
-      if (!isReconciling && !isBackingUp && !isRestoring) {
-        api.pushCloudBackup()
-          .then((res) => {
-            setBackupStatus({
-              hasBackup: true,
-              timestamp: res.timestamp,
-              peopleCount: res.peopleCount,
-              txCount: res.txCount,
-              reminderCount: res.reminderCount,
-              totalGiven: res.totalGiven,
-              totalReturned: res.totalReturned,
-              provider: 'Google Cloud Firestore'
-            });
-            setLastSavedTime(new Date(res.timestamp));
-          })
-          .catch((e) => {
-            console.warn('Background automated backup warning:', e.message);
-          });
-      }
-    }, 5 * 60 * 1000);
+    const executeAutoBackupIfDue = async (triggerReason: string) => {
+      if (isReconciling || isBackingUp || isRestoring) return;
+      try {
+        const stored = localStorage.getItem(AUTO_BACKUP_STORAGE_KEY);
+        const lastTime = stored ? parseInt(stored, 10) : 0;
+        const now = Date.now();
 
-    return () => clearInterval(backupInterval);
+        // If 24 hours have passed since last backup or no backup has been recorded
+        if (!lastTime || (now - lastTime) >= BACKUP_INTERVAL_24H_MS) {
+          console.log(`[24h Automated Cloud Backup] Executing scheduled backup (${triggerReason})...`);
+          const res = await api.pushCloudBackup();
+          localStorage.setItem(AUTO_BACKUP_STORAGE_KEY, now.toString());
+          setNextBackupDueTime(new Date(now + BACKUP_INTERVAL_24H_MS));
+          setBackupStatus({
+            hasBackup: true,
+            timestamp: res.timestamp,
+            peopleCount: res.peopleCount,
+            txCount: res.txCount,
+            reminderCount: res.reminderCount,
+            totalGiven: res.totalGiven,
+            totalReturned: res.totalReturned,
+            provider: 'Google Cloud Firestore'
+          });
+          setLastSavedTime(new Date(res.timestamp));
+        } else {
+          setNextBackupDueTime(new Date(lastTime + BACKUP_INTERVAL_24H_MS));
+        }
+      } catch (e: any) {
+        console.warn('[24h Automated Cloud Backup] Background notice:', e.message);
+      }
+    };
+
+    // Check on startup
+    executeAutoBackupIfDue('startup_check');
+
+    // Check every 15 minutes in background
+    const backupCheckInterval = setInterval(() => {
+      executeAutoBackupIfDue('15m_periodic_tick');
+    }, 15 * 60 * 1000);
+
+    // Check when user resumes app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        executeAutoBackupIfDue('visibility_resumed');
+      }
+    };
+
+    const handleOnline = () => {
+      executeAutoBackupIfDue('online_restored');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      clearInterval(backupCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+    };
   }, [fetchBackupStatus, isReconciling, isBackingUp, isRestoring]);
 
   return (
@@ -353,6 +414,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         backupStatus,
         isBackingUp,
         isRestoring,
+        nextBackupDueTime,
+        isAutoBackupActive: true,
+        autoBackupIntervalHours: 24,
         setIsIntegrityModalOpen,
         runIntegrityCheck,
         resolveDiscrepancy,

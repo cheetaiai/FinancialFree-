@@ -4,51 +4,78 @@ import { Person } from "../types";
 import { api, localVault, FF_PEOPLE_DIRECTORY_KEY } from "../lib/api";
 import { exportPeopleDirectoryPdf } from "../lib/pdfExport";
 
-const INITIAL_PEOPLE = [
-  {
-    id: "1",
-    name: "Rohan Verma",
-    category: "General",
-    status: "Pending",
-    amount: 5000,
-    phone: "9876543210",
-    city: "Mumbai"
-  }
-];
-
 interface FinancialFreeDirectoryProps {
+  people?: Person[];
   onSelectPerson?: (personId: string) => void;
   onRefreshParent?: () => void;
+  onOpenAddPersonModal?: () => void;
 }
 
-export default function FinancialFreeDirectory({ onSelectPerson, onRefreshParent }: FinancialFreeDirectoryProps) {
-  // 1. Initialize state directly from localStorage so data persists
+export default function FinancialFreeDirectory({
+  people: externalPeople,
+  onSelectPerson,
+  onRefreshParent,
+  onOpenAddPersonModal
+}: FinancialFreeDirectoryProps) {
+  // 1. Initialize state directly from localVault and localStorage (strictly real people only)
   const [people, setPeople] = useState<any[]>(() => {
     try {
+      // Purge any legacy mock entries
       const saved = localStorage.getItem(FF_PEOPLE_DIRECTORY_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const clean = parsed.filter((p: any) => {
+            const n = (p.name || p.full_name || '').toLowerCase();
+            return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+          });
+          if (clean.length > 0) return clean;
+        }
       }
-      // Check local vault
+      // Check local vault for real people
       const vaultPeople = localVault.getPeople();
       if (vaultPeople.length > 0) {
         return vaultPeople.map(p => ({
           id: p.id,
           name: p.full_name,
           category: p.category || "General",
-          status: p.status || "Pending",
+          status: p.status || (Number(p.remaining_balance || 0) === 0 ? "Cleared" : "Pending"),
           amount: p.total_given || p.remaining_balance || 0,
           phone: p.phone || "",
           city: p.address || ""
         }));
       }
-      return INITIAL_PEOPLE;
+      return [];
     } catch (e) {
-      console.error("Failed to load people from localStorage", e);
-      return INITIAL_PEOPLE;
+      return [];
     }
   });
+
+  // Keep state synced with externalPeople from parent if provided
+  useEffect(() => {
+    if (externalPeople && Array.isArray(externalPeople)) {
+      const cleanExternal = externalPeople
+        .filter(p => {
+          const n = (p.full_name || '').toLowerCase();
+          return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+        })
+        .map(p => ({
+          id: p.id,
+          name: p.full_name,
+          category: p.category || "General",
+          status: p.status || (Number(p.remaining_balance || 0) === 0 ? "Cleared" : "Pending"),
+          amount: p.total_given || p.remaining_balance || 0,
+          phone: p.phone || "",
+          city: p.address || ""
+        }));
+      setPeople(cleanExternal);
+      try {
+        localStorage.setItem(FF_PEOPLE_DIRECTORY_KEY, JSON.stringify(cleanExternal));
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [externalPeople]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All Statuses");
@@ -66,10 +93,14 @@ export default function FinancialFreeDirectory({ onSelectPerson, onRefreshParent
     city: ""
   });
 
-  // 2. Sync to localStorage and API
+  // 2. Sync to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(FF_PEOPLE_DIRECTORY_KEY, JSON.stringify(people));
+      const cleanPeople = people.filter(p => {
+        const n = (p.name || '').toLowerCase();
+        return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
+      });
+      localStorage.setItem(FF_PEOPLE_DIRECTORY_KEY, JSON.stringify(cleanPeople));
     } catch (e) {
       console.error("Failed to save to localStorage", e);
     }
@@ -81,21 +112,10 @@ export default function FinancialFreeDirectory({ onSelectPerson, onRefreshParent
     if (!formData.name.trim() || !formData.amount) return;
 
     setIsSubmitting(true);
-    const newPersonLocal = {
-      id: Date.now().toString(),
-      name: formData.name.trim(),
-      category: formData.category,
-      status: formData.status,
-      amount: Number(formData.amount),
-      phone: formData.phone.trim(),
-      city: formData.city.trim()
-    };
 
-    setPeople((prev) => [newPersonLocal, ...prev]);
-
-    // Also persist into system API and cloud Firestore
     try {
-      await api.createPerson({
+      // 1. Create real person with initial amount in Firestore & localVault
+      const createdPerson = await api.createPerson({
         full_name: formData.name.trim(),
         phone: formData.phone.trim(),
         address: formData.city.trim(),
@@ -103,10 +123,36 @@ export default function FinancialFreeDirectory({ onSelectPerson, onRefreshParent
         status: formData.status as any,
         total_given: Number(formData.amount),
         remaining_balance: Number(formData.amount),
+        ...({ initial_amount: Number(formData.amount) } as any)
       });
+
+      const newPersonFormatted = {
+        id: createdPerson.id,
+        name: createdPerson.full_name,
+        category: createdPerson.category || formData.category,
+        status: createdPerson.status || formData.status,
+        amount: Number(formData.amount),
+        phone: createdPerson.phone || formData.phone.trim(),
+        city: createdPerson.address || formData.city.trim()
+      };
+
+      setPeople((prev) => [newPersonFormatted, ...prev.filter(p => p.id !== createdPerson.id)]);
+
+      // If parent has refresh callback, trigger it to update PeoplePage
       if (onRefreshParent) onRefreshParent();
     } catch (err) {
       console.warn("API person sync background notice:", err);
+      // Fallback local addition with unique id
+      const fallbackPerson = {
+        id: `per_${Date.now()}`,
+        name: formData.name.trim(),
+        category: formData.category,
+        status: formData.status,
+        amount: Number(formData.amount),
+        phone: formData.phone.trim(),
+        city: formData.city.trim()
+      };
+      setPeople((prev) => [fallbackPerson, ...prev]);
     } finally {
       setIsSubmitting(false);
     }
@@ -212,7 +258,7 @@ export default function FinancialFreeDirectory({ onSelectPerson, onRefreshParent
 
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => onOpenAddPersonModal ? onOpenAddPersonModal() : setIsModalOpen(true)}
           className="flex-1 flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2.5 text-xs font-semibold shadow-md shadow-blue-600/20 transition-all cursor-pointer"
         >
           <UserPlus size={14} />
