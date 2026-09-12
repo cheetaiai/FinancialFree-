@@ -420,6 +420,34 @@ apiRouter.post('/backup/reset', requireAuth, (req: Request, res: Response) => {
   }
 });
 
+// Cloud Firestore Backup & Restore APIs
+apiRouter.get('/backup/cloud-status', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const status = await db.getCloudBackupStatus();
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to get cloud backup status' });
+  }
+});
+
+apiRouter.post('/backup/cloud-push', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await db.pushCloudBackup();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to push cloud backup' });
+  }
+});
+
+apiRouter.post('/backup/cloud-restore', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await db.restoreFromCloudBackup();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to restore from cloud backup' });
+  }
+});
+
 // ================= AI COPILOT & OCR ROUTES =================
 apiRouter.post('/ai/suggest-transaction-meta', requireAuth, async (req: Request, res: Response) => {
   try {

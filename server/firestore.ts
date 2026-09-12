@@ -95,6 +95,23 @@ export const firestoreRest = {
     }
   },
 
+  async getDoc(collectionName: string, docId: string): Promise<Record<string, any> | null> {
+    try {
+      const url = `${getBaseUrl()}/${collectionName}/${docId}?key=${firebaseConfig.apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (!json.fields) return null;
+      const fields: Record<string, any> = {};
+      for (const [k, v] of Object.entries(json.fields)) {
+        fields[k] = fromFirestoreValue(v);
+      }
+      return fields;
+    } catch {
+      return null;
+    }
+  },
+
   async setDoc(collectionName: string, docId: string, data: Record<string, any>): Promise<boolean> {
     try {
       const url = `${getBaseUrl()}/${collectionName}/${docId}?key=${firebaseConfig.apiKey}`;

@@ -35,6 +35,7 @@ import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { formatINR, formatIndianDate, getStatusBadgeConfig } from '../lib/formatters';
 import { exportPeopleDirectoryPdf, exportPersonStatementPdf } from '../lib/pdfExport';
+import FinancialFreeDirectory from '../components/FinancialFreeDirectory';
 
 interface PeoplePageProps {
   selectedPersonId?: string | null;
@@ -57,6 +58,7 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
 }) => {
   const { showToast } = useToast();
   const [people, setPeople] = useState<Person[]>([]);
+  const [viewMode, setViewMode] = useState<'directory' | 'detailed'>('directory');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -473,7 +475,7 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
-            Directory
+            Directory & Balance Hub
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             People ({people.length})
@@ -483,7 +485,33 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View Mode Switcher */}
+          <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/60 dark:border-white/10">
+            <button
+              type="button"
+              onClick={() => setViewMode('directory')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                viewMode === 'directory'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Directory Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('detailed')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                viewMode === 'detailed'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Detailed Ledger
+            </button>
+          </div>
+
           <LiquidButton
             variant="secondary"
             size="sm"
@@ -510,7 +538,14 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
         </div>
       </div>
 
-      {/* Search and Category/Status Filter Bars */}
+      {viewMode === 'directory' ? (
+        <FinancialFreeDirectory
+          onSelectPerson={(id) => setActivePersonId(id)}
+          onRefreshParent={fetchPeople}
+        />
+      ) : (
+        <>
+          {/* Search and Category/Status Filter Bars */}
       <div className="space-y-3">
         {/* Search Bar */}
         <div className="relative">
@@ -655,6 +690,8 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
             </LiquidButton>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

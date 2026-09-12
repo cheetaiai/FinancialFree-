@@ -1,21 +1,50 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Single-user financial manager security rules
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User accounts collection
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if true;
     }
+
+    // People / Borrowers Directory
     match /people/{personId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if true;
     }
+
+    // Transactions Ledger (Money Given / Taken / Returned)
     match /transactions/{transactionId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if true;
     }
+
+    // Reminders & Alerts
     match /reminders/{reminderId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if true;
     }
+
+    // Database Backups & Snapshots
+    match /backups/{backupId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Catch-all fallback to prevent silent write failures
     match /{document=**} {
       allow read, write: if true;
     }
   }
 }
+

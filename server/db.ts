@@ -112,6 +112,7 @@ class DatabaseService {
 
   private sessions: Map<string, { userId: string; email: string; expiresAt: number }> = new Map();
   private isCloudSynced: boolean = false;
+  private backupDebounceTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     this.init();
@@ -164,6 +165,13 @@ class DatabaseService {
     } catch {
       // ignore
     }
+
+    // Start automated periodic cloud backup routine (every 10 minutes)
+    setInterval(() => {
+      this.pushCloudBackup().catch(err => {
+        console.warn('Automated periodic cloud backup notice:', err.message || err);
+      });
+    }, 10 * 60 * 1000);
   }
 
   public async syncWithFirestore(): Promise<void> {
@@ -268,6 +276,9 @@ class DatabaseService {
     } catch {
       // In-memory fallback if disk write is not allowed in serverless
     }
+
+    // Schedule automated cloud backup push to Firestore
+    this.scheduleAutomatedBackup();
   }
 
   private ensureAdminCredentials() {
@@ -1414,6 +1425,263 @@ class DatabaseService {
     } catch (e: any) {
       return { success: false, message: e.message };
     }
+  }
+
+  public scheduleAutomatedBackup() {
+    if (this.backupDebounceTimer) {
+      clearTimeout(this.backupDebounceTimer);
+    }
+    this.backupDebounceTimer = setTimeout(() => {
+      this.pushCloudBackup().catch(err => {
+        console.warn('Background automated backup notice:', err.message || err);
+      });
+    }, 4000);
+  }
+
+  /**
+   * Automated & Manual Cloud Backup to Firestore
+   * Pushes a full serialized snapshot of people, transactions, and reminders
+   * to Firestore 'backups' collection under 'latest_backup' and 'backup_<timestamp>'
+   */
+  public async pushCloudBackup(): Promise<{
+    success: boolean;
+    timestamp: string;
+    peopleCount: number;
+    txCount: number;
+    reminderCount: number;
+    totalGiven: number;
+    totalReturned: number;
+  }> {
+    const timestamp = new Date().toISOString();
+    const people = this.getPeople();
+    const transactions = this.getTransactions({});
+    const reminders = this.getReminders();
+
+    const totalGiven = transactions
+      .filter(t => t.transaction_type === 'given')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const totalReturned = transactions
+      .filter(t => t.transaction_type === 'returned')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+    const snapshotPayload = {
+      id: 'latest_backup',
+      version: '2.0',
+      created_at: timestamp,
+      updated_at: timestamp,
+      people_count: people.length,
+      tx_count: transactions.length,
+      reminder_count: reminders.length,
+      total_given: totalGiven,
+      total_returned: totalReturned,
+      people_preview: people.slice(0, 10).map(p => ({ id: p.id, name: p.full_name, balance: p.remaining_balance })),
+      data_json: JSON.stringify({
+        version: '2.0',
+        export_date: timestamp,
+        user: { email: 'Financial@free.com' },
+        people,
+        transactions,
+        reminders
+      })
+    };
+
+    // 1. Write to Firestore 'backups' collection under 'latest_backup'
+    try {
+      await firestoreRest.setDoc('backups', 'latest_backup', snapshotPayload);
+      // Also store timestamped historical snapshot in Firestore
+      const historyId = `backup_${Date.now()}`;
+      await firestoreRest.setDoc('backups', historyId, {
+        ...snapshotPayload,
+        id: historyId
+      }).catch(() => {});
+    } catch (err: any) {
+      console.warn('Firestore cloud backup push notice:', err.message || err);
+    }
+
+    // 2. Also ensure latest backup is preserved on server filesystem as fallback
+    try {
+      const backupDir = path.join(process.cwd(), 'data', 'backups');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(backupDir, 'latest_backup.json'), JSON.stringify(snapshotPayload, null, 2));
+    } catch {
+      // ignore
+    }
+
+    return {
+      success: true,
+      timestamp,
+      peopleCount: people.length,
+      txCount: transactions.length,
+      reminderCount: reminders.length,
+      totalGiven,
+      totalReturned
+    };
+  }
+
+  /**
+   * Fetch current cloud backup status from Firestore
+   */
+  public async getCloudBackupStatus(): Promise<{
+    hasBackup: boolean;
+    timestamp?: string;
+    peopleCount: number;
+    txCount: number;
+    reminderCount: number;
+    totalGiven?: number;
+    totalReturned?: number;
+    provider: string;
+  }> {
+    try {
+      // Try Firestore first
+      const doc = await firestoreRest.getDoc('backups', 'latest_backup');
+      if (doc && (doc.created_at || doc.updated_at)) {
+        return {
+          hasBackup: true,
+          timestamp: doc.created_at || doc.updated_at,
+          peopleCount: doc.people_count || 0,
+          txCount: doc.tx_count || 0,
+          reminderCount: doc.reminder_count || 0,
+          totalGiven: doc.total_given || 0,
+          totalReturned: doc.total_returned || 0,
+          provider: 'Google Cloud Firestore'
+        };
+      }
+    } catch (e: any) {
+      console.warn('Could not read Firestore backup status:', e.message);
+    }
+
+    // Fallback to local snapshot file if exists
+    try {
+      const filePath = path.join(process.cwd(), 'data', 'backups', 'latest_backup.json');
+      if (fs.existsSync(filePath)) {
+        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        return {
+          hasBackup: true,
+          timestamp: parsed.created_at,
+          peopleCount: parsed.people_count || 0,
+          txCount: parsed.tx_count || 0,
+          reminderCount: parsed.reminder_count || 0,
+          totalGiven: parsed.total_given || 0,
+          totalReturned: parsed.total_returned || 0,
+          provider: 'Local Disk Cache Backup'
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return {
+      hasBackup: false,
+      peopleCount: this.data.people.length,
+      txCount: this.data.transactions.length,
+      reminderCount: this.data.reminders.length,
+      provider: 'Google Cloud Firestore'
+    };
+  }
+
+  /**
+   * Restore from Cloud Backup in Firestore
+   */
+  public async restoreFromCloudBackup(): Promise<{
+    success: boolean;
+    restoredPeopleCount: number;
+    restoredTxCount: number;
+    restoredReminderCount: number;
+    timestamp: string;
+    message: string;
+    people: Person[];
+    transactions: Transaction[];
+    reminders: Reminder[];
+  }> {
+    let payload: BackupData | null = null;
+    let backupTimestamp = new Date().toISOString();
+
+    // 1. Try reading latest_backup from Firestore
+    try {
+      const doc = await firestoreRest.getDoc('backups', 'latest_backup');
+      if (doc) {
+        if (doc.created_at) backupTimestamp = doc.created_at;
+        if (doc.data_json) {
+          payload = JSON.parse(doc.data_json);
+        } else if (doc.people && Array.isArray(doc.people)) {
+          payload = {
+            version: '2.0',
+            export_date: doc.created_at || new Date().toISOString(),
+            user: { email: 'Financial@free.com' },
+            people: doc.people,
+            transactions: doc.transactions || [],
+            reminders: doc.reminders || []
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn('Firestore backup read failed:', e.message);
+    }
+
+    // 2. If no backup doc, check Firestore individual collections directly (/people, /transactions, /reminders)
+    if (!payload) {
+      try {
+        const cloudPeople = (await firestoreRest.getCollection('people')) as Person[];
+        const cloudTransactions = (await firestoreRest.getCollection('transactions')) as Transaction[];
+        const cloudReminders = (await firestoreRest.getCollection('reminders')) as Reminder[];
+
+        if (cloudPeople.length > 0 || cloudTransactions.length > 0) {
+          payload = {
+            version: '2.0',
+            export_date: new Date().toISOString(),
+            user: { email: 'Financial@free.com' },
+            people: cloudPeople,
+            transactions: cloudTransactions,
+            reminders: cloudReminders
+          };
+        }
+      } catch (e: any) {
+        console.warn('Firestore direct collection fetch failed:', e.message);
+      }
+    }
+
+    // 3. Fallback to local backup snapshot file if Firestore had nothing
+    if (!payload) {
+      try {
+        const filePath = path.join(process.cwd(), 'data', 'backups', 'latest_backup.json');
+        if (fs.existsSync(filePath)) {
+          const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          if (parsed.data_json) {
+            payload = JSON.parse(parsed.data_json);
+            backupTimestamp = parsed.created_at || backupTimestamp;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!payload || ((!payload.people || payload.people.length === 0) && (!payload.transactions || payload.transactions.length === 0))) {
+      throw new Error('No cloud backup found to restore. Please perform a cloud backup first.');
+    }
+
+    // Apply restore to database
+    this.data.people = payload.people || [];
+    this.data.transactions = payload.transactions || [];
+    this.data.reminders = payload.reminders || [];
+    this.saveToFile();
+
+    // Mirror all restored records back to Firestore documents
+    await this.pushAllToFirestore().catch(() => {});
+
+    return {
+      success: true,
+      restoredPeopleCount: this.data.people.length,
+      restoredTxCount: this.data.transactions.length,
+      restoredReminderCount: this.data.reminders.length,
+      timestamp: backupTimestamp,
+      message: `Successfully restored ${this.data.people.length} contacts and ${this.data.transactions.length} transactions from cloud backup.`,
+      people: this.getPeople(),
+      transactions: this.getTransactions({}),
+      reminders: this.getReminders()
+    };
   }
 
   public resetToSampleData(): { success: boolean; message: string } {

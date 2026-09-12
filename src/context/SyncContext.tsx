@@ -8,6 +8,17 @@ import {
 } from '../types';
 import { api, localVault, subscribeSyncEvents } from '../lib/api';
 
+export interface CloudBackupInfo {
+  hasBackup: boolean;
+  timestamp?: string;
+  peopleCount: number;
+  txCount: number;
+  reminderCount: number;
+  totalGiven?: number;
+  totalReturned?: number;
+  provider: string;
+}
+
 interface SyncContextType {
   syncState: SyncStatus;
   lastSavedTime: Date | null;
@@ -16,10 +27,16 @@ interface SyncContextType {
   discrepancyDetails: DiscrepancyDetails | null;
   isIntegrityModalOpen: boolean;
   isReconciling: boolean;
+  backupStatus: CloudBackupInfo | null;
+  isBackingUp: boolean;
+  isRestoring: boolean;
   setIsIntegrityModalOpen: (open: boolean) => void;
   runIntegrityCheck: (promptIfDiscrepancy?: boolean) => Promise<DiscrepancyDetails | null>;
   resolveDiscrepancy: (action: 'merge' | 'push_local' | 'pull_remote') => Promise<boolean>;
   forceCloudSync: () => Promise<boolean>;
+  fetchBackupStatus: () => Promise<CloudBackupInfo | null>;
+  triggerCloudBackup: () => Promise<{ success: boolean; message: string }>;
+  restoreFromCloud: () => Promise<{ success: boolean; message: string }>;
 }
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -35,6 +52,9 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [discrepancyDetails, setDiscrepancyDetails] = useState<DiscrepancyDetails | null>(null);
   const [isIntegrityModalOpen, setIsIntegrityModalOpen] = useState<boolean>(false);
   const [isReconciling, setIsReconciling] = useState<boolean>(false);
+  const [backupStatus, setBackupStatus] = useState<CloudBackupInfo | null>(null);
+  const [isBackingUp, setIsBackingUp] = useState<boolean>(false);
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
 
   // Subscribe to real-time events triggered by API CRUD operations
   useEffect(() => {
@@ -209,6 +229,117 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Fetch Cloud Backup Status
+  const fetchBackupStatus = useCallback(async (): Promise<CloudBackupInfo | null> => {
+    try {
+      const status = await api.getCloudBackupStatus();
+      setBackupStatus(status);
+      return status;
+    } catch (err: any) {
+      console.warn('Failed to fetch backup status:', err.message);
+      return null;
+    }
+  }, []);
+
+  // Trigger Manual or Scheduled Cloud Backup
+  const triggerCloudBackup = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setIsBackingUp(true);
+    setSyncState('syncing');
+    setStatusMessage('Pushing backup to Cloud Firestore...');
+    try {
+      const res = await api.pushCloudBackup();
+      const updatedStatus: CloudBackupInfo = {
+        hasBackup: true,
+        timestamp: res.timestamp,
+        peopleCount: res.peopleCount,
+        txCount: res.txCount,
+        reminderCount: res.reminderCount,
+        totalGiven: res.totalGiven,
+        totalReturned: res.totalReturned,
+        provider: 'Google Cloud Firestore'
+      };
+      setBackupStatus(updatedStatus);
+      setSyncState('saved');
+      setLastSavedTime(new Date(res.timestamp));
+      setStatusMessage(`Cloud backup secured (${res.peopleCount} members, ${res.txCount} transactions)`);
+      return {
+        success: true,
+        message: `Successfully created cloud backup with ${res.peopleCount} members and ${res.txCount} transactions.`
+      };
+    } catch (err: any) {
+      console.error('Cloud backup failed:', err);
+      setSyncState('error');
+      setStatusMessage(`Backup error: ${err.message}`);
+      return {
+        success: false,
+        message: err.message || 'Failed to complete cloud backup.'
+      };
+    } finally {
+      setIsBackingUp(false);
+    }
+  }, []);
+
+  // Restore from Cloud Backup
+  const restoreFromCloud = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setIsRestoring(true);
+    setSyncState('syncing');
+    setStatusMessage('Restoring records from Cloud Firestore...');
+    try {
+      const res = await api.restoreFromCloudBackup();
+      setSyncState('saved');
+      setLastSavedTime(new Date());
+      setStatusMessage(`Restored: ${res.restoredPeopleCount} contacts & ${res.restoredTxCount} transactions!`);
+      // Update backup status after restore
+      await fetchBackupStatus();
+      return {
+        success: true,
+        message: `Successfully restored ${res.restoredPeopleCount} contacts and ${res.restoredTxCount} transactions from cloud backup!`
+      };
+    } catch (err: any) {
+      console.error('Cloud restore failed:', err);
+      setSyncState('error');
+      setStatusMessage(`Restore error: ${err.message}`);
+      return {
+        success: false,
+        message: err.message || 'Failed to restore from cloud.'
+      };
+    } finally {
+      setIsRestoring(false);
+    }
+  }, [fetchBackupStatus]);
+
+  // Automated Periodic Backup Routine
+  useEffect(() => {
+    // Initial fetch of backup status
+    fetchBackupStatus();
+
+    // Automated periodic background backup push (every 5 minutes)
+    const backupInterval = setInterval(() => {
+      // Only run if not currently syncing or reconciling
+      if (!isReconciling && !isBackingUp && !isRestoring) {
+        api.pushCloudBackup()
+          .then((res) => {
+            setBackupStatus({
+              hasBackup: true,
+              timestamp: res.timestamp,
+              peopleCount: res.peopleCount,
+              txCount: res.txCount,
+              reminderCount: res.reminderCount,
+              totalGiven: res.totalGiven,
+              totalReturned: res.totalReturned,
+              provider: 'Google Cloud Firestore'
+            });
+            setLastSavedTime(new Date(res.timestamp));
+          })
+          .catch((e) => {
+            console.warn('Background automated backup warning:', e.message);
+          });
+      }
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(backupInterval);
+  }, [fetchBackupStatus, isReconciling, isBackingUp, isRestoring]);
+
   return (
     <SyncContext.Provider
       value={{
@@ -219,10 +350,16 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         discrepancyDetails,
         isIntegrityModalOpen,
         isReconciling,
+        backupStatus,
+        isBackingUp,
+        isRestoring,
         setIsIntegrityModalOpen,
         runIntegrityCheck,
         resolveDiscrepancy,
-        forceCloudSync
+        forceCloudSync,
+        fetchBackupStatus,
+        triggerCloudBackup,
+        restoreFromCloud
       }}
     >
       {children}

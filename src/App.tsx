@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { SyncProvider, useSync } from './context/SyncContext';
+import { BiometricAuthProvider, useBiometricAuth } from './context/BiometricAuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PeoplePage } from './pages/PeoplePage';
@@ -21,16 +22,21 @@ import { ReminderModal } from './components/ReminderModal';
 import { AiFinancialChatDrawer } from './components/AiFinancialChatDrawer';
 import { AppWalkthroughModal } from './components/onboarding/AppWalkthroughModal';
 import { LogoutAnimationModal } from './components/auth/LogoutAnimationModal';
+import { BiometricLockScreen } from './components/auth/BiometricLockScreen';
 import { DataIntegrityModal } from './components/DataIntegrityModal';
+import { DeviceFrameSimulator, DeviceMode } from './components/mobile/DeviceFrameSimulator';
+import { OfflineIndicator } from './components/mobile/OfflineIndicator';
 import { Person, Transaction, TransactionType } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, Sparkles, Bot } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isLoading, logout } = useAuth();
+  const { isLocked } = useBiometricAuth();
   const { runIntegrityCheck } = useSync();
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>('responsive');
 
   // App Walkthrough state (opens on first launch or when clicked)
   const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(() => {
@@ -138,169 +144,188 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-blue-500 selection:text-white relative">
-      {/* Top Navigation */}
-      <Navbar
-        onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
-        onNavigateTab={tab => {
-          setSelectedPersonId(null);
-          setCurrentTab(tab);
-        }}
-        currentTab={currentTab}
-        onOpenWalkthrough={() => setIsWalkthroughOpen(true)}
-        onLogoutRequest={() => setIsLoggingOut(true)}
-      />
+    <DeviceFrameSimulator
+      deviceMode={deviceMode}
+      onChangeDeviceMode={setDeviceMode}
+    >
+      <div className="min-h-screen flex flex-col selection:bg-blue-500 selection:text-white relative">
+        {/* Top Navigation */}
+        <Navbar
+          onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
+          onNavigateTab={tab => {
+            setSelectedPersonId(null);
+            setCurrentTab(tab);
+          }}
+          currentTab={currentTab}
+          onOpenWalkthrough={() => setIsWalkthroughOpen(true)}
+          onLogoutRequest={() => setIsLoggingOut(true)}
+          currentDeviceMode={deviceMode}
+          onSelectDeviceMode={setDeviceMode}
+        />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTab + (selectedPersonId || '') + refreshKey}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-          >
-            {currentTab === 'dashboard' && (
-              <DashboardPage
-                onNavigateToPeople={() => setCurrentTab('people')}
-                onNavigateToTransactions={() => setCurrentTab('transactions')}
-                onOpenGiveModal={handleOpenGiveModal}
-                onOpenReturnModal={handleOpenReturnModal}
-                onOpenAddPersonModal={() => handleOpenAddPerson()}
-                onOpenReminderModal={handleOpenReminder}
-                onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
-              />
-            )}
+        {/* Main Content Area */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTab + (selectedPersonId || '') + refreshKey}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {currentTab === 'dashboard' && (
+                <DashboardPage
+                  onNavigateToPeople={() => setCurrentTab('people')}
+                  onNavigateToTransactions={() => setCurrentTab('transactions')}
+                  onOpenGiveModal={handleOpenGiveModal}
+                  onOpenReturnModal={handleOpenReturnModal}
+                  onOpenAddPersonModal={() => handleOpenAddPerson()}
+                  onOpenReminderModal={handleOpenReminder}
+                  onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
+                />
+              )}
 
-            {currentTab === 'people' && (
-              <PeoplePage
-                selectedPersonId={selectedPersonId}
-                onClearSelectedPerson={() => setSelectedPersonId(null)}
-                onOpenGiveModal={handleOpenGiveModal}
-                onOpenReturnModal={handleOpenReturnModal}
-                onOpenAddPersonModal={handleOpenAddPerson}
-                onOpenReminderModal={handleOpenReminder}
-                onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
-              />
-            )}
+              {currentTab === 'people' && (
+                <PeoplePage
+                  selectedPersonId={selectedPersonId}
+                  onClearSelectedPerson={() => setSelectedPersonId(null)}
+                  onOpenGiveModal={handleOpenGiveModal}
+                  onOpenReturnModal={handleOpenReturnModal}
+                  onOpenAddPersonModal={handleOpenAddPerson}
+                  onOpenReminderModal={handleOpenReminder}
+                  onOpenAiDrawer={() => setIsAiDrawerOpen(true)}
+                />
+              )}
 
-            {currentTab === 'transactions' && (
-              <TransactionsPage
-                onOpenGiveModal={() => handleOpenGiveModal()}
-                onOpenReturnModal={() => handleOpenReturnModal()}
-                onEditTransaction={handleEditTransaction}
-              />
-            )}
+              {currentTab === 'transactions' && (
+                <TransactionsPage
+                  onOpenGiveModal={() => handleOpenGiveModal()}
+                  onOpenReturnModal={() => handleOpenReturnModal()}
+                  onEditTransaction={handleEditTransaction}
+                />
+              )}
 
-            {currentTab === 'monthly' && <MonthlySummaryPage />}
+              {currentTab === 'monthly' && <MonthlySummaryPage />}
 
-            {currentTab === 'yearly' && <YearlySummaryPage />}
+              {currentTab === 'yearly' && <YearlySummaryPage />}
 
-            {currentTab === 'reports' && <ReportsPage />}
+              {currentTab === 'reports' && <ReportsPage />}
 
-            {currentTab === 'reminders' && (
-              <RemindersPage onOpenReminderModal={() => handleOpenReminder()} />
-            )}
+              {currentTab === 'reminders' && (
+                <RemindersPage onOpenReminderModal={() => handleOpenReminder()} />
+              )}
 
-            {currentTab === 'settings' && (
-              <SettingsPage onOpenWalkthrough={() => setIsWalkthroughOpen(true)} />
-            )}
-          </motion.div>
+              {currentTab === 'settings' && (
+                <SettingsPage
+                  onOpenWalkthrough={() => setIsWalkthroughOpen(true)}
+                  currentDeviceMode={deviceMode}
+                  onSelectDeviceMode={setDeviceMode}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        {/* Floating AI Agent Trigger Button (Right Side) */}
+        <motion.button
+          whileHover={{ scale: 1.06, y: -2 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsAiDrawerOpen(true)}
+          className="fixed bottom-24 right-4 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 text-white font-semibold text-xs shadow-xl shadow-blue-500/25 cursor-pointer border border-white/20 backdrop-blur-md"
+          title="Open FinancialFree AI Agent"
+        >
+          <Sparkles size={16} className="animate-spin-slow" />
+          <span className="hidden sm:inline">AI Agent Copilot</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </motion.button>
+
+        {/* Floating Bottom Navigation Bar */}
+        <BottomNavigation
+          currentTab={currentTab}
+          onSelectTab={tab => {
+            setSelectedPersonId(null);
+            setCurrentTab(tab);
+          }}
+          onOpenGiveModal={() => handleOpenGiveModal()}
+          onOpenReturnModal={() => handleOpenReturnModal()}
+          onOpenAddPersonModal={() => handleOpenAddPerson()}
+        />
+
+        {/* Global Transaction Modal */}
+        <AddTransactionModal
+          isOpen={isTxModalOpen}
+          onClose={() => {
+            setIsTxModalOpen(false);
+            setEditTx(null);
+          }}
+          onSuccess={() => setRefreshKey(k => k + 1)}
+          initialType={txModalType}
+          initialPersonId={txModalPersonId}
+          editTransaction={editTx}
+        />
+
+        {/* Global Person Modal */}
+        <AddPersonModal
+          isOpen={isPersonModalOpen}
+          onClose={() => {
+            setIsPersonModalOpen(false);
+            setEditPerson(null);
+          }}
+          onSuccess={() => setRefreshKey(k => k + 1)}
+          editPerson={editPerson}
+        />
+
+        {/* Global Reminder Modal */}
+        <ReminderModal
+          isOpen={isReminderModalOpen}
+          onClose={() => {
+            setIsReminderModalOpen(false);
+            setReminderPersonId(undefined);
+          }}
+          onSuccess={() => setRefreshKey(k => k + 1)}
+          initialPersonId={reminderPersonId}
+        />
+
+        {/* Global AI Chat Drawer */}
+        <AiFinancialChatDrawer
+          isOpen={isAiDrawerOpen}
+          onClose={() => setIsAiDrawerOpen(false)}
+        />
+
+        {/* 3-Page Walkthrough Tour Modal (with Page-Turn Animations & Feature Highlights) */}
+        <AppWalkthroughModal
+          isOpen={isWalkthroughOpen}
+          onClose={() => {
+            setIsWalkthroughOpen(false);
+            localStorage.setItem('financialfree_walkthrough_seen', 'true');
+          }}
+          onProceedToLogin={() => {
+            setIsWalkthroughOpen(false);
+            localStorage.setItem('financialfree_walkthrough_seen', 'true');
+          }}
+        />
+
+        {/* Data Integrity & Cloud Reconciliation Modal */}
+        <DataIntegrityModal />
+
+        {/* Logout Animation Transition Modal */}
+        <LogoutAnimationModal
+          isOpen={isLoggingOut}
+          onFinished={() => {
+            setIsLoggingOut(false);
+            logout();
+          }}
+        />
+
+        {/* Real-Time Connectivity Offline/Online Notification */}
+        <OfflineIndicator />
+
+        {/* Biometric (WebAuthn) & Quick PIN Vault Lock Screen */}
+        <AnimatePresence>
+          {isLocked && <BiometricLockScreen />}
         </AnimatePresence>
-      </main>
-
-      {/* Floating AI Agent Trigger Button (Right Side) */}
-      <motion.button
-        whileHover={{ scale: 1.06, y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsAiDrawerOpen(true)}
-        className="fixed bottom-24 right-4 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 text-white font-semibold text-xs shadow-xl shadow-blue-500/25 cursor-pointer border border-white/20 backdrop-blur-md"
-        title="Open FinancialFree AI Agent"
-      >
-        <Sparkles size={16} className="animate-spin-slow" />
-        <span className="hidden sm:inline">AI Agent Copilot</span>
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      </motion.button>
-
-      {/* Floating Bottom Navigation Bar */}
-      <BottomNavigation
-        currentTab={currentTab}
-        onSelectTab={tab => {
-          setSelectedPersonId(null);
-          setCurrentTab(tab);
-        }}
-        onOpenGiveModal={() => handleOpenGiveModal()}
-        onOpenReturnModal={() => handleOpenReturnModal()}
-        onOpenAddPersonModal={() => handleOpenAddPerson()}
-      />
-
-      {/* Global Transaction Modal */}
-      <AddTransactionModal
-        isOpen={isTxModalOpen}
-        onClose={() => {
-          setIsTxModalOpen(false);
-          setEditTx(null);
-        }}
-        onSuccess={() => setRefreshKey(k => k + 1)}
-        initialType={txModalType}
-        initialPersonId={txModalPersonId}
-        editTransaction={editTx}
-      />
-
-      {/* Global Person Modal */}
-      <AddPersonModal
-        isOpen={isPersonModalOpen}
-        onClose={() => {
-          setIsPersonModalOpen(false);
-          setEditPerson(null);
-        }}
-        onSuccess={() => setRefreshKey(k => k + 1)}
-        editPerson={editPerson}
-      />
-
-      {/* Global Reminder Modal */}
-      <ReminderModal
-        isOpen={isReminderModalOpen}
-        onClose={() => {
-          setIsReminderModalOpen(false);
-          setReminderPersonId(undefined);
-        }}
-        onSuccess={() => setRefreshKey(k => k + 1)}
-        initialPersonId={reminderPersonId}
-      />
-
-      {/* Global AI Chat Drawer */}
-      <AiFinancialChatDrawer
-        isOpen={isAiDrawerOpen}
-        onClose={() => setIsAiDrawerOpen(false)}
-      />
-
-      {/* 3-Page Walkthrough Tour Modal (with Page-Turn Animations & Feature Highlights) */}
-      <AppWalkthroughModal
-        isOpen={isWalkthroughOpen}
-        onClose={() => {
-          setIsWalkthroughOpen(false);
-          localStorage.setItem('financialfree_walkthrough_seen', 'true');
-        }}
-        onProceedToLogin={() => {
-          setIsWalkthroughOpen(false);
-          localStorage.setItem('financialfree_walkthrough_seen', 'true');
-        }}
-      />
-
-      {/* Data Integrity & Cloud Reconciliation Modal */}
-      <DataIntegrityModal />
-
-      {/* Logout Animation Transition Modal */}
-      <LogoutAnimationModal
-        isOpen={isLoggingOut}
-        onFinished={() => {
-          setIsLoggingOut(false);
-          logout();
-        }}
-      />
-    </div>
+      </div>
+    </DeviceFrameSimulator>
   );
 };
 
@@ -311,7 +336,9 @@ export function App() {
         <AuthProvider>
           <SyncProvider>
             <CurrencyProvider>
-              <MainApp />
+              <BiometricAuthProvider>
+                <MainApp />
+              </BiometricAuthProvider>
             </CurrencyProvider>
           </SyncProvider>
         </AuthProvider>

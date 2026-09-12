@@ -21,6 +21,7 @@ const VAULT_PEOPLE_KEY = 'financialfree_vault_people';
 const VAULT_TXS_KEY = 'financialfree_vault_txs';
 const VAULT_REMINDERS_KEY = 'financialfree_vault_reminders';
 const LAST_SYNC_KEY = 'financialfree_last_sync_timestamp';
+export const FF_PEOPLE_DIRECTORY_KEY = 'ff_people_directory';
 
 function getLocalCache<T>(key: string): T | null {
   try {
@@ -43,11 +44,65 @@ function setLocalCache<T>(key: string, data: T) {
 // The browser vault prevents any data loss from server restarts or temporary connectivity issues
 export const localVault = {
   getPeople(): Person[] {
-    return getLocalCache<Person[]>(VAULT_PEOPLE_KEY) || getLocalCache<Person[]>(CACHE_PEOPLE_KEY) || [];
+    const vault = getLocalCache<Person[]>(VAULT_PEOPLE_KEY);
+    const cached = getLocalCache<Person[]>(CACHE_PEOPLE_KEY);
+    let list: Person[] = vault || cached || [];
+
+    // Also ingest from legacy or standalone ff_people_directory if present
+    const directory = getLocalCache<any[]>(FF_PEOPLE_DIRECTORY_KEY);
+    if (Array.isArray(directory) && directory.length > 0) {
+      let changed = false;
+      for (const item of directory) {
+        const name = item.name || item.full_name;
+        if (!name) continue;
+        const exists = list.some(p => p.id === item.id || p.full_name.toLowerCase() === name.toLowerCase());
+        if (!exists) {
+          const amt = Number(item.amount || item.total_given || 0);
+          list.push({
+            id: item.id || `p_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            user_id: item.user_id || 'usr_master_admin_01',
+            full_name: name,
+            phone: item.phone || '',
+            address: item.city || item.address || '',
+            category: item.category || 'General',
+            status: item.status || 'Pending',
+            total_given: amt,
+            total_returned: item.total_returned || 0,
+            remaining_balance: item.remaining_balance !== undefined ? item.remaining_balance : amt,
+            transaction_count: item.transaction_count || (amt > 0 ? 1 : 0),
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString(),
+          });
+          changed = true;
+        }
+      }
+      if (changed && list.length > 0) {
+        setLocalCache(VAULT_PEOPLE_KEY, list);
+        setLocalCache(CACHE_PEOPLE_KEY, list);
+      }
+    }
+
+    return list;
   },
   savePeople(people: Person[]) {
     setLocalCache(VAULT_PEOPLE_KEY, people);
     setLocalCache(CACHE_PEOPLE_KEY, people);
+
+    // Keep ff_people_directory in perfect sync
+    try {
+      const dirFormat = people.map(p => ({
+        id: p.id,
+        name: p.full_name,
+        category: p.category || 'General',
+        status: p.status || 'Pending',
+        amount: p.total_given || p.remaining_balance || 0,
+        phone: p.phone || '',
+        city: p.address || ''
+      }));
+      localStorage.setItem(FF_PEOPLE_DIRECTORY_KEY, JSON.stringify(dirFormat));
+    } catch {
+      // ignore
+    }
   },
   savePerson(person: Person) {
     const list = this.getPeople();
@@ -517,6 +572,75 @@ export const api = {
   // Backup & Export
   exportBackup: () =>
     request<BackupData>('/api/backup/export'),
+
+  getCloudBackupStatus: () =>
+    request<{
+      hasBackup: boolean;
+      timestamp?: string;
+      peopleCount: number;
+      txCount: number;
+      reminderCount: number;
+      totalGiven?: number;
+      totalReturned?: number;
+      provider: string;
+    }>('/api/backup/cloud-status'),
+
+  pushCloudBackup: async () => {
+    notifySync({ type: 'start', operation: 'Creating automated cloud backup in Firestore...' });
+    try {
+      const res = await request<{
+        success: boolean;
+        timestamp: string;
+        peopleCount: number;
+        txCount: number;
+        reminderCount: number;
+        totalGiven: number;
+        totalReturned: number;
+      }>('/api/backup/cloud-push', { method: 'POST' });
+      localVault.setLastSync(res.timestamp);
+      notifySync({
+        type: 'success',
+        operation: `Cloud backup created (${res.peopleCount} members, ${res.txCount} transactions)`,
+        timestamp: new Date(res.timestamp)
+      });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Cloud backup', error: err.message });
+      throw err;
+    }
+  },
+
+  restoreFromCloudBackup: async () => {
+    notifySync({ type: 'start', operation: 'Restoring records from Firestore cloud backup...' });
+    try {
+      const res = await request<{
+        success: boolean;
+        restoredPeopleCount: number;
+        restoredTxCount: number;
+        restoredReminderCount: number;
+        timestamp: string;
+        message: string;
+        people: Person[];
+        transactions: Transaction[];
+        reminders: Reminder[];
+      }>('/api/backup/cloud-restore', { method: 'POST' });
+
+      if (res.people) localVault.savePeople(res.people);
+      if (res.transactions) localVault.saveTransactions(res.transactions);
+      if (res.reminders) localVault.saveReminders(res.reminders);
+      localVault.setLastSync(new Date().toISOString());
+
+      notifySync({
+        type: 'success',
+        operation: `Restored ${res.restoredPeopleCount} members & ${res.restoredTxCount} transactions from cloud`,
+        timestamp: new Date()
+      });
+      return res;
+    } catch (err: any) {
+      notifySync({ type: 'error', operation: 'Restore from cloud', error: err.message });
+      throw err;
+    }
+  },
 
   importBackup: async (backup: BackupData) => {
     notifySync({ type: 'start', operation: 'Importing backup & synchronizing cloud...' });

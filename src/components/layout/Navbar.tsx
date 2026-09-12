@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSync } from '../../context/SyncContext';
-import { Sparkles, Sun, Moon, Laptop, LogOut, Key, ShieldCheck, Wallet, Settings, Bell, Compass, RefreshCw, CheckCircle2, AlertTriangle, Cloud } from 'lucide-react';
+import { useBiometricAuth } from '../../context/BiometricAuthContext';
+import { Sparkles, Sun, Moon, Laptop, LogOut, Key, ShieldCheck, Wallet, Settings, Bell, Compass, RefreshCw, CheckCircle2, AlertTriangle, Cloud, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LiquidModal } from '../ui/LiquidModal';
 import { LiquidButton } from '../ui/LiquidButton';
 import { TabType } from './BottomNavigation';
 import { AppLogo } from '../common/AppLogo';
+import { CloudSyncIndicator } from './CloudSyncIndicator';
+import { PWAInstallButton } from '../mobile/PWAInstallButton';
 
 interface NavbarProps {
   onOpenAiDrawer: () => void;
@@ -15,6 +18,8 @@ interface NavbarProps {
   currentTab?: TabType;
   onOpenWalkthrough?: () => void;
   onLogoutRequest?: () => void;
+  currentDeviceMode?: 'responsive' | 'iphone' | 'android' | 'tablet';
+  onSelectDeviceMode?: (mode: 'responsive' | 'iphone' | 'android' | 'tablet') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,11 +27,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateTab,
   currentTab,
   onOpenWalkthrough,
-  onLogoutRequest
+  onLogoutRequest,
+  currentDeviceMode = 'responsive',
+  onSelectDeviceMode
 }) => {
   const { user, logout, changePassword } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { syncState, lastSavedTime, statusMessage, discrepancyDetails, setIsIntegrityModalOpen } = useSync();
+  const { lockApp, settings } = useBiometricAuth();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -148,6 +156,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Mobile App & Icon Guide Shortcut */}
+          <PWAInstallButton
+            onSelectDeviceMode={onSelectDeviceMode}
+            currentDeviceMode={currentDeviceMode}
+          />
+
+          {/* Visual Cloud Sync Status Indicator (synced = green, syncing = blue, offline = amber) */}
+          <CloudSyncIndicator onNavigateTab={onNavigateTab} />
+
           {/* Quick 3-Step Walkthrough Tour Shortcut */}
           {onOpenWalkthrough && (
             <button
@@ -214,6 +231,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Account / Security */}
           <div className="flex items-center gap-0.5 sm:gap-1">
+            {/* Quick Lock Vault Button */}
+            {settings.enabled && (settings.pinHash || settings.credentialId) && (
+              <button
+                onClick={lockApp}
+                className="p-1.5 sm:p-2 rounded-2xl hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 cursor-pointer transition-colors"
+                title="Lock Vault Now (Face ID / Fingerprint / PIN)"
+              >
+                <Lock size={16} />
+              </button>
+            )}
+
             <button
               onClick={() => setShowPasswordModal(true)}
               className="p-1.5 sm:p-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"

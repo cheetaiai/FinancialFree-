@@ -11,9 +11,12 @@ import {
   MoreHorizontal,
   CalendarRange,
   Sparkles,
-  ChevronUp
+  ChevronUp,
+  Lock,
+  Fingerprint
 } from 'lucide-react';
 import { QuickAddRadialMenu } from '../ui/QuickAddRadialMenu';
+import { useBiometricAuth } from '../../context/BiometricAuthContext';
 
 export type TabType =
   | 'dashboard'
@@ -40,6 +43,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   onOpenReturnModal,
   onOpenAddPersonModal
 }) => {
+  const { lockApp, settings } = useBiometricAuth();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -283,6 +287,28 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                       </button>
                     );
                   })}
+
+                  {/* Lock Vault button if security is armed */}
+                  {settings.enabled && (settings.pinHash || settings.credentialId) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        lockApp();
+                      }}
+                      className="w-full mt-1 flex items-center gap-3 p-2.5 rounded-2xl text-left bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold transition-all cursor-pointer border border-emerald-500/20"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                        <Lock size={15} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold truncate">Lock Vault Now</div>
+                        <div className="text-[10px] text-emerald-500/80 truncate">
+                          Face ID / Fingerprint / PIN
+                        </div>
+                      </div>
+                    </button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

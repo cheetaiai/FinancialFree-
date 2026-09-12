@@ -22,7 +22,12 @@ import {
   AlertTriangle,
   Globe2,
   DollarSign,
-  UserX
+  UserX,
+  CloudDownload,
+  CloudUpload,
+  Smartphone,
+  Tablet,
+  Monitor
 } from 'lucide-react';
 import { LiquidGlassCard } from '../components/ui/LiquidGlassCard';
 import { LiquidButton } from '../components/ui/LiquidButton';
@@ -31,19 +36,39 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { useSync } from '../context/SyncContext';
+import { usePWAInstall } from '../lib/usePWAInstall';
+import { MobileAppShowcaseModal } from '../components/mobile/MobileAppShowcaseModal';
+import { BiometricSecuritySection } from '../components/settings/BiometricSecuritySection';
 import { BackupData } from '../types';
 import { Compass, Sparkles } from 'lucide-react';
 
 interface SettingsPageProps {
   onOpenWalkthrough?: () => void;
+  currentDeviceMode?: 'responsive' | 'iphone' | 'android' | 'tablet';
+  onSelectDeviceMode?: (mode: 'responsive' | 'iphone' | 'android' | 'tablet') => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({
+  onOpenWalkthrough,
+  currentDeviceMode = 'responsive',
+  onSelectDeviceMode
+}) => {
+  const { isInstallable, isInstalled, install } = usePWAInstall();
+  const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
   const { user, changePassword } = useAuth();
   const { theme, setTheme } = useTheme();
   const { currency, setCurrency, formatAmount, currencyConfig, currencies } = useCurrency();
   const { showToast } = useToast();
-  const { runIntegrityCheck, setIsIntegrityModalOpen } = useSync();
+  const {
+    runIntegrityCheck,
+    setIsIntegrityModalOpen,
+    backupStatus,
+    isBackingUp,
+    isRestoring,
+    triggerCloudBackup,
+    restoreFromCloud,
+    fetchBackupStatus
+  } = useSync();
 
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -54,6 +79,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearingPeople, setIsClearingPeople] = useState(false);
   const [isClearPeopleModalOpen, setIsClearPeopleModalOpen] = useState(false);
+  const [isConfirmRestoreOpen, setIsConfirmRestoreOpen] = useState(false);
 
   const [dbStatus, setDbStatus] = useState<{
     status: string;
@@ -102,6 +128,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
       showToast(err.message || 'Failed to clear records from database', 'error');
     } finally {
       setIsClearingPeople(false);
+    }
+  };
+
+  const handleManualCloudBackup = async () => {
+    const result = await triggerCloudBackup();
+    if (result.success) {
+      showToast(result.message, 'success');
+      await fetchDbStatus();
+    } else {
+      showToast(result.message, 'error');
+    }
+  };
+
+  const handleConfirmRestore = async () => {
+    setIsConfirmRestoreOpen(false);
+    const result = await restoreFromCloud();
+    if (result.success) {
+      showToast(result.message, 'success');
+      await fetchDbStatus();
+    } else {
+      showToast(result.message, 'error');
     }
   };
 
@@ -335,6 +382,261 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
         </div>
       </LiquidGlassCard>
 
+      {/* Automated Cloud Backup & Manual Restore Routine Card */}
+      <LiquidGlassCard variant="primary" className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+              <CloudUpload size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Automated Cloud Backup & Manual Restore
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                  Routine Active (Every 5m + On Save)
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Continuous background routine pushes snapshots to Google Cloud Firestore (<span className="font-mono text-[11px]">backups/latest_backup</span>).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <LiquidButton
+              variant="secondary"
+              size="sm"
+              onClick={handleManualCloudBackup}
+              isLoading={isBackingUp}
+              icon={<CloudUpload size={14} className="text-blue-500" />}
+            >
+              {isBackingUp ? 'Pushing Snapshot...' : 'Backup to Cloud Now'}
+            </LiquidButton>
+
+            <LiquidButton
+              variant="primary"
+              size="sm"
+              onClick={() => setIsConfirmRestoreOpen(true)}
+              isLoading={isRestoring}
+              icon={<CloudDownload size={14} />}
+            >
+              {isRestoring ? 'Restoring Records...' : 'Restore from Cloud'}
+            </LiquidButton>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+          <div className="p-3 rounded-xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10">
+            <div className="text-[11px] text-slate-400 font-medium">Last Cloud Backup</div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5" title={backupStatus?.timestamp}>
+              {backupStatus?.timestamp ? new Date(backupStatus.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', month: 'short', day: 'numeric' }) : 'Ready'}
+            </div>
+          </div>
+          <div className="p-3 rounded-xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10">
+            <div className="text-[11px] text-slate-400 font-medium">Snapshot Members</div>
+            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+              {backupStatus?.peopleCount !== undefined ? `${backupStatus.peopleCount} Contacts` : `${dbStatus?.peopleCount || 0} Contacts`}
+            </div>
+          </div>
+          <div className="p-3 rounded-xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10">
+            <div className="text-[11px] text-slate-400 font-medium">Snapshot Transactions</div>
+            <div className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+              {backupStatus?.txCount !== undefined ? `${backupStatus.txCount} Records` : `${dbStatus?.txCount || 0} Records`}
+            </div>
+          </div>
+          <div className="p-3 rounded-xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10">
+            <div className="text-[11px] text-slate-400 font-medium">Storage Target</div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+              {backupStatus?.provider || 'Google Cloud Firestore'}
+            </div>
+          </div>
+        </div>
+      </LiquidGlassCard>
+
+      {/* Mobile App (Android, iPhone & Tablet) Card */}
+      <LiquidGlassCard variant="primary" className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 p-0.5 shadow-md flex items-center justify-center flex-shrink-0">
+              <img
+                src="/apple-touch-icon.png"
+                alt="FinancialFree Icon"
+                className="w-full h-full object-cover rounded-[14px]"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Mobile App (Android, iPhone & Tablet)
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  PWA Ready
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Install as a native home-screen app with custom high-resolution icons for Android, iOS Safari, and Tablets.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <LiquidButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsShowcaseModalOpen(true)}
+              icon={<Smartphone size={14} className="text-blue-500" />}
+            >
+              Inspect Icons & Guide
+            </LiquidButton>
+
+            {isInstalled ? (
+              <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                <CheckCircle2 size={14} />
+                <span>Installed on Device</span>
+              </span>
+            ) : (
+              <LiquidButton
+                variant="primary"
+                size="sm"
+                onClick={() => install()}
+                icon={<Download size={14} />}
+              >
+                Install App
+              </LiquidButton>
+            )}
+          </div>
+        </div>
+
+        {/* Live Icons Preview Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          {/* Android Icon Preview */}
+          <div className="p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full overflow-hidden p-0.5 bg-slate-900 shadow-md border border-emerald-500/30 flex-shrink-0">
+              <img
+                src="/pwa-maskable-512x512.png"
+                alt="Android Maskable Icon"
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                <span>Android Icon</span>
+                <span className="text-[10px] text-emerald-500 font-mono">192/512px</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                Adaptive maskable safe-zone for Pixel & Galaxy
+              </p>
+            </div>
+          </div>
+
+          {/* iOS / iPhone Icon Preview */}
+          <div className="p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-[22%] overflow-hidden shadow-md border border-white/20 flex-shrink-0">
+              <img
+                src="/apple-touch-icon.png"
+                alt="Apple Touch Icon"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                <span>iPhone Icon</span>
+                <span className="text-[10px] text-blue-500 font-mono">180px PNG</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                Apple Touch Icon for iOS Springboard
+              </p>
+            </div>
+          </div>
+
+          {/* iPad / Tablet Icon Preview */}
+          <div className="p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md border border-purple-500/30 flex-shrink-0">
+              <img
+                src="/pwa-512x512.png"
+                alt="Tablet High-Res Icon"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                <span>Tablet / iPad</span>
+                <span className="text-[10px] text-purple-500 font-mono">512px HD</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                High-DPI splash and store resolution
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Live In-Browser Device Frame Simulator Controls */}
+        {onSelectDeviceMode && (
+          <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <Sparkles size={14} className="text-blue-500" />
+              <span>Simulate hardware on screen:</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => onSelectDeviceMode('iphone')}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  currentDeviceMode === 'iphone'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Smartphone size={13} />
+                <span>iPhone 16 Pro</span>
+              </button>
+
+              <button
+                onClick={() => onSelectDeviceMode('android')}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  currentDeviceMode === 'android'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Smartphone size={13} />
+                <span>Android Pixel</span>
+              </button>
+
+              <button
+                onClick={() => onSelectDeviceMode('tablet')}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  currentDeviceMode === 'tablet'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Tablet size={13} />
+                <span>iPad / Tablet</span>
+              </button>
+
+              <button
+                onClick={() => onSelectDeviceMode('responsive')}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  currentDeviceMode === 'responsive'
+                    ? 'bg-slate-700 text-white'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Monitor size={13} />
+                <span>Full Screen</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </LiquidGlassCard>
+
+      {/* Biometric (WebAuthn) & Quick PIN Privacy Lock Section */}
+      <BiometricSecuritySection />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Account Details & Password Card */}
         <LiquidGlassCard variant="primary" className="space-y-6">
@@ -511,6 +813,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenWalkthrough })
         message="This will permanently delete all existing members/people and their associated transaction records from the Cloud Firestore database. You can then add new people fresh, and their information will be permanently saved to the database."
         confirmText="Remove All Members"
         isLoading={isClearingPeople}
+      />
+
+      {/* Confirmation Dialog for Restoring from Cloud Backup */}
+      <ConfirmDialog
+        isOpen={isConfirmRestoreOpen}
+        onClose={() => setIsConfirmRestoreOpen(false)}
+        onConfirm={handleConfirmRestore}
+        title="Restore Financial Records from Cloud Firestore?"
+        message={`This will pull the latest verified backup snapshot from Google Cloud Firestore (${backupStatus?.timestamp ? new Date(backupStatus.timestamp).toLocaleString() : 'latest snapshot'}) and restore all ${backupStatus?.peopleCount !== undefined ? backupStatus.peopleCount : 'verified'} members and ${backupStatus?.txCount !== undefined ? backupStatus.txCount : 'all'} financial transactions into your local database and browser vault.`}
+        confirmText="Yes, Restore from Cloud"
+        isDestructive={false}
+        isLoading={isRestoring}
+      />
+      {/* Mobile App & Icons Showcase Modal */}
+      <MobileAppShowcaseModal
+        isOpen={isShowcaseModalOpen}
+        onClose={() => setIsShowcaseModalOpen(false)}
+        currentDeviceMode={currentDeviceMode}
+        onSelectDeviceMode={onSelectDeviceMode}
       />
     </div>
   );
