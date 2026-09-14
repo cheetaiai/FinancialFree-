@@ -28,8 +28,20 @@ export const DeviceFrameSimulator: React.FC<DeviceFrameSimulatorProps> = ({
 }) => {
   const [showHomeScreenPreview, setShowHomeScreenPreview] = useState(false);
   const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  });
 
-  if (deviceMode === 'responsive') {
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // On real mobile screens or responsive mode, display the native UI without hardware bezels
+  if (deviceMode === 'responsive' || isMobileScreen) {
     return <>{children}</>;
   }
 

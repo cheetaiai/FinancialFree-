@@ -67,9 +67,22 @@ export const RemindersPage: React.FC<RemindersPageProps> = ({ onOpenReminderModa
     }
   };
 
-  const handleWhatsApp = (reminder: Reminder) => {
+  const handleWhatsApp = async (reminder: Reminder) => {
     const text = reminder.note || `Hi ${reminder.person_name}, gentle reminder regarding the outstanding balance of ${formatINR(reminder.pending_amount)}. Thank you!`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      }
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const newWin = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!newWin) {
+        showToast('Reminder text copied to clipboard! Paste it into WhatsApp.', 'success');
+      } else {
+        showToast('Opening WhatsApp & message copied to clipboard!', 'success');
+      }
+    } catch {
+      showToast('Reminder text ready for WhatsApp.', 'info');
+    }
   };
 
   const filteredReminders = reminders.filter(r => {

@@ -8,9 +8,11 @@ import { LiquidSegmentedControl } from './ui/LiquidSegmentedControl';
 import { Person, Transaction, TransactionType, PaymentMethod, AiTransactionSuggestion } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
-import { formatINR, getFinancialYearFromDate } from '../lib/formatters';
-import { ArrowUpRight, ArrowDownLeft, AlertCircle, Sparkles, Camera, Image as ImageIcon, X, CheckCircle2, UserPlus, RefreshCw, Wand2, Tag, Check, Video } from 'lucide-react';
+import { formatINR, getFinancialYearFromDate, formatTransactionRef } from '../lib/formatters';
+import { ArrowUpRight, ArrowDownLeft, AlertCircle, Sparkles, Camera, Image as ImageIcon, X, CheckCircle2, UserPlus, RefreshCw, Wand2, Tag, Check, Video, Cpu, ShieldCheck } from 'lucide-react';
 import { CameraCaptureModal } from './camera/CameraCaptureModal';
+import { PaymentAnimationModal, PaymentAnimationData } from './ui/PaymentAnimationModal';
+import { PersonLedgerCard } from './ui/PersonLedgerCard';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -59,6 +61,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [detectedPersonName, setDetectedPersonName] = useState<string | null>(null);
   const [scanSummary, setScanSummary] = useState<string | null>(null);
+
+  // Advanced Payment Result Animation State (Success Tick / Error Cross)
+  const [paymentAnimation, setPaymentAnimation] = useState<PaymentAnimationData | null>(null);
+  const [isPaymentAnimOpen, setIsPaymentAnimOpen] = useState(false);
+  const savedTxRef = useRef<Transaction | null>(null);
 
   // Load people list
   useEffect(() => {
@@ -206,6 +213,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
+    showToast('Local Storage Access: Reading receipt image safely from device storage', 'info');
     const reader = new FileReader();
     reader.onload = async (event) => {
       const base64 = event.target?.result as string;
@@ -245,22 +253,58 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setErrorMessage('');
 
     if (!personId) {
-      setErrorMessage('Please select or add a person.');
+      const msg = 'Please select or add a person first.';
+      setErrorMessage(msg);
+      setPaymentAnimation({
+        status: 'failed',
+        type,
+        amount: numAmount || 0,
+        personName: 'No Contact Selected',
+        errorMessage: msg
+      });
+      setIsPaymentAnimOpen(true);
       return;
     }
 
     if (isNaN(numAmount) || numAmount <= 0) {
-      setErrorMessage('Please enter a valid amount greater than 0.');
+      const msg = 'Please enter a valid amount greater than 0.';
+      setErrorMessage(msg);
+      setPaymentAnimation({
+        status: 'failed',
+        type,
+        amount: 0,
+        personName: selectedPerson?.full_name || 'Contact',
+        errorMessage: msg
+      });
+      setIsPaymentAnimOpen(true);
       return;
     }
 
     if (type === 'returned' && !editTransaction && numAmount > currentPending) {
-      setErrorMessage(`This return amount (${formatINR(numAmount)}) is greater than the outstanding balance of ${formatINR(currentPending)}.`);
+      const msg = `This return amount (${formatINR(numAmount)}) is greater than the outstanding balance of ${formatINR(currentPending)}.`;
+      setErrorMessage(msg);
+      setPaymentAnimation({
+        status: 'failed',
+        type,
+        amount: numAmount,
+        personName: selectedPerson?.full_name || 'Contact',
+        errorMessage: msg
+      });
+      setIsPaymentAnimOpen(true);
       return;
     }
 
     if (!date) {
-      setErrorMessage('Please select a transaction date.');
+      const msg = 'Please select a transaction date.';
+      setErrorMessage(msg);
+      setPaymentAnimation({
+        status: 'failed',
+        type,
+        amount: numAmount,
+        personName: selectedPerson?.full_name || 'Contact',
+        errorMessage: msg
+      });
+      setIsPaymentAnimOpen(true);
       return;
     }
 
@@ -278,9 +322,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           notes: notes.trim(),
           receipt_image: receiptImage
         });
+        savedTxRef.current = updated;
         showToast('Transaction updated successfully.', 'success');
-        onSuccess(updated);
-        onClose();
+        setPaymentAnimation({
+          status: 'success',
+          type,
+          amount: numAmount,
+          personName: selectedPerson?.full_name || 'Contact',
+          transactionRef: formatTransactionRef(updated.id),
+          category: category.trim(),
+          notes: notes.trim()
+        });
+        setIsPaymentAnimOpen(true);
       } else {
         const created = await api.createTransaction({
           person_id: personId,
@@ -293,12 +346,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           notes: notes.trim(),
           ...(receiptImage ? { receipt_image: receiptImage } : {})
         });
+        savedTxRef.current = created;
 
         // Confetti celebration on full payoff
         if (type === 'returned' && numAmount === currentPending && currentPending > 0) {
           confetti({
-            particleCount: 80,
-            spread: 70,
+            particleCount: 90,
+            spread: 75,
             origin: { y: 0.6 }
           });
           showToast(`Outstanding balance for ${selectedPerson?.full_name} is now fully cleared! 🎉`, 'success');
@@ -309,13 +363,38 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           );
         }
 
-        onSuccess(created);
-        onClose();
+        setPaymentAnimation({
+          status: 'success',
+          type,
+          amount: numAmount,
+          personName: selectedPerson?.full_name || 'Contact',
+          transactionRef: formatTransactionRef(created.id),
+          category: category.trim(),
+          notes: notes.trim()
+        });
+        setIsPaymentAnimOpen(true);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Unable to save transaction. Please try again.');
+      const errText = err.message || 'Unable to save transaction. Please try again.';
+      setErrorMessage(errText);
+      setPaymentAnimation({
+        status: 'failed',
+        type,
+        amount: numAmount,
+        personName: selectedPerson?.full_name || 'Contact',
+        errorMessage: errText
+      });
+      setIsPaymentAnimOpen(true);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleClosePaymentAnim = () => {
+    setIsPaymentAnimOpen(false);
+    if (paymentAnimation?.status === 'success' && savedTxRef.current) {
+      onSuccess(savedTxRef.current);
+      onClose();
     }
   };
 
@@ -346,6 +425,35 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
         )}
 
+        {/* Liquid-Glass Transaction Number & Ledger Card Header */}
+        <div className="p-3 rounded-2xl liquid-glass-secondary border border-white/40 dark:border-white/10 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-6 rounded-md bg-gradient-to-tr from-amber-300 to-amber-500 flex items-center justify-center shadow-xs border border-amber-400/50">
+              <Cpu size={13} className="text-amber-950" />
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                Transaction Ref No
+              </div>
+              <div className="font-mono text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>{editTransaction ? formatTransactionRef(editTransaction.id) : 'TXN-AUTO-MINT'}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans font-semibold">
+                  Verified
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {selectedPerson && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-xs">
+              <span className="text-[10px] text-slate-400 uppercase font-bold">Contact:</span>
+              <span className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">
+                {selectedPerson.full_name}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* AI Receipt / Screenshot Scanner Dropzone */}
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-teal-500/10 border border-blue-500/20">
           <div className="flex items-center justify-between">
@@ -374,14 +482,17 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               onChange={handleReceiptImageUpload}
             />
 
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 disabled={isScanning}
-                onClick={() => setIsCameraModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                onClick={() => {
+                  showToast('Camera Access: Launching camera to scan payment receipt / slip / UPI QR', 'info');
+                  setIsCameraModalOpen(true);
+                }}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50 touch-target"
               >
-                <Camera size={14} />
+                <Camera size={15} />
                 <span>Live Camera</span>
               </button>
 
@@ -389,10 +500,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 type="button"
                 disabled={isScanning}
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50 touch-target"
               >
-                <ImageIcon size={14} />
-                <span>{receiptImage ? 'Re-upload' : 'Upload'}</span>
+                <ImageIcon size={15} />
+                <span>{receiptImage ? 'Re-upload' : 'Upload File'}</span>
               </button>
             </div>
           </div>
@@ -779,6 +890,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={(imgDataUrl) => processScannedBase64(imgDataUrl, 'image/jpeg')}
+      />
+
+      {/* Advanced Payment Animation Modal (Drawing Checkmark Tick / Error Cross) */}
+      <PaymentAnimationModal
+        data={paymentAnimation}
+        isOpen={isPaymentAnimOpen}
+        onClose={handleClosePaymentAnim}
       />
     </LiquidModal>
   );

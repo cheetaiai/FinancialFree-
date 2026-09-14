@@ -3,26 +3,26 @@
     {
       "id": "usr_admin_financialfree",
       "email": "financiFinancial@free.com",
-      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
-      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
+      "password_hash": "5f2b95894278c360174264c761ce38bcf58b639d0cbad009aeb6bc13bca21d65f882c6d1751bfb382d52c294cf2d6685682dcb937b04268dfcccbba0440095ca",
+      "salt": "f18a143578f06cd0d76018dbf2614bc2",
       "created_at": "2026-01-01T00:00:00.000Z",
-      "updated_at": "2026-09-10T13:45:00.894Z"
+      "updated_at": "2026-09-14T06:01:36.391Z"
     },
     {
       "id": "usr_admin_cheeta",
       "email": "startup.cheetaiaistudio.com@gmail.com",
-      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
-      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
+      "password_hash": "5f2b95894278c360174264c761ce38bcf58b639d0cbad009aeb6bc13bca21d65f882c6d1751bfb382d52c294cf2d6685682dcb937b04268dfcccbba0440095ca",
+      "salt": "f18a143578f06cd0d76018dbf2614bc2",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-09-10T13:45:00.894Z"
+      "updated_at": "2026-09-14T06:01:36.391Z"
     },
     {
       "id": "usr_admin_noorjahan",
       "email": "noorjahan77027@gmail.com",
-      "password_hash": "eabd06e2cbd43cb03386b6b05888062cc499e3fa80e19168ce3ad3c129396dca45b386fe35b7e4b60f620a298af3e8947dd7965bd985f7ec3bd1c649fefc3516",
-      "salt": "48f0766945fe6bf247dcaf311a9adf3d",
+      "password_hash": "5f2b95894278c360174264c761ce38bcf58b639d0cbad009aeb6bc13bca21d65f882c6d1751bfb382d52c294cf2d6685682dcb937b04268dfcccbba0440095ca",
+      "salt": "f18a143578f06cd0d76018dbf2614bc2",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-09-10T13:45:00.894Z"
+      "updated_at": "2026-09-14T06:01:36.391Z"
     },
     {
       "id": "usr_fb_kDsWMT7cvfhHmfAAWFKyRcVs8vm2",
@@ -41,30 +41,7 @@
       "updated_at": "2026-09-10T13:45:00.896Z"
     }
   ],
-  "people": [
-    {
-      "id": "p1",
-      "user_id": "u1",
-      "full_name": "Rohan Verma",
-      "phone": "9876543210",
-      "created_at": "2026-09-10T00:00:00.000Z",
-      "updated_at": "2026-09-10T00:00:00.000Z"
-    }
-  ],
-  "transactions": [
-    {
-      "id": "t1",
-      "user_id": "u1",
-      "person_id": "p1",
-      "amount": 5000,
-      "transaction_type": "given",
-      "transaction_date": "2026-09-10",
-      "month": 9,
-      "year": 2026,
-      "payment_method": "UPI",
-      "created_at": "2026-09-10T00:00:00.000Z",
-      "updated_at": "2026-09-10T00:00:00.000Z"
-    }
-  ],
+  "people": [],
+  "transactions": [],
   "reminders": []
 }

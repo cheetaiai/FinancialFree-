@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Camera,
   Database,
-  Smartphone,
   Sparkles,
   TrendingUp,
   CheckCircle2,
@@ -17,7 +16,6 @@ import {
   Zap,
   X
 } from 'lucide-react';
-import { LiquidGlassCard } from '../ui/LiquidGlassCard';
 
 interface AppWalkthroughModalProps {
   isOpen: boolean;
@@ -39,11 +37,11 @@ const AnimatedWords: React.FC<{
       {words.map((word, index) => (
         <motion.span
           key={index}
-          initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+          initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{
-            duration: 0.35,
-            delay: delayOffset + index * 0.045,
+            duration: 0.3,
+            delay: delayOffset + index * 0.035,
             ease: "easeOut"
           }}
           className={`inline-block mr-1.5 ${wordClassName}`}
@@ -84,45 +82,42 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
   // 3D Page flip variants
   const pageFlipVariants = {
     enter: (dir: number) => ({
-      rotateY: dir > 0 ? 55 : -55,
+      rotateY: dir > 0 ? 40 : -40,
       opacity: 0,
-      scale: 0.94,
-      transformPerspective: 1200,
-      transition: { duration: 0.4, ease: "easeOut" as const }
+      scale: 0.95,
+      transition: { duration: 0.35, ease: "easeOut" as const }
     }),
     center: {
       rotateY: 0,
       opacity: 1,
       scale: 1,
-      transformPerspective: 1200,
-      transition: { duration: 0.45, ease: "easeOut" as const }
+      transition: { duration: 0.4, ease: "easeOut" as const }
     },
     exit: (dir: number) => ({
-      rotateY: dir > 0 ? -55 : 55,
+      rotateY: dir > 0 ? -40 : 40,
       opacity: 0,
-      scale: 0.94,
-      transformPerspective: 1200,
-      transition: { duration: 0.35, ease: "easeInOut" as const }
+      scale: 0.95,
+      transition: { duration: 0.3, ease: "easeInOut" as const }
     })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-xl overflow-y-auto">
       {/* Ambient background glow orbs */}
-      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-teal-500/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-emerald-500/15 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-teal-500/15 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-2xl relative">
+      <div className="w-full max-w-2xl relative my-auto py-4">
         {/* Top Header & Close button */}
-        <div className="flex items-center justify-between mb-3 px-2">
+        <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
             <AppLogo size="xs" />
-            <span className="text-xs font-bold text-slate-300">FinancialFree Tour</span>
+            <span className="text-xs font-bold text-slate-200">FinancialFree Tour</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Step Indicators */}
-            <div className="flex items-center gap-1.5 bg-slate-900/60 p-1 rounded-full border border-white/10">
+            <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-full border border-slate-700/80">
               {[1, 2, 3].map((step) => (
                 <button
                   key={step}
@@ -131,7 +126,7 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                     setDirection(step > currentPage ? 1 : -1);
                     setCurrentPage(step as 1 | 2 | 3);
                   }}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                     currentPage === step
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
@@ -145,16 +140,17 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1 border border-slate-700"
               title="Skip Tour"
             >
-              <X size={16} />
+              <span>Skip</span>
+              <X size={14} />
             </button>
           </div>
         </div>
 
         {/* 3D Animated Page Turn Container */}
-        <div className="perspective-[1400px]">
+        <div>
           <AnimatePresence mode="wait" custom={direction}>
             {currentPage === 1 && (
               <motion.div
@@ -165,15 +161,12 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                 animate="center"
                 exit="exit"
               >
-                <LiquidGlassCard
-                  variant="floating"
-                  className="p-6 sm:p-9 border border-white/20 shadow-2xl relative overflow-hidden"
-                >
+                <div className="w-full bg-slate-900/95 border border-slate-700/80 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-2xl text-white">
                   <div className="flex flex-col items-center text-center">
                     {/* Glowing App Logo */}
-                    <div className="relative mb-5">
+                    <div className="relative mb-4">
                       <div className="absolute inset-0 bg-emerald-500/25 blur-2xl rounded-full scale-150 animate-pulse" />
-                      <AppLogo size="2xl" animate={true} />
+                      <AppLogo size="xl" animate={true} />
                     </div>
 
                     <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-3">
@@ -181,79 +174,79 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                       <span>Page 1 of 3: Start & Overview</span>
                     </div>
 
-                    {/* Animated Headline Words */}
-                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+                    {/* Animated Headline */}
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight mb-2">
                       <AnimatedWords
-                        text="Welcome to FinancialFree System"
+                        text="Welcome to FinancialFree"
                         wordClassName="text-white"
                       />
                     </h2>
 
-                    {/* Animated Subtitle Words */}
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-6">
+                    {/* Animated Subtitle */}
+                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-5">
                       <AnimatedWords
-                        text="Your ultimate personal lending & return tracker. Never forget money given to friends, colleagues, or vendors."
-                        delayOffset={0.2}
+                        text="Your trusted personal money lending and repayment ledger. Track money given to people, auto-calculate balances, and stay organized."
+                        delayOffset={0.15}
                         wordClassName="text-slate-300"
                       />
                     </p>
 
                     {/* 3 Value Pillars */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full text-left mb-6">
-                      <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all">
+                      <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-emerald-500/40 transition-all">
                         <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2">
                           <Wallet size={18} />
                         </div>
                         <div className="text-xs font-bold text-white mb-0.5">Lend & Return Tracking</div>
-                        <div className="text-[11px] text-slate-400 leading-snug">
-                          Record every transaction with payment modes, notes, and dates.
+                        <div className="text-[11px] text-slate-300 leading-snug">
+                          Record every rupee with payment mode (UPI, Cash, Bank), purpose, and date.
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all">
+                      <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-emerald-500/40 transition-all">
                         <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center mb-2">
                           <TrendingUp size={18} />
                         </div>
                         <div className="text-xs font-bold text-white mb-0.5">Running Net Balance</div>
-                        <div className="text-[11px] text-slate-400 leading-snug">
-                          Instant calculation of who owes you and zero-debt milestones.
+                        <div className="text-[11px] text-slate-300 leading-snug">
+                          Automatic math: Remaining = Total Given - Total Returned.
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all">
+                      <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-emerald-500/40 transition-all">
                         <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-2">
                           <Calendar size={18} />
                         </div>
                         <div className="text-xs font-bold text-white mb-0.5">Due Date Reminders</div>
-                        <div className="text-[11px] text-slate-400 leading-snug">
-                          Automated WhatsApp and SMS reminder templates.
+                        <div className="text-[11px] text-slate-300 leading-snug">
+                          Set return reminders with 1-tap WhatsApp and SMS templates.
                         </div>
                       </div>
                     </div>
 
                     {/* Next Action */}
-                    <div className="w-full flex items-center justify-between pt-2 border-t border-white/10">
+                    <div className="w-full flex items-center justify-between pt-3 border-t border-slate-700/80">
                       <button
                         type="button"
                         onClick={onClose}
-                        className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer py-2 px-3"
                       >
-                        Skip to Login
+                        Skip to App
                       </button>
 
                       <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         type="button"
                         onClick={goToNextPage}
-                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/30 cursor-pointer"
+                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/30 cursor-pointer min-h-[44px]"
                       >
-                        <span>Next: Working App Overview</span>
+                        <span>Next: Features</span>
                         <ArrowRight size={15} />
                       </motion.button>
                     </div>
                   </div>
-                </LiquidGlassCard>
+                </div>
               </motion.div>
             )}
 
@@ -266,102 +259,89 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                 animate="center"
                 exit="exit"
               >
-                <LiquidGlassCard
-                  variant="floating"
-                  className="p-6 sm:p-9 border border-white/20 shadow-2xl relative overflow-hidden"
-                >
+                <div className="w-full bg-slate-900/95 border border-slate-700/80 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-2xl text-white">
                   <div className="flex flex-col items-center text-center">
                     <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-500/15 border border-teal-500/30 text-teal-400 text-xs font-bold mb-3">
                       <Zap size={13} />
-                      <span>Page 2 of 3: Working App Features</span>
+                      <span>Page 2 of 3: Powerful Features</span>
                     </div>
 
-                    {/* Animated Headline Words */}
-                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+                    {/* Animated Headline */}
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight mb-2">
                       <AnimatedWords
-                        text="Live Analytics & Working App Engine"
+                        text="Live Analytics & Financial Reports"
                         wordClassName="text-white"
                       />
                     </h2>
 
-                    {/* Animated Subtitle Words */}
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-6">
+                    {/* Animated Subtitle */}
+                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-5">
                       <AnimatedWords
-                        text="Experience real-time ledger updates, multi-currency switching, PDF audit exports, and an AI copilot assistant."
+                        text="Experience real-time ledger updates, monthly and financial-year breakdowns, and PDF/CSV statements."
                         delayOffset={0.15}
                         wordClassName="text-slate-300"
                       />
                     </p>
 
-                    {/* Interactive Mockup Card */}
-                    <div className="w-full p-4 rounded-3xl bg-slate-900/90 border border-teal-500/30 shadow-inner mb-6 text-left">
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                    {/* Feature Highlight Box */}
+                    <div className="w-full p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 shadow-inner mb-6 text-left">
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-700">
                         <div className="flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                          <span className="text-xs font-bold text-white">Live Ledger Simulation</span>
+                          <span className="text-xs font-bold text-white">Interactive Feature Highlights</span>
                         </div>
                         <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          Active State
+                          Built-in
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="p-2.5 rounded-xl bg-white/5">
-                          <div className="text-[10px] text-slate-400 uppercase font-semibold">Total Given</div>
-                          <div className="text-sm font-black text-emerald-400">₹1,50,000</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                          <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                            <CheckCircle2 size={14} />
+                            <span>Real People Only</span>
+                          </div>
+                          <p className="text-slate-300 text-[11px]">
+                            Clean person directory with contact info, avatar initials, and individual transaction histories.
+                          </p>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-white/5">
-                          <div className="text-[10px] text-slate-400 uppercase font-semibold">Total Returned</div>
-                          <div className="text-sm font-black text-blue-400">₹95,000</div>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white/5">
-                          <div className="text-[10px] text-slate-400 uppercase font-semibold">Net Pending</div>
-                          <div className="text-sm font-black text-amber-400">₹55,000</div>
-                        </div>
-                      </div>
 
-                      {/* Sample ledger item */}
-                      <div className="p-2.5 rounded-xl bg-white/5 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                            R
+                        <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700/60">
+                          <div className="font-bold text-teal-400 mb-1 flex items-center gap-1.5">
+                            <CheckCircle2 size={14} />
+                            <span>Financial Year Support</span>
                           </div>
-                          <div>
-                            <div className="font-semibold text-white">Rahul Sharma</div>
-                            <div className="text-[10px] text-slate-400">UPI Repayment • Partial Return</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-emerald-400">+₹20,000</div>
-                          <div className="text-[10px] text-slate-400">Cleared today</div>
+                          <p className="text-slate-300 text-[11px]">
+                            Automatic Indian FY calculation (Apr–Mar) for accurate annual auditing and tax organization.
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="w-full flex items-center justify-between pt-2 border-t border-white/10">
+                    <div className="w-full flex items-center justify-between pt-3 border-t border-slate-700/80">
                       <button
                         type="button"
                         onClick={goToPrevPage}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer min-h-[44px]"
                       >
                         <ArrowLeft size={15} />
                         <span>Previous</span>
                       </button>
 
                       <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         type="button"
                         onClick={goToNextPage}
-                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-teal-500/30 cursor-pointer"
+                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-teal-500/30 cursor-pointer min-h-[44px]"
                       >
-                        <span>Next: Storage & Camera</span>
+                        <span>Next: Security</span>
                         <ArrowRight size={15} />
                       </motion.button>
                     </div>
                   </div>
-                </LiquidGlassCard>
+                </div>
               </motion.div>
             )}
 
@@ -374,28 +354,25 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                 animate="center"
                 exit="exit"
               >
-                <LiquidGlassCard
-                  variant="floating"
-                  className="p-6 sm:p-9 border border-white/20 shadow-2xl relative overflow-hidden"
-                >
+                <div className="w-full bg-slate-900/95 border border-slate-700/80 rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-2xl text-white">
                   <div className="flex flex-col items-center text-center">
                     <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-bold mb-3">
                       <ShieldCheck size={13} />
                       <span>Page 3 of 3: Cloud & Camera Security</span>
                     </div>
 
-                    {/* Animated Headline Words */}
-                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+                    {/* Animated Headline */}
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight mb-2">
                       <AnimatedWords
-                        text="Dual Cloud Storage & Camera Scanner"
+                        text="Dual Storage & Camera Receipt Scanner"
                         wordClassName="text-white"
                       />
                     </h2>
 
-                    {/* Animated Subtitle Words */}
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-6">
+                    {/* Animated Subtitle */}
+                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed mb-5">
                       <AnimatedWords
-                        text="All your lending data is mirrored across Cloud Firestore/SQL and browser LocalStorage. Snap physical receipts with your camera in one click."
+                        text="Data is synchronized safely between Cloud Firestore and local storage. Attach photos of receipts, checks, and notes."
                         delayOffset={0.15}
                         wordClassName="text-slate-300"
                       />
@@ -403,7 +380,7 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
 
                     {/* Visual Security & Feature Highlights */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full text-left mb-6">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-blue-500/30">
+                      <div className="p-4 rounded-2xl bg-slate-800/80 border border-blue-500/30">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
                             <Database size={18} />
@@ -420,7 +397,7 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-white/5 border border-emerald-500/30">
+                      <div className="p-4 rounded-2xl bg-slate-800/80 border border-emerald-500/30">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
                             <Camera size={18} />
@@ -433,40 +410,40 @@ export const AppWalkthroughModal: React.FC<AppWalkthroughModalProps> = ({
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-300 leading-relaxed">
-                          Attach photos of signed promissory notes, checks, and UPI payment slips directly to every loan record.
+                          Attach photos of signed promissory notes, checks, and UPI payment slips directly to every record.
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-2xl bg-slate-900/80 border border-white/10 w-full flex items-center justify-center gap-2 text-xs text-slate-300 mb-6">
+                    <div className="p-3 rounded-2xl bg-slate-800/90 border border-slate-700/80 w-full flex items-center justify-center gap-2 text-xs text-slate-300 mb-6">
                       <Lock size={14} className="text-emerald-400" />
-                      <span>Confidential Admin Access — Never displays passwords in UI</span>
+                      <span>Confidential Admin Access — Safe & Encrypted</span>
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="w-full flex items-center justify-between pt-2 border-t border-white/10">
+                    <div className="w-full flex items-center justify-between pt-3 border-t border-slate-700/80">
                       <button
                         type="button"
                         onClick={goToPrevPage}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer min-h-[44px]"
                       >
                         <ArrowLeft size={15} />
                         <span>Previous</span>
                       </button>
 
                       <motion.button
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         type="button"
                         onClick={onProceedToLogin}
-                        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-xl shadow-emerald-500/35 cursor-pointer"
+                        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-xl shadow-emerald-500/35 cursor-pointer min-h-[44px]"
                       >
-                        <span>Proceed to Login</span>
+                        <span>Proceed to App</span>
                         <ArrowRight size={16} />
                       </motion.button>
                     </div>
                   </div>
-                </LiquidGlassCard>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

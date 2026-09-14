@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { SyncProvider, useSync } from './context/SyncContext';
 import { BiometricAuthProvider, useBiometricAuth } from './context/BiometricAuthContext';
+import { PerformanceProvider } from './context/PerformanceContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PeoplePage } from './pages/PeoplePage';
@@ -38,10 +39,8 @@ const MainApp: React.FC = () => {
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('responsive');
 
-  // App Walkthrough state (opens on first launch or when clicked)
-  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(() => {
-    return localStorage.getItem('financialfree_walkthrough_seen') !== 'true';
-  });
+  // App Walkthrough state (opened when clicked via Help / Tour button)
+  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(false);
 
   // Logout animation state
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -164,7 +163,7 @@ const MainApp: React.FC = () => {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-3 sm:pt-4 pb-28 md:pb-24">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentTab + (selectedPersonId || '') + refreshKey}
@@ -331,19 +330,21 @@ const MainApp: React.FC = () => {
 
 export function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <SyncProvider>
-            <CurrencyProvider>
-              <BiometricAuthProvider>
-                <MainApp />
-              </BiometricAuthProvider>
-            </CurrencyProvider>
-          </SyncProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <PerformanceProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <SyncProvider>
+              <CurrencyProvider>
+                <BiometricAuthProvider>
+                  <MainApp />
+                </BiometricAuthProvider>
+              </CurrencyProvider>
+            </SyncProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </PerformanceProvider>
   );
 }
 

@@ -130,10 +130,10 @@ export const BiometricLockScreen: React.FC = () => {
       <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="w-full max-w-sm relative z-10 flex flex-col items-center text-center space-y-6"
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="w-full max-w-sm relative z-10 flex flex-col items-center text-center space-y-6 liquid-glass-card liquid-glass-specular p-6 sm:p-8 rounded-3xl border border-white/20 shadow-2xl backdrop-blur-2xl"
       >
         {/* Top Vault Brand & Lock Icon */}
         <div className="flex flex-col items-center space-y-2">
@@ -156,7 +156,7 @@ export const BiometricLockScreen: React.FC = () => {
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-emerald-400 font-medium">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-medium">
             <ShieldCheck size={13} className="text-emerald-400" />
             <span>Hardware Biometric & PIN Security</span>
           </div>
@@ -170,13 +170,13 @@ export const BiometricLockScreen: React.FC = () => {
                 setActiveTab('biometric');
                 setErrorMsg(null);
               }}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-target ${
                 activeTab === 'biometric'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Fingerprint size={14} />
+              <Fingerprint size={15} />
               <span>Biometric</span>
             </button>
             <button
@@ -184,13 +184,13 @@ export const BiometricLockScreen: React.FC = () => {
                 setActiveTab('pin');
                 setErrorMsg(null);
               }}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-target ${
                 activeTab === 'pin'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <KeyRound size={14} />
+              <KeyRound size={15} />
               <span>Quick PIN</span>
             </button>
           </div>
@@ -203,7 +203,7 @@ export const BiometricLockScreen: React.FC = () => {
               <button
                 onClick={handleBiometricAuth}
                 disabled={isVerifying}
-                className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600/20 via-emerald-600/20 to-teal-500/20 border-2 border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center text-emerald-400 shadow-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer group"
+                className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600/25 via-emerald-600/25 to-teal-500/25 border-2 border-emerald-500/50 hover:border-emerald-400 flex items-center justify-center text-emerald-400 shadow-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer group touch-target"
                 title="Tap to verify Face ID / Fingerprint"
               >
                 <div className="relative">
@@ -215,15 +215,15 @@ export const BiometricLockScreen: React.FC = () => {
                   />
                   {isVerifying && (
                     <motion.div
-                      className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-full"
+                      className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400 rounded-full shadow-lg shadow-emerald-400/50"
                       animate={{ y: [0, 48, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
                     />
                   )}
                 </div>
               </button>
 
-              <div className="absolute -inset-2 rounded-full border border-emerald-500/20 animate-ping pointer-events-none opacity-40" />
+              <div className="absolute -inset-3 rounded-full border border-emerald-500/30 animate-ping pointer-events-none opacity-50" />
             </div>
 
             <div className="space-y-1">
@@ -238,7 +238,7 @@ export const BiometricLockScreen: React.FC = () => {
             <button
               onClick={handleBiometricAuth}
               disabled={isVerifying}
-              className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-2"
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-2 min-h-[44px] touch-target"
             >
               <ScanFace size={16} />
               <span>Tap to Scan Biometrics</span>
@@ -247,7 +247,7 @@ export const BiometricLockScreen: React.FC = () => {
             {settings.pinHash && (
               <button
                 onClick={() => setActiveTab('pin')}
-                className="text-xs text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 cursor-pointer"
+                className="text-xs text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 cursor-pointer min-h-[44px] inline-flex items-center"
               >
                 Or unlock using your 4-digit PIN
               </button>
@@ -258,9 +258,9 @@ export const BiometricLockScreen: React.FC = () => {
           <div className="w-full space-y-5 flex flex-col items-center">
             {/* PIN Dots Indicator */}
             <motion.div
-              animate={shake ? { x: [-12, 12, -8, 8, -4, 4, 0] } : {}}
+              animate={shake ? { x: [-14, 14, -10, 10, -6, 6, 0] } : {}}
               transition={{ duration: 0.4 }}
-              className="flex items-center justify-center gap-3 py-1"
+              className="flex items-center justify-center gap-3.5 py-1"
             >
               {Array.from({ length: pinTargetLength }).map((_, index) => {
                 const isFilled = index < enteredPin.length;
@@ -269,13 +269,13 @@ export const BiometricLockScreen: React.FC = () => {
                     key={index}
                     initial={false}
                     animate={{
-                      scale: isFilled ? 1.25 : 1,
+                      scale: isFilled ? 1.3 : 1,
                       backgroundColor: isFilled ? '#10b981' : 'transparent',
                     }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className={`w-4 h-4 rounded-full border-2 transition-colors ${
+                    transition={{ type: 'spring', stiffness: 600, damping: 28 }}
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
                       isFilled
-                        ? 'border-emerald-400 bg-emerald-500 shadow-md shadow-emerald-500/50'
+                        ? 'border-emerald-400 bg-emerald-500 shadow-lg shadow-emerald-500/60 ring-2 ring-emerald-500/30'
                         : 'border-slate-600 bg-slate-900/40'
                     }`}
                   />
@@ -299,14 +299,17 @@ export const BiometricLockScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Responsive Numeric Keypad */}
+            {/* Responsive Numeric Keypad with Liquid Glass Styling */}
             <div className="grid grid-cols-3 gap-3 w-full max-w-[280px]">
               {keypadNumbers.map((num) => (
                 <button
                   key={num}
-                  onClick={() => handleKeyPress(num)}
+                  onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    handleKeyPress(num);
+                  }}
                   disabled={isLockedOut || isVerifying || enteredPin.length >= pinTargetLength}
-                  className="h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:bg-white/20 active:scale-95 text-white font-bold text-xl flex items-center justify-center transition-all border border-white/10 shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                  className="h-14 rounded-2xl liquid-glass-secondary border border-white/10 hover:border-emerald-400/40 active:scale-95 active:bg-emerald-500/20 text-white font-bold text-xl flex items-center justify-center transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:pointer-events-none touch-target"
                 >
                   {num}
                 </button>
@@ -319,7 +322,7 @@ export const BiometricLockScreen: React.FC = () => {
                     setActiveTab('biometric');
                     handleBiometricAuth();
                   }}
-                  className="h-14 rounded-2xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold text-xs flex flex-col items-center justify-center transition-all border border-blue-500/20 cursor-pointer"
+                  className="h-14 rounded-2xl liquid-glass-secondary border border-blue-500/25 hover:border-blue-400/50 active:scale-95 text-blue-400 font-semibold text-xs flex flex-col items-center justify-center transition-all cursor-pointer touch-target"
                   title="Switch to Biometric Scan"
                 >
                   <Fingerprint size={20} />
@@ -327,9 +330,12 @@ export const BiometricLockScreen: React.FC = () => {
                 </button>
               ) : (
                 <button
-                  onClick={handleClear}
+                  onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    handleClear();
+                  }}
                   disabled={isLockedOut || enteredPin.length === 0}
-                  className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-medium text-xs flex flex-col items-center justify-center transition-all border border-white/5 cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                  className="h-14 rounded-2xl liquid-glass-secondary border border-white/10 hover:border-white/20 active:scale-95 text-slate-400 hover:text-white font-medium text-xs flex flex-col items-center justify-center transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none touch-target"
                 >
                   <RotateCcw size={16} />
                   <span className="text-[10px] mt-0.5">Clear</span>
@@ -337,17 +343,23 @@ export const BiometricLockScreen: React.FC = () => {
               )}
 
               <button
-                onClick={() => handleKeyPress(0)}
+                onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate(15);
+                  handleKeyPress(0);
+                }}
                 disabled={isLockedOut || isVerifying || enteredPin.length >= pinTargetLength}
-                className="h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:bg-white/20 active:scale-95 text-white font-bold text-xl flex items-center justify-center transition-all border border-white/10 shadow-sm cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                className="h-14 rounded-2xl liquid-glass-secondary border border-white/10 hover:border-emerald-400/40 active:scale-95 active:bg-emerald-500/20 text-white font-bold text-xl flex items-center justify-center transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:pointer-events-none touch-target"
               >
                 0
               </button>
 
               <button
-                onClick={handleBackspace}
+                onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate(15);
+                  handleBackspace();
+                }}
                 disabled={isLockedOut || enteredPin.length === 0}
-                className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                className="h-14 rounded-2xl liquid-glass-secondary border border-white/10 hover:border-white/20 active:scale-95 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none touch-target"
                 title="Delete"
               >
                 <Delete size={20} />

@@ -229,6 +229,15 @@ apiRouter.post('/transactions/clear-all', requireAuth, async (req: Request, res:
   }
 });
 
+apiRouter.post('/admin/clean-orphaned', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await db.purgeOrphanedRecords();
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to clean orphaned records' });
+  }
+});
+
 // ================= ANALYTICS & SUMMARY ROUTES =================
 apiRouter.get('/analytics/dashboard', requireAuth, (req: Request, res: Response) => {
   try {

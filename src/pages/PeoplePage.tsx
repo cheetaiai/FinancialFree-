@@ -30,6 +30,7 @@ import { LiquidButton } from '../components/ui/LiquidButton';
 import { LiquidSegmentedControl } from '../components/ui/LiquidSegmentedControl';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { LiquidModal } from '../components/ui/LiquidModal';
+import { PersonLedgerCard } from '../components/ui/PersonLedgerCard';
 import { Person, Transaction, Reminder } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
@@ -338,6 +339,22 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
               <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">
                 {formatINR(person.remaining_balance)}
               </div>
+            </div>
+          </div>
+
+          {/* Holographic Ledger Pass Card */}
+          <div className="mt-6 pt-6 border-t border-black/5 dark:border-white/10">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
+              <span>Digital Ledger Pass & Account Card</span>
+              <span className="text-[11px] font-medium text-slate-400">Hover or tilt card for 3D specular sheen</span>
+            </div>
+            <div className="max-w-md">
+              <PersonLedgerCard
+                person={person}
+                size="md"
+                interactive={true}
+                showBalance={true}
+              />
             </div>
           </div>
         </LiquidGlassCard>

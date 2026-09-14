@@ -11,6 +11,7 @@ import { TabType } from './BottomNavigation';
 import { AppLogo } from '../common/AppLogo';
 import { CloudSyncIndicator } from './CloudSyncIndicator';
 import { PWAInstallButton } from '../mobile/PWAInstallButton';
+import { LiquidThemeToggle } from '../ui/LiquidThemeToggle';
 
 interface NavbarProps {
   onOpenAiDrawer: () => void;
@@ -218,16 +219,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">AI Advisor</span>
           </motion.button>
 
-          {/* Theme Toggle */}
-          <div className="flex items-center p-0.5 sm:p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10">
-            <button
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-              title={`Switch to ${resolvedTheme === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {resolvedTheme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-          </div>
+          {/* Animated Liquid Theme Toggle with smooth day/night transitions */}
+          <LiquidThemeToggle />
 
           {/* User Account / Security */}
           <div className="flex items-center gap-0.5 sm:gap-1">

@@ -6,6 +6,7 @@ interface ThemeContextType {
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -17,6 +18,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  // Trigger smooth transition class
+  const triggerTransitionClass = () => {
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+    window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 400);
+  };
 
   useEffect(() => {
     localStorage.setItem('financialfree_theme', theme);
@@ -31,11 +41,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setResolvedTheme(isDark ? 'dark' : 'light');
 
-      const root = document.documentElement;
-      if (isDark) {
-        root.classList.add('dark');
+      const applyTheme = () => {
+        const root = document.documentElement;
+        if (isDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      };
+
+      triggerTransitionClass();
+
+      // Modern View Transitions API for browsers that support circular clip-path transition
+      if ('startViewTransition' in document && typeof (document as any).startViewTransition === 'function') {
+        try {
+          (document as any).startViewTransition(() => {
+            applyTheme();
+          });
+        } catch {
+          applyTheme();
+        }
       } else {
-        root.classList.remove('dark');
+        applyTheme();
       }
     };
 
@@ -50,11 +77,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
+    triggerTransitionClass();
     setThemeState(newTheme);
   };
 
+  const toggleTheme = () => {
+    triggerTransitionClass();
+    const nextTheme: Theme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setThemeState(nextTheme);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -162,7 +162,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-4 sm:space-y-6 pb-28 md:pb-24">
       {/* Header Greeting & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -177,107 +177,110 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <LiquidButton
             variant="secondary"
-            size="sm"
+            size="md"
             onClick={loadData}
-            icon={<RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />}
+            className="min-h-[44px] flex-1 sm:flex-initial touch-target justify-center"
+            icon={<RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />}
           >
             Refresh
           </LiquidButton>
           <LiquidButton
             variant="emerald"
-            size="sm"
+            size="md"
             onClick={() => onOpenReturnModal()}
-            icon={<ArrowDownLeft size={15} />}
+            className="min-h-[44px] flex-1 sm:flex-initial touch-target justify-center"
+            icon={<ArrowDownLeft size={16} />}
           >
             Money Returned
           </LiquidButton>
           <LiquidButton
             variant="primary"
-            size="sm"
+            size="md"
             onClick={() => onOpenGiveModal()}
-            icon={<ArrowUpRight size={15} />}
+            className="min-h-[44px] w-full sm:w-auto touch-target justify-center"
+            icon={<ArrowUpRight size={16} />}
           >
             Give Money
           </LiquidButton>
         </div>
       </div>
 
-      {/* 4 Primary Liquid Glass Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* 4 Primary Liquid Glass Metric Cards (Balanced 2x2 Grid on Mobile, 4-Col on Desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
         {/* Card 1: Total Given */}
-        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Money Given
+        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden p-3.5 sm:p-5">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+              Total Given
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <ArrowUpRight size={18} />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <ArrowUpRight size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight truncate">
             {formatAmount(totalGiven)}
           </div>
-          <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+          <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-slate-500 truncate">
             <span>Cumulative principal lent</span>
           </div>
         </LiquidGlassCard>
 
         {/* Card 2: Total Returned */}
-        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden p-3.5 sm:p-5">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
               Money Returned
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <ArrowDownLeft size={18} />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <ArrowDownLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
             {formatAmount(totalReturned)}
           </div>
-          <div className="mt-2 text-xs text-emerald-600/80 dark:text-emerald-400/80 flex items-center gap-1">
-            <CheckCircle2 size={13} />
-            <span>Successfully recovered</span>
+          <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-emerald-600/80 dark:text-emerald-400/80 flex items-center gap-1 truncate">
+            <CheckCircle2 size={12} className="flex-shrink-0" />
+            <span className="truncate">Successfully recovered</span>
           </div>
         </LiquidGlassCard>
 
         {/* Card 3: Total Pending */}
-        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Pending Balance
+        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden p-3.5 sm:p-5">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+              Pending Due
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <Clock size={18} />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+              <Clock size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight truncate">
             {formatAmount(totalPending)}
           </div>
-          <div className="mt-2 text-xs text-rose-600/80 dark:text-rose-400/80 flex items-center gap-1">
-            <AlertCircle size={13} />
-            <span>Due to be returned</span>
+          <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-rose-600/80 dark:text-rose-400/80 flex items-center gap-1 truncate">
+            <AlertCircle size={12} className="flex-shrink-0" />
+            <span className="truncate">Due to be returned</span>
           </div>
         </LiquidGlassCard>
 
         {/* Card 4: Recovery Rate */}
-        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <LiquidGlassCard variant="primary" hoverEffect className="relative overflow-hidden p-3.5 sm:p-5">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
               Recovery Rate
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <TrendingUp size={18} />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+              <TrendingUp size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
+          <div className="text-lg sm:text-2xl lg:text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight truncate">
             {recoveryRate.toFixed(1)}%
           </div>
           {/* Liquid Progress Bar */}
-          <div className="w-full bg-black/5 dark:bg-white/10 h-2 rounded-full mt-2.5 overflow-hidden">
+          <div className="w-full bg-black/5 dark:bg-white/10 h-2 rounded-full mt-2 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(100, Math.max(0, recoveryRate))}%` }}
@@ -289,10 +292,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
 
       {/* 📊 INTERACTIVE GRAPH: MONEY GIVEN VS TAKEN (LAST 6 MONTHS) */}
-      <LiquidGlassCard variant="primary" className="p-5 sm:p-6 space-y-4">
+      <LiquidGlassCard variant="primary" className="p-4 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 flex-shrink-0">
               <BarChart3 size={20} />
             </div>
             <div>
@@ -321,11 +324,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Recharts Bar Chart */}
-        <div className="w-full h-72 pt-3">
+        <div className="w-full h-64 sm:h-72 pt-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dashboardGraphData}
-              margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               barGap={4}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
@@ -347,14 +350,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 name="Money Given"
                 fill="#3B82F6"
                 radius={[6, 6, 0, 0]}
-                maxBarSize={32}
+                maxBarSize={28}
               />
               <Bar
                 dataKey="returned"
                 name="Money Returned"
                 fill="#10B981"
                 radius={[6, 6, 0, 0]}
-                maxBarSize={32}
+                maxBarSize={28}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -434,18 +437,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
                       <button
                         onClick={() => onOpenReturnModal(person.id)}
-                        className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-2xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 active:scale-95 flex items-center justify-center transition-all cursor-pointer"
                         title="Record Return Payment"
+                        aria-label={`Record return payment for ${person.full_name}`}
                       >
-                        <ArrowDownLeft size={16} />
+                        <ArrowDownLeft size={18} />
                       </button>
 
                       <button
                         onClick={() => onOpenReminderModal(person.id)}
-                        className="p-2 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-2xl bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 active:scale-95 flex items-center justify-center transition-all cursor-pointer"
                         title="Schedule Reminder"
+                        aria-label={`Schedule reminder for ${person.full_name}`}
                       >
-                        <Bell size={16} />
+                        <Bell size={18} />
                       </button>
                     </div>
                   </div>

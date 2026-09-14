@@ -40,6 +40,22 @@ function setLocalCache<T>(key: string, data: T) {
   }
 }
 
+// Immediate Self-Healing: Purge legacy fake transaction (t1, 5000, unknown person) from browser storage
+try {
+  [VAULT_TXS_KEY, CACHE_TXS_KEY].forEach(key => {
+    const raw = localStorage.getItem(key);
+    if (raw && (raw.includes('"t1"') || raw.includes('"amount":5000') || raw.includes('"amount": 5000'))) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(t => t && t.id !== 't1' && t.person_id !== 'p1' && t.person_id !== '1');
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+      } catch {}
+    }
+  });
+} catch {}
+
 // ================= PERMANENT INDELIBLE LOCAL VAULT =================
 // The browser vault prevents any data loss from server restarts or temporary connectivity issues
 export const localVault = {
@@ -135,11 +151,30 @@ export const localVault = {
     this.saveTransactions(txs);
   },
   getTransactions(): Transaction[] {
-    return getLocalCache<Transaction[]>(VAULT_TXS_KEY) || getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+    const raw = getLocalCache<Transaction[]>(VAULT_TXS_KEY) || getLocalCache<Transaction[]>(CACHE_TXS_KEY) || [];
+    const people = this.getPeople();
+    const validPersonIds = new Set(people.map(p => p.id));
+    const clean = raw.filter(t => {
+      if (!t || t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
+      if (!validPersonIds.has(t.person_id)) return false;
+      return true;
+    });
+    if (clean.length !== raw.length) {
+      setLocalCache(VAULT_TXS_KEY, clean);
+      setLocalCache(CACHE_TXS_KEY, clean);
+    }
+    return clean;
   },
   saveTransactions(txs: Transaction[]) {
-    setLocalCache(VAULT_TXS_KEY, txs);
-    setLocalCache(CACHE_TXS_KEY, txs);
+    const people = this.getPeople();
+    const validPersonIds = new Set(people.map(p => p.id));
+    const clean = (txs || []).filter(t => {
+      if (!t || t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
+      if (!validPersonIds.has(t.person_id)) return false;
+      return true;
+    });
+    setLocalCache(VAULT_TXS_KEY, clean);
+    setLocalCache(CACHE_TXS_KEY, clean);
   },
   saveTransaction(tx: Transaction) {
     const list = this.getTransactions();
@@ -539,6 +574,23 @@ export const api = {
       notifySync({ type: 'error', operation: 'Delete transaction', error: err.message });
       throw err;
     }
+  },
+
+  clearAllTransactions: async () => {
+    const res = await request<{ success: boolean; deletedTransactions: number }>('/api/transactions/clear-all', {
+      method: 'POST'
+    });
+    localVault.saveTransactions([]);
+    return res;
+  },
+
+  cleanOrphanedRecords: async () => {
+    const res = await request<{ success: boolean; purgedTransactions: number; purgedReminders: number }>('/api/admin/clean-orphaned', {
+      method: 'POST'
+    });
+    // Force re-clean of local cache
+    localVault.getTransactions();
+    return res;
   },
 
   // Analytics

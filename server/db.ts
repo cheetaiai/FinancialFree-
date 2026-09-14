@@ -163,6 +163,16 @@ class DatabaseService {
       return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
     });
 
+    // Purge any mock/orphaned transactions (including t1, 5000 unknown person, or missing person_id)
+    const validPersonIds = new Set(this.data.people.map(p => p.id));
+    this.data.transactions = this.data.transactions.filter(t => {
+      if (t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
+      return validPersonIds.has(t.person_id);
+    });
+    this.data.reminders = this.data.reminders.filter(r => validPersonIds.has(r.person_id));
+    firestoreRest.deleteDoc('transactions', 't1').catch(() => {});
+    this.saveToFile();
+
     // Trigger cloud synchronization in background (non-blocking)
     try {
       this.syncWithFirestore().catch(e => {
@@ -208,6 +218,15 @@ class DatabaseService {
         const n = (p.full_name || '').toLowerCase();
         return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
       });
+
+      // Purge any mock or orphaned transactions that do not belong to a real registered person
+      const validPeopleCloudSet = new Set(this.data.people.map(p => p.id));
+      this.data.transactions = this.data.transactions.filter(t => {
+        if (t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
+        return validPeopleCloudSet.has(t.person_id);
+      });
+      this.data.reminders = this.data.reminders.filter(r => validPeopleCloudSet.has(r.person_id));
+      firestoreRest.deleteDoc('transactions', 't1').catch(() => {});
 
       // Merge transactions safely
       if (Array.isArray(cloudTransactions) && cloudTransactions.length > 0) {
@@ -839,10 +858,13 @@ class DatabaseService {
   }): Transaction[] {
     const peopleMap = new Map<string, string>(this.data.people.map(p => [p.id, p.full_name]));
 
-    let list = this.data.transactions.map(t => ({
-      ...t,
-      person_name: peopleMap.get(t.person_id) || 'Unknown Person'
-    }));
+    // Strictly ignore any transactions that do not belong to an active, registered real person
+    let list = this.data.transactions
+      .filter(t => t.id !== 't1' && t.person_id !== 'p1' && t.person_id !== '1' && peopleMap.has(t.person_id))
+      .map(t => ({
+        ...t,
+        person_name: peopleMap.get(t.person_id)!
+      }));
 
     if (filters.person_id) {
       list = list.filter(t => t.person_id === filters.person_id);
@@ -1011,6 +1033,26 @@ class DatabaseService {
     return { success: true, message: 'Transaction deleted successfully.' };
   }
 
+  public async purgeOrphanedRecords(): Promise<{ purgedTransactions: number; purgedReminders: number }> {
+    const validPersonIds = new Set(this.data.people.map(p => p.id));
+    const initialTxCount = this.data.transactions.length;
+    const initialRemCount = this.data.reminders.length;
+
+    this.data.transactions = this.data.transactions.filter(t => {
+      if (t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
+      return validPersonIds.has(t.person_id);
+    });
+
+    this.data.reminders = this.data.reminders.filter(r => validPersonIds.has(r.person_id));
+    this.saveToFile();
+    await firestoreRest.deleteDoc('transactions', 't1').catch(() => {});
+
+    return {
+      purgedTransactions: Math.max(0, initialTxCount - this.data.transactions.length),
+      purgedReminders: Math.max(0, initialRemCount - this.data.reminders.length)
+    };
+  }
+
   public async clearAllTransactions(): Promise<{ success: boolean; deletedTransactions: number }> {
     const countTxs = this.data.transactions.length;
     const txIds = this.data.transactions.map(t => t.id);
@@ -1108,10 +1150,11 @@ class DatabaseService {
 
   // --- Analytics & Summaries ---
   public getDashboardSummary(): DashboardSummary {
+    const activeTransactions = this.getTransactions({});
     let totalGiven = 0;
     let totalReturned = 0;
 
-    for (const t of this.data.transactions) {
+    for (const t of activeTransactions) {
       if (t.transaction_type === 'given') totalGiven += Number(t.amount);
       else if (t.transaction_type === 'returned') totalReturned += Number(t.amount);
     }
@@ -1127,7 +1170,7 @@ class DatabaseService {
     const { fy: currentFy } = calculateFinancialYear(now.toISOString().split('T')[0]);
 
     // This month metrics
-    const thisMonthTxs = this.data.transactions.filter(t => t.month === curMonth && t.year === curYear);
+    const thisMonthTxs = activeTransactions.filter(t => t.month === curMonth && t.year === curYear);
     let thisMonthGiven = 0;
     let thisMonthReturned = 0;
     for (const t of thisMonthTxs) {
@@ -1136,7 +1179,7 @@ class DatabaseService {
     }
 
     // This year metrics
-    const thisYearTxs = this.data.transactions.filter(t => t.year === curYear);
+    const thisYearTxs = activeTransactions.filter(t => t.year === curYear);
     let thisYearGiven = 0;
     let thisYearReturned = 0;
     for (const t of thisYearTxs) {
@@ -1145,7 +1188,7 @@ class DatabaseService {
     }
 
     // Current FY metrics
-    const currentFyTxs = this.data.transactions.filter(t => t.financial_year === currentFy);
+    const currentFyTxs = activeTransactions.filter(t => t.financial_year === currentFy);
     let fyGiven = 0;
     let fyReturned = 0;
     for (const t of currentFyTxs) {
@@ -1159,7 +1202,7 @@ class DatabaseService {
       const d = new Date(curYear, curMonth - 1 - i, 1);
       const m = d.getMonth() + 1;
       const y = d.getFullYear();
-      const txs = this.data.transactions.filter(t => t.month === m && t.year === y);
+      const txs = activeTransactions.filter(t => t.month === m && t.year === y);
       let g = 0;
       let r = 0;
       for (const t of txs) {

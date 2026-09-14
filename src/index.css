@@ -9,6 +9,10 @@
     --glass-border-subtle: rgba(226, 232, 240, 0.85);
     --glass-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
     --glass-glow: 0 0 20px rgba(37, 99, 235, 0.12);
+    --glass-blur-val: 24px;
+    --glass-blur-secondary: 18px;
+    --glass-blur-floating: 28px;
+    --glass-saturate-val: 180%;
     --bg-mesh-1: #f1f5f9;
     --bg-mesh-2: #e2e8f0;
     --bg-mesh-3: #f8fafc;
@@ -22,9 +26,33 @@
     --glass-border-subtle: rgba(255, 255, 255, 0.06);
     --glass-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.55);
     --glass-glow: 0 0 25px rgba(96, 165, 250, 0.18);
+    --glass-blur-val: 24px;
+    --glass-blur-secondary: 18px;
+    --glass-blur-floating: 28px;
+    --glass-saturate-val: 180%;
     --bg-mesh-1: #090d16;
     --bg-mesh-2: #0e1424;
     --bg-mesh-3: #110e20;
+  }
+
+  /* Low-end mobile device & battery-saver optimization */
+  .perf-battery-saver {
+    --glass-blur-val: 4px !important;
+    --glass-blur-secondary: 3px !important;
+    --glass-blur-floating: 6px !important;
+    --glass-saturate-val: 110% !important;
+  }
+
+  /* Smooth light / dark mode transitions */
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition-delay: 0s !important;
   }
 
   body {
@@ -51,32 +79,74 @@
   }
 }
 
-/* Liquid Glass Utilities */
+/* Liquid Glass Utilities with Advanced Specular Highlights & Refraction */
 .liquid-glass-primary {
   background: var(--glass-bg-primary);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--glass-blur-val, 24px)) saturate(var(--glass-saturate-val, 180%));
+  -webkit-backdrop-filter: blur(var(--glass-blur-val, 24px)) saturate(var(--glass-saturate-val, 180%));
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
+  position: relative;
+}
+
+.dark .liquid-glass-primary {
+  box-shadow: var(--glass-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
 .liquid-glass-secondary {
   background: var(--glass-bg-secondary);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--glass-blur-secondary, 18px)) saturate(var(--glass-saturate-val, 160%));
+  -webkit-backdrop-filter: blur(var(--glass-blur-secondary, 18px)) saturate(var(--glass-saturate-val, 160%));
   border: 1px solid var(--glass-border-subtle);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.dark .liquid-glass-secondary {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 .liquid-glass-floating {
   background: var(--glass-bg-floating);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(var(--glass-blur-floating, 28px)) saturate(var(--glass-saturate-val, 190%));
+  -webkit-backdrop-filter: blur(var(--glass-blur-floating, 28px)) saturate(var(--glass-saturate-val, 190%));
   border: 1px solid var(--glass-border);
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.14), 0 0 1px 1px var(--glass-border);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.75);
 }
 
 .dark .liquid-glass-floating {
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6), 0 0 1px 1px var(--glass-border);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+
+/* Glass Specular Rim Effect */
+.liquid-glass-specular {
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-specular::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  pointer-events: none;
+}
+
+.dark .liquid-glass-specular::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+}
+
+/* Mobile Touch Target Standards (Apple & Android Guidelines: min 44px) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile Safe-Area insets */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 16px));
 }
 
 /* Liquid Selection Capsule */

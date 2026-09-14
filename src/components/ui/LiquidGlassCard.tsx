@@ -24,11 +24,11 @@ export const LiquidGlassCard: React.FC<LiquidGlassCardProps> = ({
   return (
     <motion.div
       whileHover={hoverEffect ? { y: -2, transition: { duration: 0.2 } } : undefined}
-      className={`relative rounded-3xl p-5 md:p-6 transition-all duration-300 ${variantClass} ${className}`}
+      className={`relative rounded-3xl p-4 sm:p-5 md:p-6 transition-all duration-300 liquid-glass-specular ${variantClass} ${className}`}
       {...props}
     >
       {/* Subtle top inner glass reflection line */}
-      <div className="absolute inset-x-4 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-4 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 dark:via-white/20 to-transparent pointer-events-none" />
       {children}
     </motion.div>
   );

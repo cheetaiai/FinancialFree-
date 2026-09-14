@@ -31,7 +31,7 @@ import { Transaction, Person, PaymentMethod } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { formatINR, formatIndianDate, MONTH_NAMES } from '../lib/formatters';
+import { formatINR, formatIndianDate, MONTH_NAMES, formatTransactionRef } from '../lib/formatters';
 
 interface TransactionsPageProps {
   onOpenGiveModal: () => void;
@@ -544,106 +544,212 @@ export const TransactionsPage: React.FC<TransactionsPageProps> = ({
         </LiquidGlassCard>
       </div>
 
-      {/* Transactions Table View */}
+      {/* Transactions Table & Responsive Mobile Cards View */}
       <LiquidGlassCard variant="primary" className="p-0 overflow-hidden shadow-sm">
         {filteredTransactions.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[11px] uppercase font-bold tracking-wider bg-slate-50/80 dark:bg-white/[0.02]">
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4">Person</th>
-                  <th className="py-3.5 px-4">Type</th>
-                  <th className="py-3.5 px-4">Method</th>
-                  <th className="py-3.5 px-4">Purpose / Proof</th>
-                  <th className="py-3.5 px-4 text-right">Amount</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-white/5">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {filteredTransactions.map((tx, idx) => {
-                    const isGiven = tx.transaction_type === 'given';
+          <div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-[11px] uppercase font-bold tracking-wider bg-slate-50/80 dark:bg-white/[0.02]">
+                    <th className="py-3.5 px-4">Date / Ref</th>
+                    <th className="py-3.5 px-4">Person</th>
+                    <th className="py-3.5 px-4">Type</th>
+                    <th className="py-3.5 px-4">Method</th>
+                    <th className="py-3.5 px-4">Purpose / Proof</th>
+                    <th className="py-3.5 px-4 text-right">Amount</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {filteredTransactions.map((tx, idx) => {
+                      const isGiven = tx.transaction_type === 'given';
+                      const txRef = formatTransactionRef(tx.id);
 
-                    return (
-                      <motion.tr
-                        key={tx.id}
-                        initial={{ opacity: 0, y: 8, scale: 0.99 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
-                        transition={{
-                          duration: 0.28,
-                          ease: [0.16, 1, 0.3, 1],
-                          delay: Math.min(idx * 0.02, 0.2)
-                        }}
-                        className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
-                      >
-                        <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap">
-                          {formatIndianDate(tx.transaction_date)}
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-slate-950 dark:text-white whitespace-nowrap">
-                          {tx.person_name}
-                        </td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
+                      return (
+                        <motion.tr
+                          key={tx.id}
+                          initial={{ opacity: 0, y: 8, scale: 0.99 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
+                          transition={{
+                            duration: 0.28,
+                            ease: [0.16, 1, 0.3, 1],
+                            delay: Math.min(idx * 0.02, 0.2)
+                          }}
+                          className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
+                        >
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="font-medium text-slate-900 dark:text-slate-200">
+                              {formatIndianDate(tx.transaction_date)}
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-400 font-semibold mt-0.5">
+                              {txRef}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-slate-950 dark:text-white whitespace-nowrap">
+                            {tx.person_name}
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                isGiven
+                                  ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
+                                  : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                              }`}
+                            >
+                              {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}
+                              {isGiven ? 'Given' : 'Returned'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {tx.payment_method}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 max-w-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate">{tx.purpose || tx.notes || '-'}</span>
+                              {tx.receipt_image && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-bold cursor-pointer flex-shrink-0"
+                                  title="View receipt attachment"
+                                >
+                                  <ImageIcon size={12} />
+                                  <span>Receipt</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className={`py-3.5 px-4 text-right font-black whitespace-nowrap ${
+                            isGiven ? 'text-slate-950 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'
+                          }`}>
+                            {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => onEditTransaction(tx)}
+                                className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                title="Edit Transaction"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTxId(tx.id)}
+                                className="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="md:hidden p-3 space-y-2.5">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {filteredTransactions.map((tx, idx) => {
+                  const isGiven = tx.transaction_type === 'given';
+                  const txRef = formatTransactionRef(tx.id);
+
+                  return (
+                    <motion.div
+                      key={tx.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.97 }}
+                      transition={{ duration: 0.22, delay: Math.min(idx * 0.02, 0.15) }}
+                      className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/10 space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-slate-900 dark:text-white text-sm">
+                            {tx.person_name}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>{formatIndianDate(tx.transaction_date)}</span>
+                            <span>•</span>
+                            <span className="font-mono text-[10px] text-slate-400">{txRef}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className={`text-base font-black ${
+                            isGiven ? 'text-slate-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}>
+                            {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
+                          </div>
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold mt-0.5 ${
                               isGiven
                                 ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
                                 : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                             }`}
                           >
-                            {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}
+                            {isGiven ? <ArrowUpRight size={10} /> : <ArrowDownLeft size={10} />}
                             {isGiven ? 'Given' : 'Returned'}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                          {tx.payment_method}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 max-w-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate">{tx.purpose || tx.notes || '-'}</span>
-                            {tx.receipt_image && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 text-[11px] font-bold cursor-pointer flex-shrink-0"
-                                title="View receipt attachment"
-                              >
-                                <ImageIcon size={12} />
-                                <span>Receipt</span>
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className={`py-3.5 px-4 text-right font-black whitespace-nowrap ${
-                          isGiven ? 'text-slate-950 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'
-                        }`}>
-                          {isGiven ? '-' : '+'}{formatAmount(tx.amount)}
-                        </td>
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
+                        </div>
+                      </div>
+
+                      {/* Purpose & Details */}
+                      {(tx.purpose || tx.notes) && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300 bg-black/[0.03] dark:bg-white/[0.03] p-2 rounded-xl">
+                          {tx.purpose || tx.notes}
+                        </div>
+                      )}
+
+                      {/* Bottom row: method + proof + actions */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-black/5 dark:border-white/5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] px-2 py-0.5 rounded-lg bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-medium">
+                            {tx.payment_method}
+                          </span>
+                          {tx.receipt_image && (
                             <button
-                              onClick={() => onEditTransaction(tx)}
-                              className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-500/10 transition-colors cursor-pointer"
-                              title="Edit Transaction"
+                              type="button"
+                              onClick={() => setPreviewReceiptUrl(tx.receipt_image!)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-bold cursor-pointer"
                             >
-                              <Edit2 size={14} />
+                              <ImageIcon size={11} />
+                              <span>Proof</span>
                             </button>
-                            <button
-                              onClick={() => setDeleteTxId(tx.id)}
-                              className="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title="Delete Transaction"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onEditTransaction(tx)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTxId(tx.id)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
           </div>
         ) : (
           <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">

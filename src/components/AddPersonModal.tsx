@@ -5,7 +5,9 @@ import { LiquidDropdown } from './ui/LiquidDropdown';
 import { Person } from '../types';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
-import { User, Phone, Mail, MapPin, Camera, Sparkles, X, Image as ImageIcon, Check } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Camera, Sparkles, X, Image as ImageIcon, Check, Video, CreditCard } from 'lucide-react';
+import { CameraCaptureModal } from './camera/CameraCaptureModal';
+import { PersonLedgerCard } from './ui/PersonLedgerCard';
 
 interface AddPersonModalProps {
   isOpen: boolean;
@@ -45,6 +47,7 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScanningCard, setIsScanningCard] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -80,46 +83,56 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
       return;
     }
 
+    showToast('Local Storage Access: Reading contact photo safely from device storage', 'info');
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
       setAvatarUrl(base64);
-      showToast('Avatar photo uploaded.', 'info');
+      showToast('Avatar photo loaded from device.', 'success');
     };
     reader.readAsDataURL(file);
   };
 
-  // Handle business / contact card scanning
+  // Process image for card detection (from Camera or Local Storage)
+  const processCardImage = async (base64: string, mimeType: string) => {
+    setIsScanningCard(true);
+    setError('');
+    try {
+      const result = await api.scanReceiptOrImage(base64, mimeType);
+      if (result.person_name) {
+        setFullName(result.person_name);
+      }
+      if (result.notes) {
+        setNotes(prev => prev ? `${prev}\n${result.notes}` : (result.notes || ''));
+      }
+      setAvatarUrl(base64);
+      showToast('Contact details successfully recognized from photo.', 'success');
+    } catch (err: any) {
+      setError('Could not scan card details. Please fill manually.');
+    } finally {
+      setIsScanningCard(false);
+    }
+  };
+
+  // Handle business / contact card scanning via file
   const handleScanCard = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsScanningCard(true);
-    setError('');
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        try {
-          const result = await api.scanReceiptOrImage(base64, file.type || 'image/jpeg');
-          if (result.person_name) {
-            setFullName(result.person_name);
-          }
-          if (result.notes) {
-            setNotes(prev => prev ? `${prev}\n${result.notes}` : (result.notes || ''));
-          }
-          setAvatarUrl(base64);
-          showToast('Contact information scanned from card.', 'success');
-        } catch (err: any) {
-          setError('Could not scan card details. Please fill manually.');
-        } finally {
-          setIsScanningCard(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setIsScanningCard(false);
-    }
+    showToast('Local Storage Access: Reading visiting card from device storage for auto-fill', 'info');
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      await processCardImage(base64, file.type || 'image/jpeg');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle business / contact card capture via live Camera
+  const handleCameraCapture = async (imageDataUrl: string) => {
+    setIsCameraModalOpen(false);
+    showToast('Camera Access: Captured photo. Analyzing contact information...', 'info');
+    await processCardImage(imageDataUrl, 'image/jpeg');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,6 +192,33 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Holographic Ledger Pass / Account Card Live Preview */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <CreditCard size={13} className="text-blue-500" />
+              <span>Digital Ledger Account Pass</span>
+            </span>
+            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              Live Preview
+            </span>
+          </div>
+
+          <PersonLedgerCard
+            person={{
+              id: editPerson?.id || fullName || '1029',
+              full_name: fullName || 'Full Name',
+              category: category,
+              avatar_color: avatarColor,
+              remaining_balance: editPerson?.remaining_balance || 0,
+              total_given: editPerson?.total_given || 0
+            }}
+            size="sm"
+            interactive={true}
+            showBalance={!!editPerson}
+          />
+        </div>
+
         {/* Avatar Photo & Color Picker */}
         <div className="flex items-center gap-4 p-3.5 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10">
           <div className="relative group">
@@ -252,10 +292,10 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
           </div>
         </div>
 
-        {/* Business card scanner option */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/15 text-xs text-slate-600 dark:text-slate-300">
+        {/* Business card / contact photo scanner option */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-blue-500/5 border border-blue-500/15 text-xs text-slate-600 dark:text-slate-300">
           <div className="flex items-center gap-2">
-            <Sparkles size={15} className="text-blue-500" />
+            <Sparkles size={16} className="text-blue-500 flex-shrink-0" />
             <span>Have a visiting card or contact photo?</span>
           </div>
           <input
@@ -265,14 +305,29 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
             className="hidden"
             onChange={handleScanCard}
           />
-          <button
-            type="button"
-            disabled={isScanningCard}
-            onClick={() => cardInputRef.current?.click()}
-            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50"
-          >
-            {isScanningCard ? 'Scanning Card...' : 'Scan Card to Auto-Fill'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isScanningCard}
+              onClick={() => {
+                showToast('Camera Access: Launching camera to photograph visiting card / person', 'info');
+                setIsCameraModalOpen(true);
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+            >
+              <Camera size={13} />
+              <span>Camera Scan</span>
+            </button>
+            <button
+              type="button"
+              disabled={isScanningCard}
+              onClick={() => cardInputRef.current?.click()}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-200/60 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+            >
+              <ImageIcon size={13} />
+              <span>{isScanningCard ? 'Scanning...' : 'Upload Card'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Full Name */}
@@ -398,6 +453,14 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
           </LiquidButton>
         </div>
       </form>
+
+      {/* Live Camera Scanner for Visiting Card / Person Photo */}
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleCameraCapture}
+        title="Photograph Visiting Card or Person"
+      />
     </LiquidModal>
   );
 };

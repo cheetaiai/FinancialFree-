@@ -138,3 +138,33 @@ export function getStatusBadgeConfig(status?: string): { bg: string; text: strin
       };
   }
 }
+
+/**
+ * Generates an embossed Ledger Account Number card format from person ID or string
+ * e.g. "ACC-7294-8102"
+ */
+export function formatLedgerAccountNumber(personId?: string | null): string {
+  if (!personId) return 'ACC-0000-0000';
+  // If already formatted, return
+  if (personId.startsWith('ACC-') || personId.startsWith('PLN-')) return personId;
+  
+  // Clean alphanumeric characters
+  const clean = personId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (clean.length < 8) {
+    const padded = (clean + '9A8B7C6D5E').slice(0, 8);
+    return `ACC-${padded.slice(0, 4)}-${padded.slice(4, 8)}`;
+  }
+  return `ACC-${clean.slice(0, 4)}-${clean.slice(-4)}`;
+}
+
+/**
+ * Formats a clean transaction reference number for payment cards
+ * e.g. "TXN-849204"
+ */
+export function formatTransactionRef(txId?: string | null): string {
+  if (!txId) return `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
+  if (txId.startsWith('TXN-')) return txId;
+  const clean = txId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const numPart = clean.slice(-6).padEnd(6, '7');
+  return `TXN-${numPart}`;
+}
