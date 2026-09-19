@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authorized master user",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "created_at": { "type": "string" }
+      }
+    },
+    "Person": {
+      "title": "Person",
+      "description": "Borrower contact with lending balance",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "full_name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" },
+        "category": { "type": "string" },
+        "avatar_color": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["full_name"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial ledger record of money given or returned",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "person_id": { "type": "string" },
+        "person_name": { "type": "string" },
+        "transaction_type": { "type": "string", "enum": ["given", "returned"] },
+        "amount": { "type": "number" },
+        "transaction_date": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "financial_year": { "type": "string" },
+        "payment_method": { "type": "string" },
+        "purpose": { "type": "string" },
+        "notes": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["person_id", "transaction_type", "amount", "transaction_date"]
+    },
+    "Reminder": {
+      "title": "Reminder",
+      "description": "Payment follow-up schedule",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "person_id": { "type": "string" },
+        "pending_amount": { "type": "number" },
+        "reminder_date": { "type": "string" },
+        "note": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "dismissed"] },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["person_id", "reminder_date", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "entity": "User"
+    },
+    "/people/{personId}": {
+      "entity": "Person"
+    },
+    "/transactions/{transactionId}": {
+      "entity": "Transaction"
+    },
+    "/reminders/{reminderId}": {
+      "entity": "Reminder"
+    }
+  }
+}

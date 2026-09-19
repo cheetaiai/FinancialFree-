@@ -1,0 +1,59 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_financialfree",
+      "email": "financiFinancial@free.com",
+      "password_hash": "cac61d15c0784d8e790eafe5618224bd2e561fee4c53af2206ff56c59f9671590fa4302f40d43f91a2ef903c366ebbd34f489fcdaf10b8a6d25a68b6d9a5baa8",
+      "salt": "6a5f1fb1e6660ef904fc43cb91d0f5ea",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-09-19T08:37:46.826Z",
+      "name": "FinancialFree Admin",
+      "phone": "+91 9988776655",
+      "role": "admin",
+      "email_verified": true
+    },
+    {
+      "id": "usr_admin_cheeta",
+      "email": "startup.cheetaiaistudio.com@gmail.com",
+      "password_hash": "cac61d15c0784d8e790eafe5618224bd2e561fee4c53af2206ff56c59f9671590fa4302f40d43f91a2ef903c366ebbd34f489fcdaf10b8a6d25a68b6d9a5baa8",
+      "salt": "6a5f1fb1e6660ef904fc43cb91d0f5ea",
+      "created_at": "2026-09-10T12:00:22.766Z",
+      "updated_at": "2026-09-19T08:37:46.825Z",
+      "name": "Cheeta Admin",
+      "phone": "+91 9876543210",
+      "role": "admin",
+      "email_verified": true
+    },
+    {
+      "id": "usr_admin_noorjahan",
+      "email": "noorjahan77027@gmail.com",
+      "password_hash": "cac61d15c0784d8e790eafe5618224bd2e561fee4c53af2206ff56c59f9671590fa4302f40d43f91a2ef903c366ebbd34f489fcdaf10b8a6d25a68b6d9a5baa8",
+      "salt": "6a5f1fb1e6660ef904fc43cb91d0f5ea",
+      "created_at": "2026-09-10T12:00:22.766Z",
+      "updated_at": "2026-09-19T08:37:46.826Z",
+      "name": "Noorjahan Admin",
+      "phone": "+91 7702700000",
+      "role": "admin",
+      "email_verified": true
+    },
+    {
+      "id": "usr_fb_kDsWMT7cvfhHmfAAWFKyRcVs8vm2",
+      "email": "shaikzakeer902@gmail.com",
+      "password_hash": "a53318234677ff71f8420a4dd51a50550a406abe1439946e90d413c4841e6b4b36987f5c0c4c4e2f538bc0e43b13a905afe70ad7a015eb778d5bdb6924e00546",
+      "salt": "9fc1c7c06fbafdc53b61a492f23fb457",
+      "created_at": "2026-09-10T12:26:06.027Z",
+      "updated_at": "2026-09-10T12:26:06.027Z"
+    },
+    {
+      "id": "usr_fb_test-user-123",
+      "email": "test@example.com",
+      "password_hash": "7f54a7890fa35385e709b7249a00aee2108d676557cb718badf274018404c29bf9398f675e2a9a4cc32f41447e6fd446ad4714a0ac58a5db7ea0e936b2be2c87",
+      "salt": "fb649bdfbf4ccfd9f9a825a790ab0df7",
+      "created_at": "2026-09-10T13:45:00.896Z",
+      "updated_at": "2026-09-10T13:45:00.896Z"
+    }
+  ],
+  "people": [],
+  "transactions": [],
+  "reminders": []
+}
