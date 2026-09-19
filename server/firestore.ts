@@ -12,19 +12,24 @@ interface FirebaseConfig {
 }
 
 export let firebaseConfig: FirebaseConfig = {
-  projectId: 'financialfree-c171e',
-  appId: '1:696948243469:web:35b8aef4e4612c92002944',
-  apiKey: 'AIzaSyDL-B5oHnSA3WixMdnwLgGA2_Q1wRDencQ',
-  authDomain: 'financialfree-c171e.firebaseapp.com',
-  storageBucket: 'financialfree-c171e.firebasestorage.app',
-  messagingSenderId: '696948243469'
+  projectId: process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'financialfree-c171e',
+  appId: process.env.FIREBASE_APP_ID || process.env.VITE_FIREBASE_APP_ID || '1:696948243469:web:35b8aef4e4612c92002944',
+  apiKey: process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || process.env.VITE_FIREBASE_AUTH_DOMAIN || 'financialfree-c171e.firebaseapp.com',
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || 'financialfree-c171e.firebasestorage.app',
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '696948243469'
 };
 
 try {
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(configPath)) {
     const raw = fs.readFileSync(configPath, 'utf-8');
-    firebaseConfig = { ...firebaseConfig, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    firebaseConfig = {
+      ...firebaseConfig,
+      ...parsed,
+      apiKey: process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || parsed.apiKey || ''
+    };
   }
 } catch (e) {
   // Use defaults

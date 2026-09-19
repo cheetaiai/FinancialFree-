@@ -1,11 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 import { ScannedFinancialData } from '../src/types';
 
-// NVIDIA NIM API Key (Supports user-provided key or environment variable)
-const DEFAULT_NVIDIA_API_KEY = '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';
-
+// NVIDIA NIM API Key (Configured via NVIDIA_API_KEY environment variable)
 function getNvidiaApiKey(): string | null {
-  return process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_API_KEY || null;
+  return process.env.NVIDIA_API_KEY || null;
 }
 
 let aiClient: GoogleGenAI | null = null;
