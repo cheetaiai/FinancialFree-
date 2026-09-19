@@ -224,7 +224,7 @@ export const ReportsPage: React.FC = () => {
       link.setAttribute('download', `financialfree_report_${selectedReportType}_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       showToast('CSV Report downloaded successfully.', 'success');
     } catch (err: any) {
       showToast('Failed to export CSV', 'error');

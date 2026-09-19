@@ -54,7 +54,7 @@ export const LiquidButton: React.FC<LiquidButtonProps> = ({
       ) : (
         icon && <span className="flex-shrink-0">{icon}</span>
       )}
-      {children}
+      {children && <span className="truncate">{children}</span>}
     </motion.button>
   );
 };

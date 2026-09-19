@@ -54,7 +54,7 @@ export const MobileAppShowcaseModal: React.FC<MobileAppShowcaseModalProps> = ({
       link.setAttribute('download', 'FinancialFree.apk');
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
     }
     setTimeout(() => setIsDownloadingApk(false), 1200);
   };
@@ -72,7 +72,7 @@ export const MobileAppShowcaseModal: React.FC<MobileAppShowcaseModalProps> = ({
       link.click();
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
-        document.body.removeChild(link);
+        link.remove();
       }, 100);
     } catch (err) {
       const link = document.createElement('a');
@@ -80,7 +80,7 @@ export const MobileAppShowcaseModal: React.FC<MobileAppShowcaseModalProps> = ({
       link.setAttribute('download', 'financialfree-android-project.zip');
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
     }
   };
 

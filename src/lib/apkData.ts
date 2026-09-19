@@ -23,7 +23,7 @@ export function downloadApkClientSide(fileName = "FinancialFree.apk"): boolean {
 
     setTimeout(() => {
       URL.revokeObjectURL(blobUrl);
-      document.body.removeChild(a);
+      a.remove();
     }, 2000);
     return true;
   } catch (err) {
