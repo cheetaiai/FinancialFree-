@@ -57,6 +57,8 @@ const MainApp: React.FC = () => {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [txModalType, setTxModalType] = useState<TransactionType>('given');
   const [txModalPersonId, setTxModalPersonId] = useState<string | undefined>(undefined);
+  const [txModalInitialAmount, setTxModalInitialAmount] = useState<string | undefined>(undefined);
+  const [txModalInitialNotes, setTxModalInitialNotes] = useState<string | undefined>(undefined);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
 
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
@@ -90,6 +92,30 @@ const MainApp: React.FC = () => {
     window.addEventListener('financialfree_data_reconciled', handleReconciled);
     return () => window.removeEventListener('financialfree_data_reconciled', handleReconciled);
   }, []);
+
+  // Deep-Link Return Request Listener (?action=return&personId=...&amount=...)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'return') {
+        const pId = params.get('personId') || undefined;
+        const amt = params.get('amount') || undefined;
+        const nts = params.get('notes') || undefined;
+        setTxModalType('returned');
+        setTxModalPersonId(pId);
+        setTxModalInitialAmount(amt);
+        setTxModalInitialNotes(nts);
+        setEditTx(null);
+        setIsTxModalOpen(true);
+
+        // Clean URL parameters without reloading
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (e) {
+      console.warn('Failed to parse deep link params:', e);
+    }
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -126,10 +152,12 @@ const MainApp: React.FC = () => {
     setIsTxModalOpen(true);
   };
 
-  const handleOpenReturnModal = (personId?: string) => {
+  const handleOpenReturnModal = (personId?: string, amount?: string, notes?: string) => {
     setEditTx(null);
     setTxModalType('returned');
     setTxModalPersonId(personId);
+    setTxModalInitialAmount(amount);
+    setTxModalInitialNotes(notes);
     setIsTxModalOpen(true);
   };
 
@@ -284,10 +312,14 @@ const MainApp: React.FC = () => {
           onClose={() => {
             setIsTxModalOpen(false);
             setEditTx(null);
+            setTxModalInitialAmount(undefined);
+            setTxModalInitialNotes(undefined);
           }}
           onSuccess={() => setRefreshKey(k => k + 1)}
           initialType={txModalType}
           initialPersonId={txModalPersonId}
+          initialAmount={txModalInitialAmount}
+          initialNotes={txModalInitialNotes}
           editTransaction={editTx}
         />
 

@@ -43,19 +43,8 @@ import { UserProfileCard } from '../components/settings/UserProfileCard';
 import { BudgetSettingsCard } from '../components/budget/BudgetSettingsCard';
 import { DeviceAccessSettingsCard } from '../components/settings/DeviceAccessSettingsCard';
 import { AppUpdateSettingsCard } from '../components/settings/AppUpdateSettingsCard';
-import { GitHubSyncCard } from '../components/settings/GitHubSyncCard';
 import { BackupData } from '../types';
-import { Compass, Sparkles, UserCheck, LogOut, Bot, MessageSquare, Copy, Check, FileCode } from 'lucide-react';
-
-const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Allows full read and write access for personal lending tracker
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
+import { Compass, Sparkles, UserCheck, LogOut, Bot, MessageSquare, Copy, Check } from 'lucide-react';
 
 interface SettingsPageProps {
   onOpenWalkthrough?: () => void;
@@ -100,7 +89,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [isClearingPeople, setIsClearingPeople] = useState(false);
   const [isClearPeopleModalOpen, setIsClearPeopleModalOpen] = useState(false);
   const [isConfirmRestoreOpen, setIsConfirmRestoreOpen] = useState(false);
-  const [hasCopiedRules, setHasCopiedRules] = useState(false);
 
   const [dbStatus, setDbStatus] = useState<{
     status: string;
@@ -500,37 +488,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </span>
           </div>
         )}
-
-        {/* Firestore Security Rules to Add & See Data */}
-        <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/10 space-y-2.5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <FileCode size={14} className="text-emerald-500" />
-                <span>Firestore Security Rules (Add & See Data)</span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Apply this rule in Firebase Console &rarr; Firestore Database &rarr; Rules tab to allow adding, reading, and syncing all ledger records.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(FIRESTORE_RULES_SNIPPET);
-                setHasCopiedRules(true);
-                showToast('Firestore rules copied to clipboard!', 'success');
-                setTimeout(() => setHasCopiedRules(false), 2500);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-            >
-              {hasCopiedRules ? <Check size={13} /> : <Copy size={13} />}
-              <span>{hasCopiedRules ? 'Copied Rules' : 'Copy Firestore Rule'}</span>
-            </button>
-          </div>
-          <pre className="p-3.5 rounded-xl bg-slate-900 text-emerald-400 font-mono text-[11px] leading-relaxed overflow-x-auto border border-white/10 select-all">
-            {FIRESTORE_RULES_SNIPPET}
-          </pre>
-        </div>
       </LiquidGlassCard>
 
       {/* Automated Cloud Backup & Manual Restore Routine Card */}
@@ -790,9 +747,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         )}
       </LiquidGlassCard>
-
-      {/* GitHub Repository & Version Control Card */}
-      <GitHubSyncCard />
 
       {/* Biometric (WebAuthn) & Quick PIN Privacy Lock Section */}
       <BiometricSecuritySection />

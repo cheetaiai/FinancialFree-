@@ -20,6 +20,8 @@ interface AddTransactionModalProps {
   onSuccess: (tx: Transaction) => void;
   initialType?: TransactionType;
   initialPersonId?: string;
+  initialAmount?: string;
+  initialNotes?: string;
   editTransaction?: Transaction | null;
 }
 
@@ -31,6 +33,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onSuccess,
   initialType = 'given',
   initialPersonId,
+  initialAmount,
+  initialNotes,
   editTransaction = null
 }) => {
   const { showToast } = useToast();
@@ -43,12 +47,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   // Form State
   const [type, setType] = useState<TransactionType>(initialType);
   const [personId, setPersonId] = useState<string>(initialPersonId || '');
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<string>(initialAmount || '');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
   const [category, setCategory] = useState<string>('');
   const [purpose, setPurpose] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
+  const [notes, setNotes] = useState<string>(initialNotes || '');
   const [receiptImage, setReceiptImage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -105,16 +109,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     } else {
       setType(initialType);
       if (initialPersonId) setPersonId(initialPersonId);
-      setAmount('');
+      setAmount(initialAmount || '');
       setDate(new Date().toISOString().split('T')[0]);
       setPaymentMethod('UPI');
       setCategory('');
       setPurpose('');
-      setNotes('');
+      setNotes(initialNotes || '');
       setReceiptImage('');
       setAiSuggestion(null);
     }
-  }, [editTransaction, initialType, initialPersonId, isOpen]);
+  }, [editTransaction, initialType, initialPersonId, initialAmount, initialNotes, isOpen]);
 
   // AI Auto-Suggest Category & Purpose
   const handleAiAutoSuggest = async () => {

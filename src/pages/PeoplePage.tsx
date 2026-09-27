@@ -807,6 +807,10 @@ export const PeoplePage: React.FC<PeoplePageProps> = ({
         isOpen={!!qrModalPerson}
         onClose={() => setQrModalPerson(null)}
         person={qrModalPerson}
+        onTriggerReturn={(personId) => {
+          setQrModalPerson(null);
+          onOpenReturnModal(personId);
+        }}
       />
     </div>
   );

@@ -12,7 +12,9 @@ import {
   FileBarChart,
   BarChart3,
   Layers,
-  Bell
+  Bell,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,21 +30,26 @@ import {
 } from 'recharts';
 import { LiquidGlassCard } from '../components/ui/LiquidGlassCard';
 import { LiquidDropdown } from '../components/ui/LiquidDropdown';
+import { LiquidButton } from '../components/ui/LiquidButton';
 import { AiGraphAnalysisCard } from '../components/AiGraphAnalysisCard';
 import { MonthlyAnalytics } from '../types';
 import { api } from '../lib/api';
 import { useCurrency } from '../context/CurrencyContext';
 import { useBudget } from '../context/BudgetContext';
+import { useToast } from '../context/ToastContext';
 import { formatINR, formatIndianDate, MONTH_NAMES } from '../lib/formatters';
+import { exportMonthlySummaryToCSV } from '../lib/csvExport';
 
 export const MonthlySummaryPage: React.FC = () => {
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency, currencySymbol } = useCurrency();
   const { monthlyBudgetLimit, budgetPercentage, isBudgetExceeded } = useBudget();
+  const { showToast } = useToast();
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [analytics, setAnalytics] = useState<MonthlyAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
 
   const fetchMonthly = async () => {
     setIsLoading(true);
@@ -75,6 +82,31 @@ export const MonthlySummaryPage: React.FC = () => {
       setSelectedYear(y => y + 1);
     } else {
       setSelectedMonth(m => m + 1);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!analytics || !analytics.transactions || analytics.transactions.length === 0) {
+      showToast(`No transactions recorded for ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} to export.`, 'info');
+      return;
+    }
+
+    setIsExportingCSV(true);
+    try {
+      const success = exportMonthlySummaryToCSV({
+        year: selectedYear,
+        month: selectedMonth,
+        analytics,
+        currencyCode: currency,
+        currencySymbol: currencySymbol
+      });
+      if (success) {
+        showToast(`Exported ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} accounting ledger CSV successfully!`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Failed to generate accounting CSV file', 'error');
+    } finally {
+      setIsExportingCSV(false);
     }
   };
 
@@ -152,8 +184,8 @@ export const MonthlySummaryPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Month Stepper Controls */}
-        <div className="flex items-center gap-2">
+        {/* Month Stepper & Action Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handlePrevMonth}
             className="p-2 rounded-2xl liquid-glass-secondary border border-slate-200/60 dark:border-white/10 hover:bg-white text-slate-600 dark:text-slate-300 cursor-pointer"
@@ -182,6 +214,17 @@ export const MonthlySummaryPage: React.FC = () => {
           >
             <ChevronRight size={18} />
           </button>
+
+          <LiquidButton
+            variant="secondary"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={isExportingCSV || !analytics?.transactions?.length}
+            icon={<FileSpreadsheet size={15} className="text-emerald-500" />}
+            className="font-bold border border-emerald-500/20 hover:border-emerald-500/40"
+          >
+            Export Accounting CSV
+          </LiquidButton>
         </div>
       </div>
 

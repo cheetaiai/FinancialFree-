@@ -248,7 +248,8 @@ export const HCaptchaWidget: React.FC<HCaptchaWidgetProps> = ({
           >
             <div
               ref={containerRef}
-              className="min-h-[78px] flex items-center justify-center w-full overflow-hidden rounded-xl"
+              className="h-captcha min-h-[78px] flex items-center justify-center w-full overflow-hidden rounded-xl"
+              data-sitekey={HCAPTCHA_SITE_KEY}
             >
               {!isReady && !loadError && (
                 <div className="flex items-center gap-2 text-xs text-slate-400 py-4">
