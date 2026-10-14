@@ -1,0 +1,56 @@
+{
+  "id": "/",
+  "name": "FinancialFree — Personal Lending Tracker",
+  "short_name": "FinancialFree",
+  "description": "Personal money lending and return tracking system with Apple Liquid Glass UI, balance calculations, and multi-period analytics.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#090d16",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Give",
+      "short_name": "Give",
+      "description": "Record money lent to a person",
+      "url": "/?action=give",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Quick Return",
+      "short_name": "Return",
+      "description": "Record money returned by a person",
+      "url": "/?action=return",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reminders",
+      "short_name": "Reminders",
+      "description": "View due collection reminders",
+      "url": "/?tab=reminders",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "latest_backup",
+  "version": "2.0",
+  "created_at": "2026-10-14T16:25:53.927Z",
+  "updated_at": "2026-10-14T16:25:53.927Z",
+  "people_count": 1,
+  "tx_count": 0,
+  "reminder_count": 0,
+  "total_given": 0,
+  "total_returned": 0,
+  "people_preview": [
+    {
+      "id": "per_d48587967e977a39",
+      "name": "Shaik",
+      "balance": 0
+    }
+  ],
+  "data_json": "{\"version\":\"2.0\",\"export_date\":\"2026-10-14T16:25:53.927Z\",\"user\":{\"email\":\"Financial@free.com\"},\"people\":[{\"id\":\"per_d48587967e977a39\",\"user_id\":\"usr_admin_financialfree\",\"full_name\":\"Shaik\",\"phone\":\"\",\"email\":\"\",\"address\":\"\",\"notes\":\"\",\"category\":\"Friends\",\"avatar_color\":\"#EC4899\",\"avatar_url\":\"\",\"created_at\":\"2026-10-13T12:25:41.290Z\",\"updated_at\":\"2026-10-13T12:25:41.290Z\",\"total_given\":0,\"total_returned\":0,\"remaining_balance\":0,\"status\":\"No Balance\",\"transaction_count\":0,\"last_transaction_date\":\"2026-10-13\"}],\"transactions\":[],\"reminders\":[]}"
+}
