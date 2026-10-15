@@ -1220,10 +1220,10 @@ function getAppUpdatePayload() {
   const totalSizeMB = 1945.6;
 
   return {
-    currentVersion: 'v6.4.4',
-    latestVersion: 'v6.4.5',
-    releaseDate: '2026-10-13',
-    releaseTitle: 'FinancialFree Pro v6.4.5 — Weekly Intelligence, UPI Chooser & Rocket Animation Edition',
+    currentVersion: 'v6.4.5',
+    latestVersion: 'v6.5.0',
+    releaseDate: '2026-10-15',
+    releaseTitle: 'FinancialFree Ultra v6.5.0 — Zero Data-Loss Vault, Advanced Rocket Animation & Admin Approval Engine',
     isAvailable: true,
     totalBytes,
     totalSizeMB,
@@ -1232,32 +1232,32 @@ function getAppUpdatePayload() {
     files: analyzedFiles,
     advantages: [
       {
-        title: 'Weekly Summary & Direct Email Reports',
-        desc: 'Generate automated weekly audit reports of spending and income and dispatch to authenticated user.'
+        title: 'Zero Data-Loss Vault & Auto-Recovery',
+        desc: 'Tri-layer persistent storage, atomic writes, and background sync preventing any data loss during reloads or offline states.'
+      },
+      {
+        title: 'Advanced Rocket Launch Micro-Interaction',
+        desc: '60fps starfield warp velocity, dual shockwave ripples, smoke plumes, and white-hot plasma jet with zero text clutter.'
+      },
+      {
+        title: 'User Registration & Administrator Approval Flow',
+        desc: 'Instant verification queue with live approval checking and direct one-click administrator authorization.'
       },
       {
         title: 'Universal UPI App Chooser (GPay, PhonePe, Paytm, BHIM)',
         desc: 'Instant deep link integration opening installed UPI apps directly on mobile devices with zero demo placeholders.'
       },
       {
-        title: 'Public Ledger Statement (Money Given & Taken Only)',
-        desc: 'Safe public share links displaying verified lending and return records with zero login requirement.'
-      },
-      {
-        title: 'Razorpay Rocket Blast Add-Animation',
-        desc: 'High-speed ascending rocket animation upon saving items with dynamic flame trail and clean text-free visuals.'
-      },
-      {
-        title: 'Clean Shopping & Groceries Hub',
-        desc: 'Removed pre-loaded sample items so users start with a clean ledger.'
+        title: 'Weekly Summary & Direct Email Reports',
+        desc: 'Automated weekly audit reports of spending and income and dispatch to authenticated user.'
       }
     ],
     releaseNotes: [
-      'Official v6.4.5 Launch: Weekly summary calculation and email report trigger for authenticated users.',
-      'Native UPI App Integration: Removed demo text; direct intent chooser to launch GPay, PhonePe, Paytm, BHIM, CRED.',
-      'Public Ledger Share Links: Fixed share button and direct non-authenticated view of money given and taken.',
-      'Text-Free Rocket Animation: Razorpay-inspired ascending rocket blast micro-interaction when creating items.',
-      'Login Bottom Update Notice: Moved login update banner to a discreet bottom pill that prompts login before installing.'
+      'Official v6.5.0 Launch: Zero Data-Loss Vault architecture ensuring indelible local phone persistence and cloud durability.',
+      'Advanced Rocket Animation: Warp-speed starfield streaks, dual shockwave compression rings, and multi-layer plasma jet.',
+      'User Account Approval Engine: Structured new account request flow with instant status verification and admin approval dashboard.',
+      'Enhanced Sign-In Experience: Instant automatic transition into pending approval status check when signing in.',
+      'Clean Financial Ledger: All test placeholders eliminated; zero-login public statements and UPI deep-linking live.'
     ]
   };
 }
@@ -1287,7 +1287,7 @@ apiRouter.post('/app-update/acknowledge', (req: Request, res: Response) => {
   try {
     res.json({
       success: true,
-      message: 'App version v6.4.4 acknowledged as installed.',
+      message: 'App version v6.5.0 acknowledged as installed.',
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {

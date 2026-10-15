@@ -354,7 +354,7 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* WEEKLY FINANCIAL SUMMARY & EMAIL REPORT DISPATCH (v6.4.5) */}
+      {/* WEEKLY FINANCIAL SUMMARY & EMAIL REPORT DISPATCH (v6.5.0) */}
       <WeeklySummaryEmailCard />
 
       {/* SPENDING & REPAYMENT TRENDS (LAST 6 MONTHS LINE CHART) */}

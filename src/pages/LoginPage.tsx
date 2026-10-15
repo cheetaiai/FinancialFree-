@@ -112,7 +112,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenWalkthrough }) => {
     }
 
     setIsLoading(true);
-    await login(email.trim(), password);
+    const success = await login(email.trim(), password);
+    if (!success) {
+      try {
+        const check = await api.checkApprovalStatus(email.trim());
+        if (check.status === 'pending') {
+          setPendingApprovalInfo({
+            name: check.name || email.trim().split('@')[0],
+            email: email.trim(),
+            submittedAt: 'Awaiting administrator approval'
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
     setIsLoading(false);
   };
 
@@ -365,19 +379,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenWalkthrough }) => {
             </button>
           </div>
 
-          {/* AUTH FORM: LOGIN (ADMIN ONLY) */}
+          {/* AUTH FORM: LOGIN */}
           {authMode === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
-                <ShieldAlert size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                <ShieldCheck size={16} className="text-blue-500 shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
-                  <strong>Admin Restricted:</strong> Sign-in is restricted exclusively to authorized administrators.
+                  <strong>Secure Sign In:</strong> Sign in with your approved account credentials or administrator access.
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 ml-1">
-                  Administrator Email
+                  Account Email
                 </label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -386,7 +400,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenWalkthrough }) => {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="admin@financialfree.com"
+                    placeholder="user@financialfree.com or admin@..."
                     autoComplete="email"
                     className="w-full pl-10 pr-4 py-2.5 rounded-2xl liquid-glass-secondary border border-slate-200/70 dark:border-white/10 text-slate-900 dark:text-white text-sm font-medium glass-input"
                   />
@@ -439,7 +453,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenWalkthrough }) => {
                 className="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 cursor-pointer"
                 icon={<ArrowRight size={18} />}
               >
-                Sign In as Administrator
+                Sign In to FinancialFree
               </LiquidButton>
             </form>
           )}

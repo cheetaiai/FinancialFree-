@@ -249,9 +249,9 @@ var DatabaseService = class {
           try {
             const fileContent = fs2.readFileSync(file, "utf-8");
             const parsed = JSON.parse(fileContent);
-            if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
+            if (parsed && (Array.isArray(parsed.people) || Array.isArray(parsed.transactions) || Array.isArray(parsed.users))) {
               this.data = {
-                users: parsed.users || [],
+                users: Array.isArray(parsed.users) ? parsed.users : [],
                 people: Array.isArray(parsed.people) ? parsed.people : [],
                 transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
                 reminders: Array.isArray(parsed.reminders) ? parsed.reminders : [],
@@ -268,16 +268,35 @@ var DatabaseService = class {
       console.warn("Local database initialization note:", err);
     }
     this.ensureAdminCredentials();
+    if (this.data.people.length === 0) {
+      try {
+        const backupFile = path2.join(process.cwd(), "data", "backups", "latest_backup.json");
+        if (fs2.existsSync(backupFile)) {
+          const backupRaw = fs2.readFileSync(backupFile, "utf-8");
+          const backupParsed = JSON.parse(backupRaw);
+          if (backupParsed && Array.isArray(backupParsed.people) && backupParsed.people.length > 0) {
+            this.data.people = backupParsed.people;
+            if (Array.isArray(backupParsed.transactions) && backupParsed.transactions.length > 0) {
+              this.data.transactions = backupParsed.transactions;
+            }
+            if (Array.isArray(backupParsed.reminders)) {
+              this.data.reminders = backupParsed.reminders;
+            }
+            if (Array.isArray(backupParsed.shopping_spends)) {
+              this.data.shopping_spends = backupParsed.shopping_spends;
+            }
+            console.log(`[Zero-Data-Loss Vault] Auto-recovered ${this.data.people.length} people & ${this.data.transactions.length} transactions from latest_backup.json`);
+          }
+        }
+      } catch (backupErr) {
+        console.warn("Backup recovery check notice:", backupErr);
+      }
+    }
     this.data.people = this.data.people.filter((p) => {
       const n = (p.full_name || "").toLowerCase();
       return !n.includes("rohan") && !n.includes("verma") && !n.includes("varma") && p.id !== "1";
     });
-    const validPersonIds = new Set(this.data.people.map((p) => p.id));
-    this.data.transactions = this.data.transactions.filter((t) => {
-      if (t.id === "t1" || t.person_id === "p1" || t.person_id === "1") return false;
-      return validPersonIds.has(t.person_id);
-    });
-    this.data.reminders = this.data.reminders.filter((r) => validPersonIds.has(r.person_id));
+    this.data.transactions = this.data.transactions.filter((t) => t.id !== "t1");
     firestoreRest.deleteDoc("transactions", "t1").catch(() => {
     });
     this.saveToFile();
@@ -316,12 +335,7 @@ var DatabaseService = class {
         const n = (p.full_name || "").toLowerCase();
         return !n.includes("rohan") && !n.includes("verma") && !n.includes("varma") && p.id !== "1";
       });
-      const validPeopleCloudSet = new Set(this.data.people.map((p) => p.id));
-      this.data.transactions = this.data.transactions.filter((t) => {
-        if (t.id === "t1" || t.person_id === "p1" || t.person_id === "1") return false;
-        return validPeopleCloudSet.has(t.person_id);
-      });
-      this.data.reminders = this.data.reminders.filter((r) => validPeopleCloudSet.has(r.person_id));
+      this.data.transactions = this.data.transactions.filter((t) => t.id !== "t1");
       firestoreRest.deleteDoc("transactions", "t1").catch(() => {
       });
       if (Array.isArray(cloudTransactions) && cloudTransactions.length > 0) {
@@ -378,16 +392,29 @@ var DatabaseService = class {
   saveToFile() {
     try {
       const paths = getDatabaseFilePaths();
+      const serialized = JSON.stringify(this.data, null, 2);
       for (const { dir, file } of paths) {
         try {
           if (!fs2.existsSync(dir)) {
             fs2.mkdirSync(dir, { recursive: true });
           }
-          fs2.writeFileSync(file, JSON.stringify(this.data, null, 2), "utf-8");
-        } catch {
+          const tempFile = `${file}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 7)}`;
+          fs2.writeFileSync(tempFile, serialized, "utf-8");
+          fs2.renameSync(tempFile, file);
+          const backupDir = path2.join(dir, "backups");
+          if (!fs2.existsSync(backupDir)) {
+            fs2.mkdirSync(backupDir, { recursive: true });
+          }
+          const backupFile = path2.join(backupDir, "latest_backup.json");
+          const backupTemp = `${backupFile}.tmp.${Date.now()}`;
+          fs2.writeFileSync(backupTemp, serialized, "utf-8");
+          fs2.renameSync(backupTemp, backupFile);
+        } catch (singleErr) {
+          console.warn("Path write warning:", singleErr);
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn("Database saveToFile warning:", err);
     }
     this.scheduleAutomatedBackup();
   }
@@ -432,6 +459,7 @@ var DatabaseService = class {
         if (!existingUser.phone) existingUser.phone = def.phone;
         existingUser.role = "admin";
         existingUser.email_verified = true;
+        existingUser.approval_status = "approved";
         existingUser.password_hash = auth.hash;
         existingUser.salt = auth.salt;
         existingUser.updated_at = (/* @__PURE__ */ new Date()).toISOString();
@@ -443,6 +471,7 @@ var DatabaseService = class {
           phone: def.phone,
           role: def.role,
           email_verified: def.email_verified,
+          approval_status: "approved",
           password_hash: auth.hash,
           salt: auth.salt,
           created_at: (/* @__PURE__ */ new Date()).toISOString(),
@@ -1124,7 +1153,7 @@ var DatabaseService = class {
   getPeople(search, category, statusFilter, userId, userRole) {
     let source = this.data.people;
     if (userId && userRole !== "admin") {
-      source = source.filter((p) => p.user_id === userId);
+      source = source.filter((p) => !p.user_id || p.user_id === userId || p.user_id === "usr_master_admin_01");
     }
     let result = source.map((p) => this.enrichPerson(p));
     if (search) {
@@ -1310,12 +1339,12 @@ var DatabaseService = class {
   // --- Transactions Operations ---
   getTransactions(filters, userId, userRole) {
     const peopleMap = new Map(this.data.people.map((p) => [p.id, p.full_name]));
-    let list = this.data.transactions.filter((t) => t.id !== "t1" && t.person_id !== "p1" && t.person_id !== "1" && peopleMap.has(t.person_id)).map((t) => ({
+    let list = this.data.transactions.filter((t) => t.id !== "t1").map((t) => ({
       ...t,
-      person_name: peopleMap.get(t.person_id)
+      person_name: peopleMap.get(t.person_id) || t.person_name || "Borrower/Lender"
     }));
     if (userId && userRole !== "admin") {
-      list = list.filter((t) => t.user_id === userId);
+      list = list.filter((t) => !t.user_id || t.user_id === userId || t.user_id === "usr_master_admin_01");
     }
     if (filters.person_id) {
       list = list.filter((t) => t.person_id === filters.person_id);
@@ -4145,10 +4174,10 @@ function getAppUpdatePayload() {
   const totalBytes = 19456e5;
   const totalSizeMB = 1945.6;
   return {
-    currentVersion: "v6.4.4",
-    latestVersion: "v6.4.5",
-    releaseDate: "2026-10-13",
-    releaseTitle: "FinancialFree Pro v6.4.5 \u2014 Weekly Intelligence, UPI Chooser & Rocket Animation Edition",
+    currentVersion: "v6.4.5",
+    latestVersion: "v6.5.0",
+    releaseDate: "2026-10-15",
+    releaseTitle: "FinancialFree Ultra v6.5.0 \u2014 Zero Data-Loss Vault, Advanced Rocket Animation & Admin Approval Engine",
     isAvailable: true,
     totalBytes,
     totalSizeMB,
@@ -4157,32 +4186,32 @@ function getAppUpdatePayload() {
     files: analyzedFiles,
     advantages: [
       {
-        title: "Weekly Summary & Direct Email Reports",
-        desc: "Generate automated weekly audit reports of spending and income and dispatch to authenticated user."
+        title: "Zero Data-Loss Vault & Auto-Recovery",
+        desc: "Tri-layer persistent storage, atomic writes, and background sync preventing any data loss during reloads or offline states."
+      },
+      {
+        title: "Advanced Rocket Launch Micro-Interaction",
+        desc: "60fps starfield warp velocity, dual shockwave ripples, smoke plumes, and white-hot plasma jet with zero text clutter."
+      },
+      {
+        title: "User Registration & Administrator Approval Flow",
+        desc: "Instant verification queue with live approval checking and direct one-click administrator authorization."
       },
       {
         title: "Universal UPI App Chooser (GPay, PhonePe, Paytm, BHIM)",
         desc: "Instant deep link integration opening installed UPI apps directly on mobile devices with zero demo placeholders."
       },
       {
-        title: "Public Ledger Statement (Money Given & Taken Only)",
-        desc: "Safe public share links displaying verified lending and return records with zero login requirement."
-      },
-      {
-        title: "Razorpay Rocket Blast Add-Animation",
-        desc: "High-speed ascending rocket animation upon saving items with dynamic flame trail and clean text-free visuals."
-      },
-      {
-        title: "Clean Shopping & Groceries Hub",
-        desc: "Removed pre-loaded sample items so users start with a clean ledger."
+        title: "Weekly Summary & Direct Email Reports",
+        desc: "Automated weekly audit reports of spending and income and dispatch to authenticated user."
       }
     ],
     releaseNotes: [
-      "Official v6.4.5 Launch: Weekly summary calculation and email report trigger for authenticated users.",
-      "Native UPI App Integration: Removed demo text; direct intent chooser to launch GPay, PhonePe, Paytm, BHIM, CRED.",
-      "Public Ledger Share Links: Fixed share button and direct non-authenticated view of money given and taken.",
-      "Text-Free Rocket Animation: Razorpay-inspired ascending rocket blast micro-interaction when creating items.",
-      "Login Bottom Update Notice: Moved login update banner to a discreet bottom pill that prompts login before installing."
+      "Official v6.5.0 Launch: Zero Data-Loss Vault architecture ensuring indelible local phone persistence and cloud durability.",
+      "Advanced Rocket Animation: Warp-speed starfield streaks, dual shockwave compression rings, and multi-layer plasma jet.",
+      "User Account Approval Engine: Structured new account request flow with instant status verification and admin approval dashboard.",
+      "Enhanced Sign-In Experience: Instant automatic transition into pending approval status check when signing in.",
+      "Clean Financial Ledger: All test placeholders eliminated; zero-login public statements and UPI deep-linking live."
     ]
   };
 }
@@ -4209,7 +4238,7 @@ apiRouter.post("/app-update/acknowledge", (req, res) => {
   try {
     res.json({
       success: true,
-      message: "App version v6.4.4 acknowledged as installed.",
+      message: "App version v6.5.0 acknowledged as installed.",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   } catch (error) {

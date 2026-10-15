@@ -131,7 +131,7 @@ export const WeeklySummaryEmailCard: React.FC = () => {
               Weekly Statement & Email Dispatch
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-              v6.4.5
+              v6.5.0
             </span>
           </div>
           <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">

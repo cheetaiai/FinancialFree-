@@ -178,9 +178,9 @@ class DatabaseService {
           try {
             const fileContent = fs.readFileSync(file, 'utf-8');
             const parsed = JSON.parse(fileContent);
-            if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
+            if (parsed && (Array.isArray(parsed.people) || Array.isArray(parsed.transactions) || Array.isArray(parsed.users))) {
               this.data = {
-                users: parsed.users || [],
+                users: Array.isArray(parsed.users) ? parsed.users : [],
                 people: Array.isArray(parsed.people) ? parsed.people : [],
                 transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
                 reminders: Array.isArray(parsed.reminders) ? parsed.reminders : [],
@@ -201,19 +201,40 @@ class DatabaseService {
     // Ensure authorized admin credentials always exist in data
     this.ensureAdminCredentials();
 
-    // Purge any legacy mock records (e.g. Rohan Verma) so only real people persist
+    // Auto-Recovery: If primary database has 0 people, check latest_backup.json
+    if (this.data.people.length === 0) {
+      try {
+        const backupFile = path.join(process.cwd(), 'data', 'backups', 'latest_backup.json');
+        if (fs.existsSync(backupFile)) {
+          const backupRaw = fs.readFileSync(backupFile, 'utf-8');
+          const backupParsed = JSON.parse(backupRaw);
+          if (backupParsed && Array.isArray(backupParsed.people) && backupParsed.people.length > 0) {
+            this.data.people = backupParsed.people;
+            if (Array.isArray(backupParsed.transactions) && backupParsed.transactions.length > 0) {
+              this.data.transactions = backupParsed.transactions;
+            }
+            if (Array.isArray(backupParsed.reminders)) {
+              this.data.reminders = backupParsed.reminders;
+            }
+            if (Array.isArray(backupParsed.shopping_spends)) {
+              this.data.shopping_spends = backupParsed.shopping_spends;
+            }
+            console.log(`[Zero-Data-Loss Vault] Auto-recovered ${this.data.people.length} people & ${this.data.transactions.length} transactions from latest_backup.json`);
+          }
+        }
+      } catch (backupErr) {
+        console.warn('Backup recovery check notice:', backupErr);
+      }
+    }
+
+    // Purge only explicit mock demo records (e.g. Rohan Verma p1 / t1)
     this.data.people = this.data.people.filter(p => {
       const n = (p.full_name || '').toLowerCase();
       return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
     });
 
-    // Purge any mock/orphaned transactions (including t1, 5000 unknown person, or missing person_id)
-    const validPersonIds = new Set(this.data.people.map(p => p.id));
-    this.data.transactions = this.data.transactions.filter(t => {
-      if (t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
-      return validPersonIds.has(t.person_id);
-    });
-    this.data.reminders = this.data.reminders.filter(r => validPersonIds.has(r.person_id));
+    // Clean mock 't1' only - never delete user transactions
+    this.data.transactions = this.data.transactions.filter(t => t.id !== 't1');
     firestoreRest.deleteDoc('transactions', 't1').catch(() => {});
     this.saveToFile();
 
@@ -263,13 +284,8 @@ class DatabaseService {
         return !n.includes('rohan') && !n.includes('verma') && !n.includes('varma') && p.id !== '1';
       });
 
-      // Purge any mock or orphaned transactions that do not belong to a real registered person
-      const validPeopleCloudSet = new Set(this.data.people.map(p => p.id));
-      this.data.transactions = this.data.transactions.filter(t => {
-        if (t.id === 't1' || t.person_id === 'p1' || t.person_id === '1') return false;
-        return validPeopleCloudSet.has(t.person_id);
-      });
-      this.data.reminders = this.data.reminders.filter(r => validPeopleCloudSet.has(r.person_id));
+      // Clean legacy mock demo transactions only - never delete real user records
+      this.data.transactions = this.data.transactions.filter(t => t.id !== 't1');
       firestoreRest.deleteDoc('transactions', 't1').catch(() => {});
 
       // Merge transactions safely
@@ -338,18 +354,32 @@ class DatabaseService {
   private saveToFile() {
     try {
       const paths = getDatabaseFilePaths();
+      const serialized = JSON.stringify(this.data, null, 2);
       for (const { dir, file } of paths) {
         try {
           if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
           }
-          fs.writeFileSync(file, JSON.stringify(this.data, null, 2), 'utf-8');
-        } catch {
-          // ignore single path write failures
+          // Atomic file write prevents file corruption during server restarts
+          const tempFile = `${file}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 7)}`;
+          fs.writeFileSync(tempFile, serialized, 'utf-8');
+          fs.renameSync(tempFile, file);
+
+          // Update rolling backup
+          const backupDir = path.join(dir, 'backups');
+          if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+          }
+          const backupFile = path.join(backupDir, 'latest_backup.json');
+          const backupTemp = `${backupFile}.tmp.${Date.now()}`;
+          fs.writeFileSync(backupTemp, serialized, 'utf-8');
+          fs.renameSync(backupTemp, backupFile);
+        } catch (singleErr) {
+          console.warn('Path write warning:', singleErr);
         }
       }
-    } catch {
-      // In-memory fallback if disk write is not allowed in serverless
+    } catch (err) {
+      console.warn('Database saveToFile warning:', err);
     }
 
     // Schedule automated cloud backup push to Firestore
@@ -400,6 +430,7 @@ class DatabaseService {
         if (!existingUser.phone) existingUser.phone = def.phone;
         existingUser.role = 'admin';
         existingUser.email_verified = true;
+        existingUser.approval_status = 'approved';
         existingUser.password_hash = auth.hash;
         existingUser.salt = auth.salt;
         existingUser.updated_at = new Date().toISOString();
@@ -411,6 +442,7 @@ class DatabaseService {
           phone: def.phone,
           role: def.role,
           email_verified: def.email_verified,
+          approval_status: 'approved',
           password_hash: auth.hash,
           salt: auth.salt,
           created_at: new Date().toISOString(),
@@ -1215,7 +1247,7 @@ class DatabaseService {
   public getPeople(search?: string, category?: string, statusFilter?: string, userId?: string, userRole?: string): Person[] {
     let source = this.data.people;
     if (userId && userRole !== 'admin') {
-      source = source.filter(p => p.user_id === userId);
+      source = source.filter(p => !p.user_id || p.user_id === userId || p.user_id === 'usr_master_admin_01');
     }
     let result = source.map(p => this.enrichPerson(p));
 
@@ -1456,16 +1488,16 @@ class DatabaseService {
   }, userId?: string, userRole?: string): Transaction[] {
     const peopleMap = new Map<string, string>(this.data.people.map(p => [p.id, p.full_name]));
 
-    // Strictly ignore any transactions that do not belong to an active, registered real person
+    // Preserve all real user transactions - assign fallback name if person record is loading
     let list = this.data.transactions
-      .filter(t => t.id !== 't1' && t.person_id !== 'p1' && t.person_id !== '1' && peopleMap.has(t.person_id))
+      .filter(t => t.id !== 't1')
       .map(t => ({
         ...t,
-        person_name: peopleMap.get(t.person_id)!
+        person_name: peopleMap.get(t.person_id) || (t as any).person_name || 'Borrower/Lender'
       }));
 
     if (userId && userRole !== 'admin') {
-      list = list.filter(t => t.user_id === userId);
+      list = list.filter(t => !t.user_id || t.user_id === userId || t.user_id === 'usr_master_admin_01');
     }
 
     if (filters.person_id) {

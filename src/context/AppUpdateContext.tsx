@@ -69,26 +69,26 @@ const AppUpdateContext = createContext<AppUpdateContextType | undefined>(undefin
 
 export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const [latestVersion, setLatestVersion] = useState<string>('v6.4.5');
-  const [currentVersion, setCurrentVersion] = useState<string>('v6.4.4');
+  const [latestVersion, setLatestVersion] = useState<string>('v6.5.0');
+  const [currentVersion, setCurrentVersion] = useState<string>('v6.4.5');
   const [files, setFiles] = useState<AppUpdateFile[]>([]);
   const [totalSizeMB, setTotalSizeMB] = useState<number>(1945.6);
   const [totalSizeFormatted, setTotalSizeFormatted] = useState<string>('1.9 GB');
   const [advantages, setAdvantages] = useState<FeatureAdvantage[]>(DEFAULT_ADVANTAGES);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState<number>(0);
   const [releaseNotes, setReleaseNotes] = useState<string[]>([
-    'Official v6.4.5 Launch: Weekly summary calculation and email report trigger for authenticated users.',
-    'Universal UPI App Chooser: Direct intent chooser launching GPay, PhonePe, Paytm, BHIM, CRED on mobile.',
-    'Zero-Login Public Ledger Link: Public view of money given and taken with real-time transactions ledger.',
-    'Razorpay Rocket Animation: Fluid ascending rocket blast without text when saving items.',
-    'Clean Shopping Hub: Removed pre-loaded sample items so users start with a clean ledger.'
+    'Official v6.5.0 Launch: Zero Data-Loss Vault ensuring permanent multi-path persistence across all reloads and offline states.',
+    'Advanced Rocket Launch Animation: 60fps warp-speed starfield streaks, dual shockwave ripples, smoke plumes, and multi-stage plasma jet.',
+    'User Account Approval Engine: Structured new account request flow with instant status verification and admin approval dashboard.',
+    'Enhanced Sign-In Flow: Automatic detection and transition to approval queue when pending users sign in.',
+    'Universal UPI App Chooser: Send & request money via UPI ID directly to GPay, PhonePe, Paytm, BHIM, CRED with instant deep links.'
   ]);
 
   // Check if update was already applied on this device
   const [isUpdateInstalled, setIsUpdateInstalled] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-      return stored === 'v6.4.5';
+      return stored === 'v6.5.0';
     } catch {
       return false;
     }
@@ -129,14 +129,14 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
   };
 
-  // In-app release announcement notification for v6.4.5 launch
+  // In-app release announcement notification for v6.5.0 launch
   useEffect(() => {
-    const sessionKey = 'financialfree_v645_notified';
+    const sessionKey = 'financialfree_v650_notified';
     if (!sessionStorage.getItem(sessionKey)) {
       const timer = setTimeout(() => {
         const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-        if (stored !== 'v6.4.5') {
-          showToast('✨ New Update v6.4.5 (1.9 GB) Available! Weekly Email Reports, UPI Chooser & Rocket Animation live.', 'info');
+        if (stored !== 'v6.5.0') {
+          showToast('✨ New Update v6.5.0 (1.9 GB) Available! Zero Data-Loss Vault, Advanced Rocket Animation & Account Approval live.', 'info');
           sessionStorage.setItem(sessionKey, 'true');
         }
       }, 1200);
@@ -201,9 +201,9 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       const verificationStages = [
         'Inspecting local vault storage and device compatibility...',
-        'Validating cryptographic integrity for v6.4.4 package...',
+        'Validating cryptographic integrity for v6.5.0 package...',
         'Allocating 1.9 GB high-speed offline cache buffer...',
-        'Package verified: Ready to stream v6.4.4 update package.'
+        'Package verified: Ready to stream v6.5.0 update package.'
       ];
 
       const stageDelay = isTurboMode ? 150 : 450;
@@ -247,15 +247,15 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         let stageText = '';
         if (currentProg < 20) {
-          stageText = `Streaming Shopping 🛍️ & Groceries Hub Engine (${formatted} / 1.9 GB)...`;
+          stageText = `Streaming Zero Data-Loss Vault & Storage Engine (${formatted} / 1.9 GB)...`;
         } else if (currentProg < 40) {
-          stageText = `Deploying Ultra-Clarity Monthly & Yearly PDF Engine (${formatted} / 1.9 GB)...`;
+          stageText = `Deploying Advanced Rocket Particle Simulation (${formatted} / 1.9 GB)...`;
         } else if (currentProg < 60) {
-          stageText = `Activating Interactive Checkmark & Tick Micro-Animations (${formatted} / 1.9 GB)...`;
+          stageText = `Configuring User Registration & Administrator Approval Modules (${formatted} / 1.9 GB)...`;
         } else if (currentProg < 80) {
-          stageText = `Configuring Dynamic UPI Return QR & Public Share Links (${formatted} / 1.9 GB)...`;
+          stageText = `Synchronizing Universal UPI App Chooser & Return QR (${formatted} / 1.9 GB)...`;
         } else {
-          stageText = `Finalizing Package Integrity & Activating v6.4.4 (${formatted} / 1.9 GB)...`;
+          stageText = `Finalizing Package Integrity & Activating v6.5.0 (${formatted} / 1.9 GB)...`;
         }
 
         setDownloadProgress(currentProg);

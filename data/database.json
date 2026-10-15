@@ -3,38 +3,41 @@
     {
       "id": "usr_admin_financialfree",
       "email": "Financial@free.com",
-      "password_hash": "5775aeff0f582827b6a4a73a135ff75d6b70cea51498760d48ef48c3ec32c2f6b42d2a087883acd04c36f3ab4d6d83d991214e7bd5ad42609e01236350c884a8",
-      "salt": "54eac7aa9f5beef97b03cc5ee8ac22e5",
+      "password_hash": "a8110fafe64188754e52ef642a541691aa0e2cbab2798093266a9378deabcb192646255c8777c32054efde78d394055a65bc24ed94a9647f8bd6814ead16dc14",
+      "salt": "4ad1366f29a6d0c550c027d4b6737c3a",
       "created_at": "2026-01-01T00:00:00.000Z",
-      "updated_at": "2026-10-14T16:25:49.927Z",
+      "updated_at": "2026-10-15T14:49:59.015Z",
       "name": "FinancialFree Admin",
       "phone": "+91 9988776655",
       "role": "admin",
-      "email_verified": true
+      "email_verified": true,
+      "approval_status": "approved"
     },
     {
       "id": "usr_admin_cheeta",
       "email": "startup.cheetaiaistudio.com@gmail.com",
-      "password_hash": "5775aeff0f582827b6a4a73a135ff75d6b70cea51498760d48ef48c3ec32c2f6b42d2a087883acd04c36f3ab4d6d83d991214e7bd5ad42609e01236350c884a8",
-      "salt": "54eac7aa9f5beef97b03cc5ee8ac22e5",
+      "password_hash": "a8110fafe64188754e52ef642a541691aa0e2cbab2798093266a9378deabcb192646255c8777c32054efde78d394055a65bc24ed94a9647f8bd6814ead16dc14",
+      "salt": "4ad1366f29a6d0c550c027d4b6737c3a",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-10-14T16:25:49.927Z",
+      "updated_at": "2026-10-15T14:49:59.015Z",
       "name": "Cheeta Admin",
       "phone": "+91 9876543210",
       "role": "admin",
-      "email_verified": true
+      "email_verified": true,
+      "approval_status": "approved"
     },
     {
       "id": "usr_admin_noorjahan",
       "email": "noorjahan77027@gmail.com",
-      "password_hash": "5775aeff0f582827b6a4a73a135ff75d6b70cea51498760d48ef48c3ec32c2f6b42d2a087883acd04c36f3ab4d6d83d991214e7bd5ad42609e01236350c884a8",
-      "salt": "54eac7aa9f5beef97b03cc5ee8ac22e5",
+      "password_hash": "a8110fafe64188754e52ef642a541691aa0e2cbab2798093266a9378deabcb192646255c8777c32054efde78d394055a65bc24ed94a9647f8bd6814ead16dc14",
+      "salt": "4ad1366f29a6d0c550c027d4b6737c3a",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-10-14T16:25:49.927Z",
+      "updated_at": "2026-10-15T14:49:59.015Z",
       "name": "Noorjahan Admin",
       "phone": "+91 7702700000",
       "role": "admin",
-      "email_verified": true
+      "email_verified": true,
+      "approval_status": "approved"
     },
     {
       "id": "usr_fb_kDsWMT7cvfhHmfAAWFKyRcVs8vm2",
@@ -66,10 +69,36 @@
       "avatar_color": "#EC4899",
       "avatar_url": "",
       "created_at": "2026-10-13T12:25:41.290Z",
-      "updated_at": "2026-10-13T12:25:41.290Z"
+      "updated_at": "2026-10-13T12:25:41.290Z",
+      "total_given": 0,
+      "total_returned": 0,
+      "remaining_balance": 0,
+      "status": "No Balance",
+      "transaction_count": 0,
+      "last_transaction_date": "2026-10-13"
     }
   ],
-  "transactions": [],
+  "transactions": [
+    {
+      "id": "tx_bdd792f01f6613f0",
+      "user_id": "usr_admin_financialfree",
+      "person_id": "per_d48587967e977a39",
+      "person_name": "Shaik",
+      "transaction_type": "given",
+      "amount": 800,
+      "transaction_date": "2026-10-14",
+      "month": 10,
+      "year": 2026,
+      "financial_year": "FY 2026-27",
+      "payment_method": "UPI",
+      "category": "",
+      "purpose": "",
+      "notes": "",
+      "receipt_image": "",
+      "created_at": "2026-10-14T18:49:46.619Z",
+      "updated_at": "2026-10-14T18:49:46.619Z"
+    }
+  ],
   "reminders": [],
   "shopping_spends": [
     {

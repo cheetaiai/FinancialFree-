@@ -449,12 +449,20 @@ export const api = {
       const data = await request<Person[]>(`/api/people?${q.toString()}`);
       if (!params || (!params.search && !params.category && !params.status)) {
         const vaultPeople = localVault.getPeople();
-        // Crucial data-protection guard: Never overwrite local vault if server returns empty while vault has entries
         if (data.length === 0 && vaultPeople.length > 0) {
           console.warn('Server returned 0 people while local vault has', vaultPeople.length, 'people. Retaining local vault records.');
           return vaultPeople;
         }
-        localVault.savePeople(data);
+        // Safe-merge: preserve any local records not yet reflected on server
+        const serverIds = new Set(data.map(p => p.id));
+        const mergedPeople = [...data];
+        for (const vp of vaultPeople) {
+          if (!serverIds.has(vp.id)) {
+            mergedPeople.push(vp);
+          }
+        }
+        localVault.savePeople(mergedPeople);
+        return mergedPeople;
       }
       return data;
     } catch (err) {
@@ -617,12 +625,20 @@ export const api = {
       const data = await request<Transaction[]>(`/api/transactions?${q.toString()}`);
       if (!filters || Object.keys(filters).length === 0) {
         const vaultTxs = localVault.getTransactions();
-        // Crucial data-protection guard: Never overwrite local vault if server returns empty while vault has entries
         if (data.length === 0 && vaultTxs.length > 0) {
           console.warn('Server returned 0 transactions while local vault has', vaultTxs.length, 'transactions. Retaining local vault records.');
           return vaultTxs;
         }
-        localVault.saveTransactions(data);
+        // Safe-merge: preserve any local transaction records not yet reflected on server
+        const serverTxIds = new Set(data.map(t => t.id));
+        const mergedTxs = [...data];
+        for (const vt of vaultTxs) {
+          if (!serverTxIds.has(vt.id)) {
+            mergedTxs.push(vt);
+          }
+        }
+        localVault.saveTransactions(mergedTxs);
+        return mergedTxs;
       }
       return data;
     } catch (err) {
