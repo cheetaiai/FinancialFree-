@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { formatCurrency, formatTransactionRef } from '../../lib/formatters';
 import { ArrowUpRight, ArrowDownLeft, X, AlertCircle, Sparkles, Check, Copy } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { playTickSound, playGivenMoneySound, playReturnMoneySound } from '../../lib/soundEffects';
 
 export interface PaymentAnimationData {
   status: 'success' | 'failed';
@@ -31,6 +32,16 @@ export const PaymentAnimationModal: React.FC<PaymentAnimationModalProps> = ({
   useEffect(() => {
     if (isOpen && data) {
       if (data.status === 'success') {
+        // Play tactile tick sound for the drawing checkmark
+        playTickSound();
+
+        // Play appropriate payment or return money (Mixkit gold coin) sound effect
+        if (data.type === 'given') {
+          setTimeout(() => playGivenMoneySound(), 60);
+        } else {
+          setTimeout(() => playReturnMoneySound(), 60);
+        }
+
         if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
       } else {
         if (navigator.vibrate) navigator.vibrate([80, 50, 80]);
@@ -96,12 +107,19 @@ export const PaymentAnimationModal: React.FC<PaymentAnimationModalProps> = ({
                   className="absolute inset-0 rounded-full bg-teal-500/25"
                 />
 
-                {/* Main Glowing Circle */}
+                {/* Main Glowing Circle with Sound on Tick Mark */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-xl shadow-emerald-500/40 text-white"
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => {
+                    playTickSound();
+                    if (isGiven) playGivenMoneySound();
+                    else playReturnMoneySound();
+                  }}
+                  className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-xl shadow-emerald-500/40 text-white cursor-pointer transition-transform"
+                  title="Replay sound effect"
                 >
                   {/* Drawing SVG Checkmark Tick */}
                   <svg className="w-10 h-10" viewBox="0 0 52 52">

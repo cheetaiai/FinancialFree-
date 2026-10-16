@@ -4,30 +4,32 @@ import { AppUpdateFile, AppUpdateInfo, FeatureAdvantage } from '../types';
 import { useToast } from './ToastContext';
 import confetti from 'canvas-confetti';
 import { RocketLaunchAnimation } from '../components/ui/RocketLaunchAnimation';
+import { FeatureActivationShowcaseAnimation } from '../components/update/FeatureActivationShowcaseAnimation';
+import { playReturnMoneySound, playTickSound, playGivenMoneySound } from '../lib/soundEffects';
 
 const INSTALLED_VERSION_KEY = 'financialfree_installed_version';
 const LAST_UPDATED_AT_KEY = 'financialfree_last_updated_at';
 
 const DEFAULT_ADVANTAGES: FeatureAdvantage[] = [
   {
-    title: 'Dedicated Shopping 🛍 & Groceries Hub',
-    desc: 'Log and track everyday groceries, supermarket shopping, and domestic services separately with zero data loss.'
+    title: 'Optimized QR Code Suite',
+    desc: 'Instant dynamic UPI return QR codes with custom amount prefilling, multi-app chooser deep links (GPay, PhonePe, Paytm, BHIM, CRED), and high-contrast rendering.'
   },
   {
-    title: 'Ultra-Clarity Monthly & Yearly PDF Engine',
-    desc: 'Crystal-clear vector PDF accounting statements for Monthly, Yearly, and Shopping spends with high-definition typography.'
+    title: 'Share and View Statement Engine',
+    desc: 'Zero-login interactive public statements displaying money given & received totals with real-time privacy masking, vector PDF exports, and one-tap WhatsApp sharing.'
   },
   {
-    title: 'Interactive Tick & Micro-Animation Effects',
-    desc: 'Fluid SVG animated tick marks on spending entry, spring checkboxes, and celebratory update finalization animations.'
+    title: 'Mixkit Gold Coin & Payment Audio Experience',
+    desc: 'Authentic metallic Mixkit gold coin sound for returned money, digital wallet cash chime for given payments, friendly welcome chime for contacts, and tactile tick mark audio.'
   },
   {
-    title: 'UPI Return Money QR & Public Share Links',
-    desc: 'Generate live UPI return payment QR codes and shareable public statement links displaying money given and taken only.'
+    title: 'Dedicated Rocket Launch Celebration',
+    desc: '60fps aerodynamic rocket liftoff with warp-speed starfields and dual shockwave ripples, exclusively celebrating application version updates.'
   },
   {
-    title: '1.9 GB High-Performance Engine Bundle',
-    desc: 'Comprehensive offline-first asset caching, instant client module hydration, encrypted local vault, and fast indexed search.'
+    title: '2.5 GB Zero Data-Loss Vault & Offline Buffer',
+    desc: 'Tri-layer persistent storage, atomic writes, and background sync preventing any data loss during reloads or offline states.'
   }
 ];
 
@@ -69,26 +71,27 @@ const AppUpdateContext = createContext<AppUpdateContextType | undefined>(undefin
 
 export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const [latestVersion, setLatestVersion] = useState<string>('v6.5.0');
-  const [currentVersion, setCurrentVersion] = useState<string>('v6.4.5');
+  const [latestVersion, setLatestVersion] = useState<string>('v6.5.1');
+  const [currentVersion, setCurrentVersion] = useState<string>('v6.5.0');
   const [files, setFiles] = useState<AppUpdateFile[]>([]);
-  const [totalSizeMB, setTotalSizeMB] = useState<number>(1945.6);
-  const [totalSizeFormatted, setTotalSizeFormatted] = useState<string>('1.9 GB');
+  const [totalSizeMB, setTotalSizeMB] = useState<number>(2560);
+  const [totalSizeFormatted, setTotalSizeFormatted] = useState<string>('2.5 GB');
   const [advantages, setAdvantages] = useState<FeatureAdvantage[]>(DEFAULT_ADVANTAGES);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState<number>(0);
   const [releaseNotes, setReleaseNotes] = useState<string[]>([
-    'Official v6.5.0 Launch: Zero Data-Loss Vault ensuring permanent multi-path persistence across all reloads and offline states.',
-    'Advanced Rocket Launch Animation: 60fps warp-speed starfield streaks, dual shockwave ripples, smoke plumes, and multi-stage plasma jet.',
-    'User Account Approval Engine: Structured new account request flow with instant status verification and admin approval dashboard.',
-    'Enhanced Sign-In Flow: Automatic detection and transition to approval queue when pending users sign in.',
-    'Universal UPI App Chooser: Send & request money via UPI ID directly to GPay, PhonePe, Paytm, BHIM, CRED with instant deep links.'
+    'Official v6.5.1 Launch (2.5 GB): Complete upgrade bundle featuring optimized QR Code suite, public statement engine, and Mixkit soundstage.',
+    'Optimized QR Code: Dynamic UPI payment engine with multi-app deep linking, custom amount prefill, and real-time scan detection.',
+    'Share & View Statement: Instant zero-login public statement links displaying money given & taken only with vector PDF exports.',
+    'Mixkit Gold Coin Audio FX: Authentic gold coin return chime, digital wallet given payment sound, and tactile tick mark clicks.',
+    'Rocket Launch Celebration: Dedicated exclusively to app version upgrade milestones.',
+    '2.5 GB Zero Data-Loss Vault: Multi-tier persistence and automatic recovery across all sessions.'
   ]);
 
   // Check if update was already applied on this device
   const [isUpdateInstalled, setIsUpdateInstalled] = useState<boolean>(() => {
     try {
       const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-      return stored === 'v6.5.0';
+      return stored === 'v6.5.1';
     } catch {
       return false;
     }
@@ -107,7 +110,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [analysisProgress, setAnalysisProgress] = useState<number>(0);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [downloadSpeedMBps, setDownloadSpeedMBps] = useState<number>(34.5);
+  const [downloadSpeedMBps, setDownloadSpeedMBps] = useState<number>(42.5);
   const [downloadedMB, setDownloadedMB] = useState<number>(0);
   const [downloadedFormatted, setDownloadedFormatted] = useState<string>('0 MB');
   const [currentProcessingStage, setCurrentProcessingStage] = useState<string>('');
@@ -116,6 +119,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isUpdateSuccess, setIsUpdateSuccess] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isRocketAnimating, setIsRocketAnimating] = useState<boolean>(false);
+  const [isFeatureShowcaseOpen, setIsFeatureShowcaseOpen] = useState<boolean>(false);
 
   const triggerRocketAnimation = () => {
     setIsRocketAnimating(true);
@@ -124,19 +128,20 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
   const toggleTurboMode = () => {
     setIsTurboMode(prev => {
       const next = !prev;
+      playTickSound();
       showToast(next ? '⚡ Fast Stream Mode activated (~5s)' : '🐢 Realistic Network Simulation Mode (~45-75s)', 'info');
       return next;
     });
   };
 
-  // In-app release announcement notification for v6.5.0 launch
+  // In-app release announcement notification for v6.5.1 launch
   useEffect(() => {
-    const sessionKey = 'financialfree_v650_notified';
+    const sessionKey = 'financialfree_v651_notified';
     if (!sessionStorage.getItem(sessionKey)) {
       const timer = setTimeout(() => {
         const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-        if (stored !== 'v6.5.0') {
-          showToast('✨ New Update v6.5.0 (1.9 GB) Available! Zero Data-Loss Vault, Advanced Rocket Animation & Account Approval live.', 'info');
+        if (stored !== 'v6.5.1') {
+          showToast('✨ New Update v6.5.1 (2.5 GB) Available! Optimized QR Code, Share & View Statement & Mixkit Gold Coin audio.', 'info');
           sessionStorage.setItem(sessionKey, 'true');
         }
       }, 1200);
@@ -149,7 +154,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       const info = await api.getAppUpdateInfo();
       if (info) {
-        setLatestVersion(info.latestVersion || 'v6.4.5');
+        setLatestVersion(info.latestVersion || 'v6.5.1');
         if (info.currentVersion) setCurrentVersion(info.currentVersion);
         if (info.totalSizeMB) setTotalSizeMB(info.totalSizeMB);
         if (info.totalSizeFormatted) setTotalSizeFormatted(info.totalSizeFormatted);
@@ -158,7 +163,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
         if (info.files && info.files.length > 0) setFiles(info.files);
 
         const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-        if (stored === (info.latestVersion || 'v6.4.5')) {
+        if (stored === (info.latestVersion || 'v6.5.1')) {
           setIsUpdateInstalled(true);
           setHasUpdateAvailable(false);
         } else {
@@ -175,21 +180,24 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     fetchUpdateManifest();
   }, [fetchUpdateManifest]);
 
-  const openUpdateModal = () => setIsModalOpen(true);
+  const openUpdateModal = () => {
+    playTickSound();
+    setIsModalOpen(true);
+  };
+
   const closeUpdateModal = () => {
     if (!isDownloading && !isAnalyzing) {
+      playTickSound();
       setIsModalOpen(false);
     }
   };
 
-  // Step-by-step package verification and realistic 1.9 GB MB/GB download procedure
+  // Step-by-step package verification and realistic 2.5 GB MB/GB download procedure
   const startAnalysisAndDownload = async () => {
     if (isAnalyzing || isDownloading) return;
 
-    // Launch celebratory aerodynamic rocket animation when initiating update
-    setIsRocketAnimating(true);
-
     try {
+      playTickSound();
       // PHASE 1: SYSTEM REQUIREMENTS & PACKAGE VERIFICATION
       setIsAnalyzing(true);
       setAnalysisProgress(0);
@@ -201,9 +209,9 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       const verificationStages = [
         'Inspecting local vault storage and device compatibility...',
-        'Validating cryptographic integrity for v6.5.0 package...',
-        'Allocating 1.9 GB high-speed offline cache buffer...',
-        'Package verified: Ready to stream v6.5.0 update package.'
+        'Validating cryptographic integrity for v6.5.1 package...',
+        'Allocating 2.5 GB high-speed offline cache buffer...',
+        'Package verified: Ready to stream v6.5.1 update package.'
       ];
 
       const stageDelay = isTurboMode ? 150 : 450;
@@ -215,12 +223,11 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       setIsAnalyzing(false);
 
-      // PHASE 2: PROGRESSIVE DOWNLOAD WITH LIVE MB / GB TRANSFER TRACKER
-      // Matches user specification: ~45s per GB download simulation, with optional Turbo mode
+      // PHASE 2: PROGRESSIVE DOWNLOAD WITH LIVE MB / GB TRANSFER TRACKER (2.5 GB)
       setIsDownloading(true);
-      const totalMB = 1945.6; // 1.9 GB
-      const downloadSteps = isTurboMode ? 24 : 52;
-      const stepDuration = isTurboMode ? 120 : 860; // ~45-50 seconds realistic streaming
+      const totalMB = 2560; // 2.5 GB
+      const downloadSteps = isTurboMode ? 24 : 56;
+      const stepDuration = isTurboMode ? 110 : 750; // realistic streaming
 
       for (let step = 1; step <= downloadSteps; step++) {
         const currentProg = Math.round((step / downloadSteps) * 100);
@@ -232,8 +239,8 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         // Realistic dynamic download speed (MB/s)
         const currentSpeed = isTurboMode
-          ? 248.0
-          : parseFloat((28.0 + Math.sin(step) * 8.5 + Math.random() * 5).toFixed(1));
+          ? 285.0
+          : parseFloat((32.0 + Math.sin(step) * 9.5 + Math.random() * 6).toFixed(1));
         
         const estRemainingSec = Math.max(1, Math.round(((downloadSteps - step) * stepDuration) / 1000));
         setRemainingSeconds(estRemainingSec);
@@ -246,16 +253,16 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
 
         let stageText = '';
-        if (currentProg < 20) {
-          stageText = `Streaming Zero Data-Loss Vault & Storage Engine (${formatted} / 1.9 GB)...`;
-        } else if (currentProg < 40) {
-          stageText = `Deploying Advanced Rocket Particle Simulation (${formatted} / 1.9 GB)...`;
-        } else if (currentProg < 60) {
-          stageText = `Configuring User Registration & Administrator Approval Modules (${formatted} / 1.9 GB)...`;
-        } else if (currentProg < 80) {
-          stageText = `Synchronizing Universal UPI App Chooser & Return QR (${formatted} / 1.9 GB)...`;
+        if (currentProg < 25) {
+          stageText = `Streaming Optimized QR Code & UPI Deep Link Suite (${formatted} / 2.5 GB)...`;
+        } else if (currentProg < 50) {
+          stageText = `Deploying Share and View Statement Engine (${formatted} / 2.5 GB)...`;
+        } else if (currentProg < 75) {
+          stageText = `Configuring Mixkit Gold Coin & Payment Audio Synthesis (${formatted} / 2.5 GB)...`;
+        } else if (currentProg < 92) {
+          stageText = `Synchronizing 2.5 GB Zero Data-Loss Vault & Storage Engine (${formatted} / 2.5 GB)...`;
         } else {
-          stageText = `Finalizing Package Integrity & Activating v6.5.0 (${formatted} / 1.9 GB)...`;
+          stageText = `Finalizing Package Integrity & Activating v6.5.1 (${formatted} / 2.5 GB)...`;
         }
 
         setDownloadProgress(currentProg);
@@ -268,7 +275,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
       }
 
       setDownloadedMB(totalMB);
-      setDownloadedFormatted('1.9 GB');
+      setDownloadedFormatted('2.5 GB');
       setDownloadProgress(100);
       setActiveFeatureIndex(advantages.length - 1);
       setRemainingSeconds(0);
@@ -300,14 +307,11 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
       setInstalledAt(updateDate);
       setHasUpdateAvailable(false);
 
-      // Trigger Confetti Celebration
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      // Open the Feature Activation Showcase Animation for the 2.5 GB update!
+      setIsFeatureShowcaseOpen(true);
 
-      showToast(`FinancialFree updated to ${latestVersion} (1.9 GB) successfully!`, 'success');
+      // Play Mixkit gold coin sound to celebrate 2.5 GB update finish!
+      playReturnMoneySound();
 
     } catch (err: any) {
       setIsAnalyzing(false);
@@ -317,6 +321,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const checkForUpdates = async () => {
+    playTickSound();
     showToast('Checking for newer app versions...', 'info');
     await fetchUpdateManifest();
     
@@ -333,8 +338,9 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  // Helper for developers / QA to test the update flow again if desired
+  // Helper for developers / QA to test the update flow again
   const resetUpdateForTesting = () => {
+    playTickSound();
     localStorage.removeItem(INSTALLED_VERSION_KEY);
     localStorage.removeItem(LAST_UPDATED_AT_KEY);
     setIsUpdateInstalled(false);
@@ -343,7 +349,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     setDownloadProgress(0);
     setDownloadedMB(0);
     setFiles([]);
-    showToast('Update reset: Update notification & button are now available for testing.', 'info');
+    showToast('Update reset: v6.5.1 (2.5 GB) notification & download button are now ready for testing.', 'info');
   };
 
   return (
@@ -383,6 +389,25 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
       }}
     >
       {children}
+
+      {/* Feature Download & Activation Showcase Animation when 2.5 GB finishes */}
+      <FeatureActivationShowcaseAnimation
+        isOpen={isFeatureShowcaseOpen}
+        onComplete={() => {
+          setIsFeatureShowcaseOpen(false);
+          setIsRocketAnimating(true);
+          try {
+            confetti({
+              particleCount: 120,
+              spread: 85,
+              origin: { y: 0.6 }
+            });
+          } catch {}
+          showToast(`🚀 FinancialFree updated to ${latestVersion} (2.5 GB) successfully!`, 'success');
+        }}
+      />
+
+      {/* Celebratory Rocket Launch Animation - ONLY during app updates! */}
       <RocketLaunchAnimation
         isActive={isRocketAnimating}
         onComplete={() => setIsRocketAnimating(false)}

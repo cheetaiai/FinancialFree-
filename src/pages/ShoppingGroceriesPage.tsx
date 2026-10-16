@@ -31,9 +31,9 @@ import {
 import { ShoppingSpend, ShoppingCategory, PaymentMethod } from '../types';
 import { LiquidGlassCard } from '../components/ui/LiquidGlassCard';
 import { LiquidButton } from '../components/ui/LiquidButton';
-import { RocketLaunchAnimation } from '../components/ui/RocketLaunchAnimation';
 import { useToast } from '../context/ToastContext';
 import { CameraCaptureModal } from '../components/camera/CameraCaptureModal';
+import { playGivenMoneySound, playTickSound } from '../lib/soundEffects';
 import { api } from '../lib/api';
 import { exportShoppingSpendsPdf } from '../lib/pdfExport';
 
@@ -151,7 +151,6 @@ export const ShoppingGroceriesPage: React.FC = () => {
 
   // Animated Tick Success Modal State
   const [addedSuccessItem, setAddedSuccessItem] = useState<{ title: string; amount: number } | null>(null);
-  const [isRocketLaunching, setIsRocketLaunching] = useState(false);
 
   // Preview Receipt Modal
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
@@ -248,7 +247,8 @@ export const ShoppingGroceriesPage: React.FC = () => {
 
       setSpends(prev => [newSpend, ...prev]);
       setIsModalOpen(false);
-      setIsRocketLaunching(true);
+      playTickSound();
+      playGivenMoneySound();
       setAddedSuccessItem({ title: newSpend.title, amount: parsedAmount });
       setTimeout(() => setAddedSuccessItem(null), 1500);
       showToast(`Added ₹${parsedAmount} for "${newSpend.title}".`, 'success');
@@ -1036,12 +1036,6 @@ export const ShoppingGroceriesPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Razorpay Rocket Launch Micro-Interaction */}
-      <RocketLaunchAnimation
-        isActive={isRocketLaunching}
-        onComplete={() => setIsRocketLaunching(false)}
-      />
     </div>
   );
 };

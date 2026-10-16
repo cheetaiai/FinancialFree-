@@ -141,7 +141,7 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ className = ''
                       {latestVersion}
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                      1.9 GB Package
+                      {totalSizeFormatted} Package
                     </span>
                   </h3>
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -151,26 +151,26 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ className = ''
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium">
-                  FinancialFree Pro: Shopping 🛍 & Groceries Tracker, Real-Time UPI Return QR, Public Share Links & Liquid-Glass UI.
+                  FinancialFree Ultimate: Optimized QR Code Suite, Share & View Statement, Mixkit Gold Coin Audio FX & Zero Data-Loss Vault.
                 </p>
 
                 {/* Feature highlight badges */}
                 <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
-                    <ShoppingBag size={12} />
-                    <span>Shopping & Groceries Hub</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 text-[11px] font-bold border border-blue-500/20">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold border border-cyan-500/20">
                     <Zap size={12} />
-                    <span>UPI Return Money QR</span>
+                    <span>Optimized UPI QR Code</span>
                   </span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold border border-indigo-500/20">
-                    <Layers size={12} />
-                    <span>Zero Data Loss Server Sync</span>
+                    <FileText size={12} />
+                    <span>Share & View Statement</span>
                   </span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[11px] font-bold border border-amber-500/20">
-                    <FileText size={12} />
-                    <span>Spends PDF Statement</span>
+                    <Sparkles size={12} />
+                    <span>Mixkit Gold Coin Audio</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
+                    <Layers size={12} />
+                    <span>2.5 GB Zero Data-Loss Vault</span>
                   </span>
                 </div>
               </div>
@@ -185,7 +185,7 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ className = ''
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                       <span>{isAnalyzing ? 'Verifying...' : `Streaming ${downloadProgress}%`}</span>
                     </span>
-                    <span className="font-mono">{downloadedFormatted} / 1.9 GB</span>
+                    <span className="font-mono">{downloadedFormatted} / {totalSizeFormatted}</span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                     <div

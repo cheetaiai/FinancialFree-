@@ -13,7 +13,6 @@ import { ArrowUpRight, ArrowDownLeft, AlertCircle, Sparkles, Camera, Image as Im
 import { CameraCaptureModal } from './camera/CameraCaptureModal';
 import { PaymentAnimationModal, PaymentAnimationData } from './ui/PaymentAnimationModal';
 import { PersonLedgerCard } from './ui/PersonLedgerCard';
-import { RocketLaunchAnimation } from './ui/RocketLaunchAnimation';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -70,7 +69,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   // Advanced Payment Result Animation State (Success Tick / Error Cross)
   const [paymentAnimation, setPaymentAnimation] = useState<PaymentAnimationData | null>(null);
   const [isPaymentAnimOpen, setIsPaymentAnimOpen] = useState(false);
-  const [isRocketActive, setIsRocketActive] = useState(false);
   const savedTxRef = useRef<Transaction | null>(null);
 
   // Load people list
@@ -378,7 +376,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           category: category.trim(),
           notes: notes.trim()
         });
-        setIsRocketActive(true);
         setIsPaymentAnimOpen(true);
       }
     } catch (err: any) {
@@ -915,12 +912,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         data={paymentAnimation}
         isOpen={isPaymentAnimOpen}
         onClose={handleClosePaymentAnim}
-      />
-
-      {/* Razorpay Rocket Launch Micro-Interaction */}
-      <RocketLaunchAnimation
-        isActive={isRocketActive}
-        onComplete={() => setIsRocketActive(false)}
       />
     </LiquidModal>
   );

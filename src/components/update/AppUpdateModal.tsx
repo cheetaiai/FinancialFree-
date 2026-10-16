@@ -22,6 +22,8 @@ import { useAppUpdate } from '../../context/AppUpdateContext';
 import { LiquidButton } from '../ui/LiquidButton';
 import { LiquidGlassCard } from '../ui/LiquidGlassCard';
 
+import { playTickSound } from '../../lib/soundEffects';
+
 export const AppUpdateModal: React.FC = () => {
   const {
     currentVersion,
@@ -52,6 +54,11 @@ export const AppUpdateModal: React.FC = () => {
 
   if (!isModalOpen) return null;
 
+  const handleTabChange = (tab: 'advantages' | 'notes') => {
+    playTickSound();
+    setActiveTab(tab);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/65 backdrop-blur-md overflow-y-auto">
       <motion.div
@@ -81,14 +88,14 @@ export const AppUpdateModal: React.FC = () => {
                     Official Release
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    1.9 GB Package
+                    {totalSizeFormatted} Package
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Current: <span className="font-semibold">{currentVersion}</span> → Target:{' '}
                   <span className="font-bold text-blue-600 dark:text-blue-400">{latestVersion}</span>
                   <span className="mx-1.5 opacity-40">|</span>
-                  <span>1.9 GB Total Size</span>
+                  <span>{totalSizeFormatted} Total Size</span>
                 </p>
               </div>
             </div>
@@ -106,7 +113,7 @@ export const AppUpdateModal: React.FC = () => {
           {/* Mode Navigation Tabs */}
           <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
             <button
-              onClick={() => setActiveTab('advantages')}
+              onClick={() => handleTabChange('advantages')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'advantages'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
@@ -117,7 +124,7 @@ export const AppUpdateModal: React.FC = () => {
               <span>Advantages of Features</span>
             </button>
             <button
-              onClick={() => setActiveTab('notes')}
+              onClick={() => handleTabChange('notes')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'notes'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
@@ -155,7 +162,7 @@ export const AppUpdateModal: React.FC = () => {
                   <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
                     {isAnalyzing
                       ? 'Package Verified'
-                      : `${downloadedFormatted} / 1.9 GB • ${downloadSpeedMBps} MB/s`}
+                      : `${downloadedFormatted} / ${totalSizeFormatted} • ${downloadSpeedMBps} MB/s`}
                   </span>
                   <button
                     type="button"
@@ -210,7 +217,7 @@ export const AppUpdateModal: React.FC = () => {
 
               <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping shrink-0" />
-                <span>{currentProcessingStage || 'Streaming high-speed 1.9 GB update package...'}</span>
+                <span>{currentProcessingStage || `Streaming high-speed ${totalSizeFormatted} update package...`}</span>
               </div>
             </motion.div>
           )}
@@ -229,8 +236,8 @@ export const AppUpdateModal: React.FC = () => {
                 Update {latestVersion} Successfully Applied!
               </h4>
               <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-                FinancialFree is now operating on <span className="font-bold text-emerald-600 dark:text-emerald-400">{latestVersion}</span> (1.9 GB).
-                The Shopping 🛍 & Groceries Tracker and Liquid-Glass Engine are active.
+                FinancialFree is now operating on <span className="font-bold text-emerald-600 dark:text-emerald-400">{latestVersion}</span> ({totalSizeFormatted}).
+                The Optimized QR Code Engine, Share & View Statement, and Mixkit Audio Suite are active.
               </p>
               <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 italic">
                 ✓ You are on the newest release. The update prompt is permanently completed.
@@ -246,7 +253,7 @@ export const AppUpdateModal: React.FC = () => {
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Size</div>
                   <div className="text-sm sm:text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">
-                    1.9 GB
+                    {totalSizeFormatted}
                   </div>
                 </div>
                 <div>
@@ -305,10 +312,10 @@ export const AppUpdateModal: React.FC = () => {
               <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/15">
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Zap size={14} className="text-amber-500" />
-                  <span>Release Notes — FinancialFree Pro {latestVersion} (1.9 GB)</span>
+                  <span>Release Notes — FinancialFree Ultimate {latestVersion} ({totalSizeFormatted})</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Engineered for maximum reliability, speed, dedicated home spend tracking, and privacy.
+                  Engineered for maximum reliability, speed, optimized UPI QR codes, public statements, and audio feedback.
                 </p>
               </div>
 
@@ -333,7 +340,7 @@ export const AppUpdateModal: React.FC = () => {
               <span>
                 {isUpdateInstalled
                   ? `Installed on this device${installedAt ? ` (${new Date(installedAt).toLocaleDateString()})` : ''}`
-                  : `1.9 GB download • High-speed offline cache`}
+                  : `${totalSizeFormatted} download • High-speed offline cache`}
               </span>
             </div>
 
@@ -360,7 +367,7 @@ export const AppUpdateModal: React.FC = () => {
                     ? `Streaming (${downloadProgress}%)...`
                     : isAnalyzing
                     ? 'Verifying package...'
-                    : `Download & Apply Update (1.9 GB)`}
+                    : `Download & Apply Update (${totalSizeFormatted})`}
                 </LiquidButton>
               )}
             </div>

@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { User, Phone, Mail, MapPin, Camera, Sparkles, X, Image as ImageIcon, Check, Video, CreditCard } from 'lucide-react';
 import { CameraCaptureModal } from './camera/CameraCaptureModal';
 import { PersonLedgerCard } from './ui/PersonLedgerCard';
-import { RocketLaunchAnimation } from './ui/RocketLaunchAnimation';
+import { playNewPersonSound } from '../lib/soundEffects';
 
 interface AddPersonModalProps {
   isOpen: boolean;
@@ -49,7 +49,6 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScanningCard, setIsScanningCard] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
-  const [isRocketAnimating, setIsRocketAnimating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -174,12 +173,12 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
           avatar_color: avatarColor,
           avatar_url: avatarUrl
         });
-        setIsRocketAnimating(true);
-        showToast('Person added successfully to ledger.', 'success');
+        playNewPersonSound();
+        showToast(`✨ Contact "${created.full_name}" added successfully! Thanks for adding.`, 'success');
         onSuccess(created);
         setTimeout(() => {
           onClose();
-        }, 300);
+        }, 250);
       }
     } catch (err: any) {
       setError(err.message || 'Unable to save person. Please try again.');
@@ -467,11 +466,6 @@ export const AddPersonModal: React.FC<AddPersonModalProps> = ({
         title="Photograph Visiting Card or Person"
       />
 
-      {/* Advanced Rocket Animation upon creating contact */}
-      <RocketLaunchAnimation
-        isActive={isRocketAnimating}
-        onComplete={() => setIsRocketAnimating(false)}
-      />
     </LiquidModal>
   );
 };

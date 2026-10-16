@@ -25,6 +25,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { exportPublicSharePdf } from '../../lib/pdfExport';
+import { playTickSound, playReturnMoneySound } from '../../lib/soundEffects';
 
 type QrTab = 'request_money' | 'pay_upi' | 'public_share';
 
@@ -300,6 +301,7 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
   };
 
   const handleCopyUpiLink = async () => {
+    playTickSound();
     const payload = activeTab === 'request_money' ? getRequestUpiUri() : getPayUpiUri();
     try {
       await navigator.clipboard.writeText(payload);
@@ -312,6 +314,7 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
   };
 
   const handleCopyShareLink = async () => {
+    playTickSound();
     const link = shareUrl || `${window.location.origin}/share/${shareId || 'ledger'}`;
     try {
       await navigator.clipboard.writeText(link);
@@ -324,6 +327,7 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
   };
 
   const handleDownloadQrImage = () => {
+    playTickSound();
     if (!qrDataUrl) return;
     const a = document.createElement('a');
     a.href = qrDataUrl;
@@ -336,6 +340,7 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
   };
 
   const handleDownloadPdf = () => {
+    playTickSound();
     exportPublicSharePdf({
       shareId: shareId || 'ledger',
       personName: person.full_name,
@@ -433,7 +438,10 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
         <div className="p-2 bg-slate-100/70 dark:bg-slate-800/60 border-b border-slate-200/60 dark:border-white/5 grid grid-cols-3 gap-1.5">
           <button
             type="button"
-            onClick={() => setActiveTab('request_money')}
+            onClick={() => {
+              playTickSound();
+              setActiveTab('request_money');
+            }}
             className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer truncate ${
               activeTab === 'request_money'
                 ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
@@ -446,7 +454,10 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('pay_upi')}
+            onClick={() => {
+              playTickSound();
+              setActiveTab('pay_upi');
+            }}
             className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer truncate ${
               activeTab === 'pay_upi'
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
@@ -459,7 +470,10 @@ export const PersonQrCodeModal: React.FC<PersonQrCodeModalProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('public_share')}
+            onClick={() => {
+              playTickSound();
+              setActiveTab('public_share');
+            }}
             className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer truncate ${
               activeTab === 'public_share'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
