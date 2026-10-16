@@ -1,19 +1,19 @@
 {
   "id": "latest_backup",
   "version": "2.0",
-  "created_at": "2026-10-16T10:52:00.845Z",
-  "updated_at": "2026-10-16T10:52:00.845Z",
+  "created_at": "2026-10-16T11:02:02.451Z",
+  "updated_at": "2026-10-16T11:02:02.451Z",
   "people_count": 1,
-  "tx_count": 1,
+  "tx_count": 3,
   "reminder_count": 0,
-  "total_given": 800,
-  "total_returned": 0,
+  "total_given": 820,
+  "total_returned": 200,
   "people_preview": [
     {
       "id": "per_d48587967e977a39",
       "name": "Shaik",
-      "balance": 800
+      "balance": 620
     }
   ],
-  "data_json": "{\"version\":\"2.0\",\"export_date\":\"2026-10-16T10:52:00.845Z\",\"user\":{\"email\":\"Financial@free.com\"},\"people\":[{\"id\":\"per_d48587967e977a39\",\"user_id\":\"usr_admin_financialfree\",\"full_name\":\"Shaik\",\"phone\":\"\",\"email\":\"\",\"address\":\"\",\"notes\":\"\",\"category\":\"Friends\",\"avatar_color\":\"#EC4899\",\"avatar_url\":\"\",\"created_at\":\"2026-10-13T12:25:41.290Z\",\"updated_at\":\"2026-10-13T12:25:41.290Z\",\"total_given\":800,\"total_returned\":0,\"remaining_balance\":800,\"status\":\"Pending\",\"transaction_count\":1,\"last_transaction_date\":\"2026-10-14\"}],\"transactions\":[{\"id\":\"tx_bdd792f01f6613f0\",\"user_id\":\"usr_admin_financialfree\",\"person_id\":\"per_d48587967e977a39\",\"person_name\":\"Shaik\",\"transaction_type\":\"given\",\"amount\":800,\"transaction_date\":\"2026-10-14\",\"month\":10,\"year\":2026,\"financial_year\":\"FY 2026-27\",\"payment_method\":\"UPI\",\"category\":\"\",\"purpose\":\"\",\"notes\":\"\",\"receipt_image\":\"\",\"created_at\":\"2026-10-14T18:49:46.619Z\",\"updated_at\":\"2026-10-14T18:49:46.619Z\"}],\"reminders\":[]}"
+  "data_json": "{\"version\":\"2.0\",\"export_date\":\"2026-10-16T11:02:02.451Z\",\"user\":{\"email\":\"Financial@free.com\"},\"people\":[{\"id\":\"per_d48587967e977a39\",\"user_id\":\"usr_admin_financialfree\",\"full_name\":\"Shaik\",\"phone\":\"\",\"email\":\"\",\"address\":\"\",\"notes\":\"\",\"category\":\"Friends\",\"avatar_color\":\"#EC4899\",\"avatar_url\":\"\",\"created_at\":\"2026-10-13T12:25:41.290Z\",\"updated_at\":\"2026-10-13T12:25:41.290Z\",\"total_given\":820,\"total_returned\":200,\"remaining_balance\":620,\"status\":\"Partially Paid\",\"transaction_count\":3,\"last_transaction_date\":\"2026-10-16\"}],\"transactions\":[{\"id\":\"tx_085eb656cdc73f00\",\"user_id\":\"usr_admin_financialfree\",\"person_id\":\"per_d48587967e977a39\",\"person_name\":\"Shaik\",\"transaction_type\":\"returned\",\"amount\":200,\"transaction_date\":\"2026-10-16\",\"month\":10,\"year\":2026,\"financial_year\":\"FY 2026-27\",\"payment_method\":\"UPI\",\"category\":\"\",\"purpose\":\"\",\"notes\":\"\",\"receipt_image\":\"\",\"created_at\":\"2026-10-16T10:54:17.618Z\",\"updated_at\":\"2026-10-16T10:54:17.618Z\"},{\"id\":\"tx_801673200a33c484\",\"user_id\":\"usr_admin_financialfree\",\"person_id\":\"per_d48587967e977a39\",\"person_name\":\"Shaik\",\"transaction_type\":\"given\",\"amount\":20,\"transaction_date\":\"2026-10-16\",\"month\":10,\"year\":2026,\"financial_year\":\"FY 2026-27\",\"payment_method\":\"UPI\",\"category\":\"\",\"purpose\":\"\",\"notes\":\"\",\"receipt_image\":\"\",\"created_at\":\"2026-10-16T10:53:53.300Z\",\"updated_at\":\"2026-10-16T10:53:53.300Z\"},{\"id\":\"tx_bdd792f01f6613f0\",\"user_id\":\"usr_admin_financialfree\",\"person_id\":\"per_d48587967e977a39\",\"person_name\":\"Shaik\",\"transaction_type\":\"given\",\"amount\":800,\"transaction_date\":\"2026-10-14\",\"month\":10,\"year\":2026,\"financial_year\":\"FY 2026-27\",\"payment_method\":\"UPI\",\"category\":\"\",\"purpose\":\"\",\"notes\":\"\",\"receipt_image\":\"\",\"created_at\":\"2026-10-14T18:49:46.619Z\",\"updated_at\":\"2026-10-14T18:49:46.619Z\"}],\"reminders\":[]}"
 }

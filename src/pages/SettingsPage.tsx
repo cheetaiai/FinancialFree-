@@ -44,6 +44,7 @@ import { AdminUserManagementCard } from '../components/settings/AdminUserManagem
 import { BudgetSettingsCard } from '../components/budget/BudgetSettingsCard';
 import { DeviceAccessSettingsCard } from '../components/settings/DeviceAccessSettingsCard';
 import { AppUpdateSettingsCard } from '../components/settings/AppUpdateSettingsCard';
+import { AudioFxSettingsCard } from '../components/settings/AudioFxSettingsCard';
 import { BackupData } from '../types';
 import { Compass, Sparkles, UserCheck, LogOut, Bot, MessageSquare, Copy, Check } from 'lucide-react';
 
@@ -380,6 +381,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </div>
       </LiquidGlassCard>
+
+      {/* AUDIO FX & SOUNDSTAGE CARD (Paytm Given Money & Mixkit Taken Money Audio) */}
+      <AudioFxSettingsCard />
 
       {/* CURRENCY SWITCHER CARD */}
       <LiquidGlassCard variant="primary" className="space-y-4">

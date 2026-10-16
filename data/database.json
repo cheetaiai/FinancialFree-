@@ -3,10 +3,10 @@
     {
       "id": "usr_admin_financialfree",
       "email": "Financial@free.com",
-      "password_hash": "04ed4f955ae6fd1938d9421d0ce336503d5e713bd1f1882ec73c140cac8f80a1da30f6f5717bc834ea34066d54be25215c11aec8c3a29737d4b4bedfaf270284",
-      "salt": "4f33d3eb896c3a1a0854e474ffd09a1d",
+      "password_hash": "8bb6182a7aef6aea1583756a6473064b8daea07308b93ace71f19685b00ae5f2c1c2f46800088cba84c754bcfe3760b7afab6d2d1decc61c479c68ac16fbf527",
+      "salt": "1baecfe8e8c706a5d4f9c0092e2576bb",
       "created_at": "2026-01-01T00:00:00.000Z",
-      "updated_at": "2026-10-16T10:51:54.130Z",
+      "updated_at": "2026-10-16T11:01:58.449Z",
       "name": "FinancialFree Admin",
       "phone": "+91 9988776655",
       "role": "admin",
@@ -16,10 +16,10 @@
     {
       "id": "usr_admin_cheeta",
       "email": "startup.cheetaiaistudio.com@gmail.com",
-      "password_hash": "04ed4f955ae6fd1938d9421d0ce336503d5e713bd1f1882ec73c140cac8f80a1da30f6f5717bc834ea34066d54be25215c11aec8c3a29737d4b4bedfaf270284",
-      "salt": "4f33d3eb896c3a1a0854e474ffd09a1d",
+      "password_hash": "8bb6182a7aef6aea1583756a6473064b8daea07308b93ace71f19685b00ae5f2c1c2f46800088cba84c754bcfe3760b7afab6d2d1decc61c479c68ac16fbf527",
+      "salt": "1baecfe8e8c706a5d4f9c0092e2576bb",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-10-16T10:51:54.130Z",
+      "updated_at": "2026-10-16T11:01:58.449Z",
       "name": "Cheeta Admin",
       "phone": "+91 9876543210",
       "role": "admin",
@@ -29,10 +29,10 @@
     {
       "id": "usr_admin_noorjahan",
       "email": "noorjahan77027@gmail.com",
-      "password_hash": "04ed4f955ae6fd1938d9421d0ce336503d5e713bd1f1882ec73c140cac8f80a1da30f6f5717bc834ea34066d54be25215c11aec8c3a29737d4b4bedfaf270284",
-      "salt": "4f33d3eb896c3a1a0854e474ffd09a1d",
+      "password_hash": "8bb6182a7aef6aea1583756a6473064b8daea07308b93ace71f19685b00ae5f2c1c2f46800088cba84c754bcfe3760b7afab6d2d1decc61c479c68ac16fbf527",
+      "salt": "1baecfe8e8c706a5d4f9c0092e2576bb",
       "created_at": "2026-09-10T12:00:22.766Z",
-      "updated_at": "2026-10-16T10:51:54.131Z",
+      "updated_at": "2026-10-16T11:01:58.449Z",
       "name": "Noorjahan Admin",
       "phone": "+91 7702700000",
       "role": "admin",
@@ -97,10 +97,62 @@
       "receipt_image": "",
       "created_at": "2026-10-14T18:49:46.619Z",
       "updated_at": "2026-10-14T18:49:46.619Z"
+    },
+    {
+      "id": "tx_801673200a33c484",
+      "user_id": "usr_admin_financialfree",
+      "person_id": "per_d48587967e977a39",
+      "person_name": "Shaik",
+      "transaction_type": "given",
+      "amount": 20,
+      "transaction_date": "2026-10-16",
+      "month": 10,
+      "year": 2026,
+      "financial_year": "FY 2026-27",
+      "payment_method": "UPI",
+      "category": "",
+      "purpose": "",
+      "notes": "",
+      "receipt_image": "",
+      "created_at": "2026-10-16T10:53:53.300Z",
+      "updated_at": "2026-10-16T10:53:53.300Z"
+    },
+    {
+      "id": "tx_085eb656cdc73f00",
+      "user_id": "usr_admin_financialfree",
+      "person_id": "per_d48587967e977a39",
+      "person_name": "Shaik",
+      "transaction_type": "returned",
+      "amount": 200,
+      "transaction_date": "2026-10-16",
+      "month": 10,
+      "year": 2026,
+      "financial_year": "FY 2026-27",
+      "payment_method": "UPI",
+      "category": "",
+      "purpose": "",
+      "notes": "",
+      "receipt_image": "",
+      "created_at": "2026-10-16T10:54:17.618Z",
+      "updated_at": "2026-10-16T10:54:17.618Z"
     }
   ],
   "reminders": [],
   "shopping_spends": [
+    {
+      "id": "sp_1792148232176_hzkmm",
+      "user_id": "usr_admin_financialfree",
+      "title": "S",
+      "amount": 100,
+      "category": "groceries",
+      "merchant": "",
+      "date": "2026-10-16",
+      "payment_method": "UPI",
+      "notes": "",
+      "is_home_service": false,
+      "created_at": "2026-10-16T10:57:12.176Z",
+      "updated_at": "2026-10-16T10:57:14.777Z"
+    },
     {
       "id": "sp_1791781167776_oty72",
       "user_id": "usr_guest",
@@ -117,6 +169,42 @@
     }
   ],
   "public_shares": [
+    {
+      "shareId": "8kqyl2ragm",
+      "userId": "usr_admin_financialfree",
+      "personId": "per_d48587967e977a39",
+      "personName": "Shaik",
+      "totalGiven": 820,
+      "totalReturned": 200,
+      "netBalance": 620,
+      "currency": "INR",
+      "status": "receivable",
+      "note": "Verified statement of money given & taken for Shaik",
+      "transactions": [
+        {
+          "id": "tx_085eb656cdc73f00",
+          "date": "2026-10-16",
+          "type": "returned",
+          "amount": 200,
+          "notes": ""
+        },
+        {
+          "id": "tx_801673200a33c484",
+          "date": "2026-10-16",
+          "type": "given",
+          "amount": 20,
+          "notes": ""
+        },
+        {
+          "id": "tx_bdd792f01f6613f0",
+          "date": "2026-10-14",
+          "type": "given",
+          "amount": 800,
+          "notes": ""
+        }
+      ],
+      "createdAt": "2026-10-16T10:56:07.101Z"
+    },
     {
       "shareId": "0855hn57jh",
       "userId": "usr_admin_financialfree",

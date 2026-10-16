@@ -1,21 +1,45 @@
-// Audio & Sound Effects Engine for FinancialFree
-// High-fidelity Web Audio synthesis for zero-latency, 100% offline-ready sound effects:
-// 1. Tick Mark: Crisp tactile click/pop for checkmarks & toggles
-// 2. Given Money (Payment): Upward digital wallet cash register chime
-// 3. Return Money (Mixkit Gold Coin): Crystalline metallic gold coin double-bounce ring
-// 4. New Person Added: Warm, celebratory 4-note welcoming chime
+// Professional Audio & Sound Effects Engine for FinancialFree
+// Dual-layer audio pipeline:
+// Layer 1: Studio WAV Audio Asset Playback (/sounds/paytm_payment_given.wav & /sounds/mixkit_money_taken.wav)
+// Layer 2: Zero-latency Web Audio API synthesizer fallback (100% offline & zero network dependency)
 
 class SoundEffectsService {
   private ctx: AudioContext | null = null;
   private soundEnabled: boolean = true;
+  private volume: number = 0.85; // 0.0 to 1.0
+  private audioCache: Map<string, HTMLAudioElement> = new Map();
 
   constructor() {
     try {
       const stored = localStorage.getItem('financialfree_sound_enabled');
       this.soundEnabled = stored !== 'false';
+      const storedVol = localStorage.getItem('financialfree_sound_volume');
+      if (storedVol) {
+        const parsed = parseFloat(storedVol);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+          this.volume = parsed;
+        }
+      }
     } catch {
       this.soundEnabled = true;
+      this.volume = 0.85;
     }
+
+    if (typeof window !== 'undefined') {
+      this.preloadAudio('/sounds/paytm_payment_given.wav');
+      this.preloadAudio('/sounds/mixkit_money_taken.wav');
+      this.preloadAudio('/sounds/tick_mark.wav');
+      this.preloadAudio('/sounds/new_person_welcome.wav');
+    }
+  }
+
+  private preloadAudio(url: string): void {
+    try {
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      audio.volume = this.volume;
+      this.audioCache.set(url, audio);
+    } catch {}
   }
 
   public isEnabled(): boolean {
@@ -26,6 +50,20 @@ class SoundEffectsService {
     this.soundEnabled = enabled;
     try {
       localStorage.setItem('financialfree_sound_enabled', enabled ? 'true' : 'false');
+    } catch {}
+  }
+
+  public getVolume(): number {
+    return this.volume;
+  }
+
+  public setVolume(vol: number): void {
+    this.volume = Math.max(0, Math.min(1, vol));
+    try {
+      localStorage.setItem('financialfree_sound_volume', this.volume.toString());
+      this.audioCache.forEach(audio => {
+        audio.volume = this.volume;
+      });
     } catch {}
   }
 
@@ -55,163 +93,173 @@ class SoundEffectsService {
     }
   }
 
+  private playSoundFile(url: string, fallbackFn: () => void): void {
+    if (!this.soundEnabled) return;
+
+    try {
+      // First try HTML5 audio element
+      let audio = this.audioCache.get(url);
+      if (!audio) {
+        audio = new Audio(url);
+        this.audioCache.set(url, audio);
+      }
+      audio.volume = this.volume;
+      audio.currentTime = 0;
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // If browser policy blocked HTML5 audio or file not found, invoke Web Audio fallback
+          fallbackFn();
+        });
+      }
+    } catch {
+      fallbackFn();
+    }
+  }
+
   /**
    * 1. TICK MARK SOUND
-   * Crisp, subtle tactile click for checkboxes, checkmark animations & toggles.
+   * Crisp, subtle tactile click for checkmarks, buttons, tabs & toggles
    */
   public playTickSound(): void {
     if (!this.soundEnabled) return;
-    const ctx = this.getAudioContext();
-    if (!ctx) return;
 
-    try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    this.playSoundFile('/sounds/tick_mark.wav', () => {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
+      try {
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1450, now);
-      osc.frequency.exponentialRampToValueAtTime(520, now + 0.038);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1450, now);
+        osc.frequency.exponentialRampToValueAtTime(450, now + 0.035);
 
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.25, now + 0.004);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.3 * this.volume, now + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
 
-      osc.start(now);
-      osc.stop(now + 0.04);
-    } catch {}
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } catch {}
+    });
   }
 
   /**
-   * 2. GIVEN MONEY SOUND (Payment Add)
-   * Modern digital payment swoosh + cash register chime when money is given/paid.
+   * 2. GIVEN MONEY SOUND (PAYTM MP3 / WAV PAYMENT SOUND)
+   * The iconic Paytm melodious payment confirmation:
+   * Melodic chimes: G5 -> C6 -> E6 -> G6 -> C7 with vibrant marimba and chime harmonics.
    */
   public playGivenMoneySound(): void {
     if (!this.soundEnabled) return;
-    const ctx = this.getAudioContext();
-    if (!ctx) return;
 
-    try {
-      const now = ctx.currentTime;
+    this.playSoundFile('/sounds/paytm_payment_given.wav', () => {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
 
-      // Tone 1: Upward swoosh
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'triangle';
-      osc1.frequency.setValueAtTime(587.33, now); // D5
-      osc1.frequency.exponentialRampToValueAtTime(880, now + 0.08); // A5
+      try {
+        const now = ctx.currentTime;
+        const notes = [
+          { time: 0.04, freq: 783.99, dur: 0.28, vol: 0.35 * this.volume },  // G5
+          { time: 0.26, freq: 1046.50, dur: 0.28, vol: 0.40 * this.volume }, // C6
+          { time: 0.50, freq: 1318.51, dur: 0.32, vol: 0.45 * this.volume }, // E6
+          { time: 0.74, freq: 1567.98, dur: 0.40, vol: 0.50 * this.volume }, // G6
+          { time: 1.05, freq: 2093.00, dur: 1.40, vol: 0.55 * this.volume }  // C7
+        ];
 
-      gain1.gain.setValueAtTime(0.01, now);
-      gain1.gain.linearRampToValueAtTime(0.28, now + 0.02);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        notes.forEach(({ time, freq, dur, vol }) => {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.18);
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(freq, now + time);
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(freq * 2, now + time);
 
-      // Tone 2: Bright cash register chime (D6 high bell)
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(1174.66, now + 0.08); // D6
-      osc2.frequency.setValueAtTime(1760.0, now + 0.14); // A6
+          gain.gain.setValueAtTime(0.001, now + time);
+          gain.gain.linearRampToValueAtTime(vol, now + time + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + time + dur);
 
-      gain2.gain.setValueAtTime(0.001, now + 0.08);
-      gain2.gain.linearRampToValueAtTime(0.35, now + 0.095);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
 
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.08);
-      osc2.stop(now + 0.58);
-
-      // Subtle metallic sparkle overtone
-      const osc3 = ctx.createOscillator();
-      const gain3 = ctx.createGain();
-      osc3.type = 'sine';
-      osc3.frequency.setValueAtTime(2349.32, now + 0.1); // D7 sparkle
-
-      gain3.gain.setValueAtTime(0.001, now + 0.1);
-      gain3.gain.linearRampToValueAtTime(0.12, now + 0.115);
-      gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
-
-      osc3.connect(gain3);
-      gain3.connect(ctx.destination);
-      osc3.start(now + 0.1);
-      osc3.stop(now + 0.45);
-    } catch {}
+          osc1.start(now + time);
+          osc2.start(now + time);
+          osc1.stop(now + time + dur + 0.02);
+          osc2.stop(now + time + dur + 0.02);
+        });
+      } catch {}
+    });
   }
 
   /**
-   * 3. RETURN MONEY SOUND (Mixkit Gold Coin)
+   * 3. MONEY TAKEN / RETURN MONEY SOUND (MIXKIT GOLD COIN)
    * High-resonance crystalline gold coin impact, secondary bounce, and rich metallic ringdown.
    */
   public playReturnMoneySound(): void {
     if (!this.soundEnabled) return;
-    const ctx = this.getAudioContext();
-    if (!ctx) return;
 
-    try {
-      const now = ctx.currentTime;
+    this.playSoundFile('/sounds/mixkit_money_taken.wav', () => {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
 
-      // Helper function to create an authentic metallic coin strike
-      const createCoinClink = (startTime: number, volume: number, freq1: number, freq2: number) => {
-        // High fundamental ring
-        const oscA = ctx.createOscillator();
-        const gainA = ctx.createGain();
-        oscA.type = 'sine';
-        oscA.frequency.setValueAtTime(freq1, startTime);
+      try {
+        const now = ctx.currentTime;
 
-        gainA.gain.setValueAtTime(0.001, startTime);
-        gainA.gain.linearRampToValueAtTime(volume, startTime + 0.004);
-        gainA.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.95);
+        const createCoinClink = (startTime: number, volume: number, freq1: number, freq2: number) => {
+          const oscA = ctx.createOscillator();
+          const gainA = ctx.createGain();
+          oscA.type = 'sine';
+          oscA.frequency.setValueAtTime(freq1, startTime);
 
-        oscA.connect(gainA);
-        gainA.connect(ctx.destination);
-        oscA.start(startTime);
-        oscA.stop(startTime + 1.0);
+          gainA.gain.setValueAtTime(0.001, startTime);
+          gainA.gain.linearRampToValueAtTime(volume * this.volume, startTime + 0.004);
+          gainA.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.95);
 
-        // Metallic harmonic overtone (gives gold coin its distinctive bright ping)
-        const oscB = ctx.createOscillator();
-        const gainB = ctx.createGain();
-        oscB.type = 'sine';
-        oscB.frequency.setValueAtTime(freq2, startTime);
+          oscA.connect(gainA);
+          gainA.connect(ctx.destination);
+          oscA.start(startTime);
+          oscA.stop(startTime + 1.0);
 
-        gainB.gain.setValueAtTime(0.001, startTime);
-        gainB.gain.linearRampToValueAtTime(volume * 0.7, startTime + 0.004);
-        gainB.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.7);
+          const oscB = ctx.createOscillator();
+          const gainB = ctx.createGain();
+          oscB.type = 'sine';
+          oscB.frequency.setValueAtTime(freq2, startTime);
 
-        oscB.connect(gainB);
-        gainB.connect(ctx.destination);
-        oscB.start(startTime);
-        oscB.stop(startTime + 0.75);
+          gainB.gain.setValueAtTime(0.001, startTime);
+          gainB.gain.linearRampToValueAtTime(volume * 0.7 * this.volume, startTime + 0.004);
+          gainB.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.7);
 
-        // Subtly pitched metallic body resonance (B6 ~ 1975Hz)
-        const oscC = ctx.createOscillator();
-        const gainC = ctx.createGain();
-        oscC.type = 'triangle';
-        oscC.frequency.setValueAtTime(1975.53, startTime);
+          oscB.connect(gainB);
+          gainB.connect(ctx.destination);
+          oscB.start(startTime);
+          oscB.stop(startTime + 0.75);
 
-        gainC.gain.setValueAtTime(0.001, startTime);
-        gainC.gain.linearRampToValueAtTime(volume * 0.35, startTime + 0.005);
-        gainC.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.45);
+          const oscC = ctx.createOscillator();
+          const gainC = ctx.createGain();
+          oscC.type = 'triangle';
+          oscC.frequency.setValueAtTime(1975.53, startTime);
 
-        oscC.connect(gainC);
-        gainC.connect(ctx.destination);
-        oscC.start(startTime);
-        oscC.stop(startTime + 0.5);
-      };
+          gainC.gain.setValueAtTime(0.001, startTime);
+          gainC.gain.linearRampToValueAtTime(volume * 0.35 * this.volume, startTime + 0.005);
+          gainC.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.45);
 
-      // Primary coin drop impact (E7: 2637Hz & G7: 3136Hz)
-      createCoinClink(now, 0.38, 2637.02, 3135.96);
+          oscC.connect(gainC);
+          gainC.connect(ctx.destination);
+          oscC.start(startTime);
+          oscC.stop(startTime + 0.5);
+        };
 
-      // Mixkit secondary coin bounce ~120ms later (slightly higher pitch & softer)
-      createCoinClink(now + 0.12, 0.24, 2793.83, 3520.0);
-    } catch {}
+        createCoinClink(now, 0.45, 2637.02, 3135.96);
+        createCoinClink(now + 0.12, 0.30, 2793.83, 3520.0);
+      } catch {}
+    });
   }
 
   /**
@@ -220,37 +268,39 @@ class SoundEffectsService {
    */
   public playNewPersonSound(): void {
     if (!this.soundEnabled) return;
-    const ctx = this.getAudioContext();
-    if (!ctx) return;
 
-    try {
-      const now = ctx.currentTime;
-      // C Major 7th ascending arpeggio: C5 (523Hz), E5 (659Hz), G5 (783Hz), C6 (1046Hz)
-      const notes = [
-        { freq: 523.25, time: 0.0, dur: 0.35, vol: 0.22 },
-        { freq: 659.25, time: 0.08, dur: 0.38, vol: 0.25 },
-        { freq: 783.99, time: 0.16, dur: 0.42, vol: 0.28 },
-        { freq: 1046.5, time: 0.24, dur: 0.75, vol: 0.35 }
-      ];
+    this.playSoundFile('/sounds/new_person_welcome.wav', () => {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
 
-      notes.forEach(({ freq, time, dur, vol }) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      try {
+        const now = ctx.currentTime;
+        const notes = [
+          { freq: 523.25, time: 0.0, dur: 0.35, vol: 0.28 * this.volume },
+          { freq: 659.25, time: 0.09, dur: 0.38, vol: 0.32 * this.volume },
+          { freq: 783.99, time: 0.18, dur: 0.42, vol: 0.35 * this.volume },
+          { freq: 1046.5, time: 0.28, dur: 0.75, vol: 0.42 * this.volume }
+        ];
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + time);
+        notes.forEach(({ freq, time, dur, vol }) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-        gain.gain.setValueAtTime(0.001, now + time);
-        gain.gain.linearRampToValueAtTime(vol, now + time + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + time + dur);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + time);
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+          gain.gain.setValueAtTime(0.001, now + time);
+          gain.gain.linearRampToValueAtTime(vol, now + time + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + time + dur);
 
-        osc.start(now + time);
-        osc.stop(now + time + dur + 0.02);
-      });
-    } catch {}
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + time);
+          osc.stop(now + time + dur + 0.02);
+        });
+      } catch {}
+    });
   }
 }
 

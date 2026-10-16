@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatCurrency, formatTransactionRef } from '../../lib/formatters';
-import { ArrowUpRight, ArrowDownLeft, X, AlertCircle, Sparkles, Check, Copy } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, X, AlertCircle, Sparkles, Check, Copy, Volume2, Coins } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { playTickSound, playGivenMoneySound, playReturnMoneySound } from '../../lib/soundEffects';
 
@@ -188,6 +188,43 @@ export const PaymentAnimationModal: React.FC<PaymentAnimationModalProps> = ({
                   <span className="text-slate-800 dark:text-slate-200 font-bold">{data.personName}</span>
                 </div>
               </motion.div>
+
+              {/* Sound Effect Indicator & Interactive Replay Button */}
+              <div className="flex items-center justify-center">
+                {isGiven ? (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      playTickSound();
+                      playGivenMoneySound();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/25 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                    title="Replay Paytm Payment Sound"
+                  >
+                    <Volume2 size={13} className="text-blue-500 animate-pulse" />
+                    <span>Paytm Payment Sound</span>
+                    <span className="text-[10px] opacity-70 font-mono">🔊</span>
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      playTickSound();
+                      playReturnMoneySound();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                    title="Replay Mixkit Gold Coin Sound"
+                  >
+                    <Coins size={13} className="text-amber-500 animate-pulse" />
+                    <span>Mixkit Gold Coin Sound</span>
+                    <span className="text-[10px] opacity-70 font-mono">🪙</span>
+                  </motion.button>
+                )}
+              </div>
 
               {/* Transaction Ref Number Card */}
               <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-xs">
