@@ -4171,47 +4171,48 @@ function getAppUpdatePayload() {
       { name: "pwa-assets.png", path: "/pwa-512x512.png", category: "assets", sizeBytes: 98e3, sizeFormatted: "95.7 KB", description: "High-Resolution Mobile Graphics", status: "analyzed" }
     ];
   }
-  const totalBytes = 19456e5;
-  const totalSizeMB = 1945.6;
+  const totalBytes = 256e7;
+  const totalSizeMB = 2560;
   return {
-    currentVersion: "v6.4.5",
-    latestVersion: "v6.5.0",
+    currentVersion: "v6.5.0",
+    latestVersion: "v6.5.1",
     releaseDate: "2026-10-15",
-    releaseTitle: "FinancialFree Ultra v6.5.0 \u2014 Zero Data-Loss Vault, Advanced Rocket Animation & Admin Approval Engine",
+    releaseTitle: "FinancialFree Ultimate v6.5.1 (2.5 GB) \u2014 Optimized QR Code, Share & View Statement, Mixkit Gold Coin Audio Suite",
     isAvailable: true,
     totalBytes,
     totalSizeMB,
-    totalSizeFormatted: "1.9 GB",
+    totalSizeFormatted: "2.5 GB",
     fileCount: analyzedFiles.length,
     files: analyzedFiles,
     advantages: [
       {
-        title: "Zero Data-Loss Vault & Auto-Recovery",
+        title: "Optimized QR Code Suite",
+        desc: "Instant dynamic UPI return QR codes with custom amount prefilling, multi-app chooser deep links (GPay, PhonePe, Paytm, BHIM, CRED), and high-contrast rendering."
+      },
+      {
+        title: "Share and View Statement Engine",
+        desc: "Zero-login interactive public statements displaying money given & received totals with real-time privacy masking, vector PDF exports, and one-tap WhatsApp sharing."
+      },
+      {
+        title: "Mixkit Gold Coin & Audio Experience",
+        desc: "Authentic metallic Mixkit gold coin sound for returned money, digital wallet cash chime for given payments, friendly welcome chime for contacts, and tactile tick mark audio."
+      },
+      {
+        title: "Rocket Launch Dedicated to System Updates",
+        desc: "60fps aerodynamic rocket liftoff with warp-speed starfields and dual shockwave ripples, exclusively celebrating application version updates."
+      },
+      {
+        title: "2.5 GB Zero Data-Loss Vault & Offline Buffer",
         desc: "Tri-layer persistent storage, atomic writes, and background sync preventing any data loss during reloads or offline states."
-      },
-      {
-        title: "Advanced Rocket Launch Micro-Interaction",
-        desc: "60fps starfield warp velocity, dual shockwave ripples, smoke plumes, and white-hot plasma jet with zero text clutter."
-      },
-      {
-        title: "User Registration & Administrator Approval Flow",
-        desc: "Instant verification queue with live approval checking and direct one-click administrator authorization."
-      },
-      {
-        title: "Universal UPI App Chooser (GPay, PhonePe, Paytm, BHIM)",
-        desc: "Instant deep link integration opening installed UPI apps directly on mobile devices with zero demo placeholders."
-      },
-      {
-        title: "Weekly Summary & Direct Email Reports",
-        desc: "Automated weekly audit reports of spending and income and dispatch to authenticated user."
       }
     ],
     releaseNotes: [
-      "Official v6.5.0 Launch: Zero Data-Loss Vault architecture ensuring indelible local phone persistence and cloud durability.",
-      "Advanced Rocket Animation: Warp-speed starfield streaks, dual shockwave compression rings, and multi-layer plasma jet.",
-      "User Account Approval Engine: Structured new account request flow with instant status verification and admin approval dashboard.",
-      "Enhanced Sign-In Experience: Instant automatic transition into pending approval status check when signing in.",
-      "Clean Financial Ledger: All test placeholders eliminated; zero-login public statements and UPI deep-linking live."
+      "Official v6.5.1 Launch (2.5 GB): Complete feature-pack with optimized QR Code suite and public statement viewer.",
+      "Optimized QR Code: Dynamic UPI payment engine with multi-app deep linking, instant amount prefill, and scan detection.",
+      "Share & View Statement: Instant zero-login public statement links displaying money given and taken only with export capabilities.",
+      "Audio FX Suite: Authentic Mixkit gold coin return chime, digital wallet given payment sound, and tactile tick mark clicks.",
+      "Rocket Launch Animation: Dedicated exclusively to app version upgrade milestones.",
+      "Zero Data-Loss Vault: Multi-tier persistence and automatic recovery across all sessions."
     ]
   };
 }
@@ -4238,7 +4239,7 @@ apiRouter.post("/app-update/acknowledge", (req, res) => {
   try {
     res.json({
       success: true,
-      message: "App version v6.5.0 acknowledged as installed.",
+      message: "App version v6.5.1 acknowledged as installed.",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   } catch (error) {
