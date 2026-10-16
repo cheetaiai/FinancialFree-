@@ -9,8 +9,12 @@ const PORT = 3000;
 
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : true
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);

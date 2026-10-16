@@ -9,6 +9,29 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="google" content="notranslate" />
 
+    <!-- Suppress benign Vite HMR WebSocket disconnect messages in AI Studio iframe environment -->
+    <script>
+      (function() {
+        function isViteWsError(err) {
+          if (!err) return false;
+          var str = String(err.message || err.reason || err || '');
+          return str.indexOf('WebSocket') !== -1 || str.indexOf('[vite]') !== -1;
+        }
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isViteWsError(event.reason)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+        window.addEventListener('error', function(event) {
+          if (isViteWsError(event.message) || isViteWsError(event.error)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+
     <!-- Android & Mobile Web App Standalone Mode -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="FinancialFree" />

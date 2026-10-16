@@ -164,11 +164,11 @@ class SoundEffectsService {
       try {
         const now = ctx.currentTime;
         const notes = [
-          { time: 0.04, freq: 783.99, dur: 0.28, vol: 0.35 * this.volume },  // G5
-          { time: 0.26, freq: 1046.50, dur: 0.28, vol: 0.40 * this.volume }, // C6
-          { time: 0.50, freq: 1318.51, dur: 0.32, vol: 0.45 * this.volume }, // E6
-          { time: 0.74, freq: 1567.98, dur: 0.40, vol: 0.50 * this.volume }, // G6
-          { time: 1.05, freq: 2093.00, dur: 1.40, vol: 0.55 * this.volume }  // C7
+          { time: 0.04, freq: 587.33, dur: 0.28, vol: 0.42 * this.volume }, // D5
+          { time: 0.24, freq: 783.99, dur: 0.28, vol: 0.46 * this.volume }, // G5
+          { time: 0.46, freq: 987.77, dur: 0.30, vol: 0.50 * this.volume }, // B5
+          { time: 0.70, freq: 1174.66, dur: 0.38, vol: 0.55 * this.volume }, // D6
+          { time: 0.98, freq: 1567.98, dur: 1.50, vol: 0.62 * this.volume }  // G6
         ];
 
         notes.forEach(({ time, freq, dur, vol }) => {
