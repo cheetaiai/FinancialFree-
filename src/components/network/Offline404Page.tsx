@@ -148,6 +148,7 @@ export const Offline404Page: React.FC<Offline404PageProps> = ({
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <button
             type="button"
+            data-allow-offline="true"
             onClick={toggleTheme}
             className={`p-2 rounded-full border transition-all cursor-pointer ${
               theme === 'dark'
@@ -163,6 +164,7 @@ export const Offline404Page: React.FC<Offline404PageProps> = ({
           {onCloseOrBack && !standalone && (
             <button
               type="button"
+              data-allow-offline="true"
               onClick={handleBackOrClose}
               className={`p-2 rounded-full border transition-all cursor-pointer ${
                 theme === 'dark'
@@ -313,6 +315,7 @@ export const Offline404Page: React.FC<Offline404PageProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
+            data-allow-offline="true"
             onClick={handleRetry}
             disabled={isChecking}
             className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
@@ -323,6 +326,7 @@ export const Offline404Page: React.FC<Offline404PageProps> = ({
 
           <button
             type="button"
+            data-allow-offline="true"
             onClick={handleBackOrClose}
             className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 border transition-all cursor-pointer active:scale-95 ${
               theme === 'dark'

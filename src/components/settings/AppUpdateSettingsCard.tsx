@@ -143,7 +143,7 @@ export const AppUpdateSettingsCard: React.FC = () => {
           <span>
             {isUpdateInstalled || !hasUpdateAvailable
               ? `Running newest build (${latestVersion}). Update button suppressed.`
-              : `Download payload includes 4.0 GB high-speed offline bundle with verified integrity.`}
+              : `Download payload includes 6.0 GB high-speed offline bundle with verified integrity.`}
           </span>
         </div>
 

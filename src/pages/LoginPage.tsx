@@ -924,7 +924,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onOpenWalkthrough }) => {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900/90 hover:bg-slate-900 text-blue-300 hover:text-white border border-blue-500/30 transition-all cursor-pointer shadow-xl backdrop-blur-xl group"
           >
             <Sparkles size={13} className="text-amber-400 animate-spin" />
-            <span>Update <strong className="font-extrabold text-white">{latestVersion}</strong> available (4.0 GB)</span>
+            <span>Update <strong className="font-extrabold text-white">{latestVersion}</strong> available (6.0 GB)</span>
             <span className="text-[11px] text-blue-400 group-hover:text-blue-200 font-bold ml-1">• Login to Install →</span>
           </button>
         </motion.div>

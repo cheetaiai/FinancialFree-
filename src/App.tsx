@@ -107,12 +107,32 @@ const MainApp: React.FC = () => {
     }
   });
 
-  // Listen for global custom event to trigger 404 view
+  // Listen for global custom event to trigger 404 view, and handle offline button touches
   useEffect(() => {
     const handleShow404 = () => setShow404Page(true);
     window.addEventListener('financialfree_show_404', handleShow404);
-    return () => window.removeEventListener('financialfree_show_404', handleShow404);
-  }, []);
+
+    // If network is offline and user touches/clicks any button or action, automatically show 404 errors page
+    const handleGlobalOfflineClick = (e: MouseEvent | TouchEvent) => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine && !show404Page) {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        // Elements with data-allow-offline are exempt (e.g. dismissing 5s toast, theme toggle, offline indicator close)
+        if (target.closest('[data-allow-offline="true"]')) return;
+        const clickable = target.closest('button, a, [role="button"], input[type="submit"], input[type="button"]');
+        if (clickable) {
+          setShow404Page(true);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleGlobalOfflineClick, true);
+
+    return () => {
+      window.removeEventListener('financialfree_show_404', handleShow404);
+      document.removeEventListener('click', handleGlobalOfflineClick, true);
+    };
+  }, [show404Page]);
 
   // App Walkthrough state (opened when clicked via Help / Tour button)
   const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(false);
@@ -473,7 +493,7 @@ const MainApp: React.FC = () => {
             setIsLoggingOut(true);
           }}
           title="Sign Out of FinancialFree?"
-          message="FinancialFree v6.5.5.0 (4.0 GB Engine) — Are you sure you want to sign out? Your records and settings are safely synced in your secure Cloud vault."
+          message="FinancialFree v5.5.5.0 (6.0 GB Engine) — Are you sure you want to sign out? Your records and settings are safely synced in your secure Cloud vault."
           confirmText="Yes, Sign Out"
           isDestructive={true}
         />

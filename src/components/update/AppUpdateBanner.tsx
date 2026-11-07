@@ -151,7 +151,7 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ className = ''
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium">
-                  FinancialFree Pro Enterprise: Liquid Glass Sign Out Engine, Admin Approval Diagnostics, Immortal Share Statements & 4.0 GB Pipeline.
+                  FinancialFree Pro Enterprise: 6.0 GB Ultra Turbo Engine, 5-Second Offline Alerts, 404 Recovery & Camera AI.
                 </p>
 
                 {/* Feature highlight badges */}
@@ -170,7 +170,7 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ className = ''
                   </span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/20">
                     <Layers size={12} />
-                    <span>4.0 GB High-Speed Vault</span>
+                    <span>6.0 GB High-Speed Vault</span>
                   </span>
                 </div>
               </div>

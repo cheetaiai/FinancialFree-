@@ -355,7 +355,7 @@ export const AppLegalPoliciesModal: React.FC<AppLegalPoliciesModalProps> = ({
                     <span>Tri-Tier Vault & Offline Buffer</span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-400">
-                    4.0 GB allocated cache buffer with instant atomic writes to prevent data loss on unexpected power cuts, browser crashes, or network loss.
+                    6.0 GB allocated cache buffer with instant atomic writes to prevent data loss on unexpected power cuts, browser crashes, or network loss.
                   </p>
                 </div>
 

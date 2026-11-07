@@ -129,7 +129,7 @@ export const LogoutAnimationModal: React.FC<LogoutAnimationModalProps> = ({
               <span>FinancialFree Vault Active</span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/40 backdrop-blur-md shadow-xs">
-              v6.5.4.0 Pro • 4.0 GB
+              v5.5.5.0 Pro • 6.0 GB
             </span>
           </div>
         </LiquidGlassCard>

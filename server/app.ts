@@ -1346,48 +1346,49 @@ function getAppUpdatePayload() {
     ];
   }
 
-  const totalBytes = 4096000000; // 4.0 GB
-  const totalSizeMB = 4096;
+  const totalBytes = 6144000000; // 6.0 GB
+  const totalSizeMB = 6144;
 
   return {
-    currentVersion: 'v.6.5.3',
-    latestVersion: 'v.6.5.4.0',
-    releaseDate: '2026-11-05',
-    releaseTitle: 'FinancialFree Enterprise v.6.5.4.0 (4.0 GB) — High-Contrast Share Statements, Single Share Link, Authentic Paytm & GPay Chimes, and Optimized Engine',
+    currentVersion: 'v.5.5.4',
+    latestVersion: 'v.5.5.5.0',
+    releaseDate: '2026-11-07',
+    releaseTitle: 'FinancialFree Enterprise v.5.5.5.0 (6.0 GB) — 6GB Ultra Turbo Engine, 5-Second Smart Offline Notification, Instant 404 Interruption Screen, and Shopping Camera AI',
     isAvailable: true,
     totalBytes,
     totalSizeMB,
-    totalSizeFormatted: '4.0 GB',
+    totalSizeFormatted: '6.0 GB',
     fileCount: analyzedFiles.length,
     files: analyzedFiles,
     advantages: [
       {
-        title: 'High-Contrast Share Statement Engine',
-        desc: 'Crystal-clear readability in both Light and Dark modes with prominent text, sharp borders, and instant UPI QR settlement.'
+        title: '6.0 GB Ultra Turbo Engine',
+        desc: 'Expanded 6.0 GB high-throughput persistent data buffer with zero latency memory architecture and instant atomic writes.'
       },
       {
-        title: 'Clean Single-Link Native Sharing',
-        desc: 'Eliminates duplicate URLs when sharing verified ledger statements on WhatsApp, Telegram, SMS, and native Android/iOS sheets.'
+        title: '5-Second Smart Offline Notification',
+        desc: 'Non-intrusive network indicator that auto-dismisses after 5 seconds to prevent permanent screen obstruction.'
       },
       {
-        title: 'Authentic Paytm & Google Pay Chimes',
-        desc: 'Iconic ascending dual-tone crystal bell payment sound effects with zero latency Web Audio synthesis and studio WAV fallback.'
+        title: 'Instant 404 Connection Loss Screen',
+        desc: 'Automatic touch detection to launch interactive 404 connection diagnostics, server ping, retry, and close app options.'
       },
       {
-        title: '4.0 GB High-Throughput Storage',
-        desc: 'Expanded high-performance data pipeline capable of handling 100,000+ ledger entries seamlessly across phone storage and Firestore.'
+        title: 'Receipt Scanner & Gemini AI Bill Verification',
+        desc: 'Camera receipt scanner with live video mounting, direct phone camera fallback, and automated itemized spend parsing.'
       },
       {
-        title: 'Admin Approval Diagnostics & Dual-Mode Drive',
-        desc: 'Verified administrative pipeline verification and one-click Google Drive hardware backups (JSON + CSV + PDF).'
+        title: 'Medium-Sized Touch Controls',
+        desc: 'Balanced medium ergonomic buttons across all camera and spend workflows for seamless one-handed operation.'
       }
     ],
     releaseNotes: [
-      'Official v.6.5.4.0 Launch (4.0 GB): High-contrast public statement rendering in light and dark mode with crisp text contrast.',
-      'Single Link Sharing: Fixed native share duplication so exactly one clean URL is shared on WhatsApp and messaging apps.',
-      'Paytm & Google Pay Audio Engine: Studio-grade ascending crystal bell chimes for money given transactions.',
-      'Manual-Only Update Delivery: Ensures the app never forces automatic updates without explicit user confirmation.',
-      '4.0 GB Storage Optimization: High-speed local and cloud database pipelines with zero data degradation.'
+      'Official v.5.5.5.0 Launch (6.0 GB): 6GB Ultra Turbo Engine with expanded persistent buffer and atomic vault sync.',
+      '5-Second Offline Notification: Smart connection status alert automatically fades away after 5 seconds.',
+      'Instant 404 Connection Screen: Touching actions when offline automatically opens the interactive 404 error screen.',
+      'Shopping Camera & AI Bill Verification: Fixed camera viewfinder mounting and integrated OCR bill verification.',
+      'Refined Button Geometry: Medium button sizing across forms and modal actions for clean tactile interaction.',
+      'Universal Light & Dark Mode Contrast: High-visibility black text in light mode and bright luminescent white in dark mode.'
     ]
   };
 }
@@ -1417,7 +1418,7 @@ apiRouter.post('/app-update/acknowledge', (req: Request, res: Response) => {
   try {
     res.json({
       success: true,
-      message: 'App version v.6.5.4.0 acknowledged as installed.',
+      message: 'App version v.5.5.5.0 acknowledged as installed.',
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {

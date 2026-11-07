@@ -44,7 +44,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
   const [diagComplete, setDiagComplete] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
 
-  const displayVersion = 'v.6.5.5.0';
+  const displayVersion = 'v.5.5.5.0';
 
   // Run 6-phase Admin Approval Diagnostic self-test
   const runAdminDiagnostic = async () => {
@@ -56,10 +56,10 @@ export const LiquidGlassVersionCard: React.FC = () => {
 
       const steps = [
         'Inspecting Liquid Glass Compositor (120 FPS)...',
-        'Validating 4.0 GB High-Throughput Persistent Vault...',
+        'Validating 6.0 GB High-Throughput Persistent Vault...',
         'Auditing Firestore & Local Database Security Boundaries...',
         'Checking Dynamic Share Statement Engine...',
-        'Testing Liquid-Glass Notification Pipeline...',
+        'Testing 5-Second Offline Monitor & 404 Recovery Pipeline...',
         'Confirming Admin Approval Credentials & Access...'
       ];
 
@@ -120,7 +120,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
               </span>
 
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-500/30 backdrop-blur-md">
-                4.0 GB Engine
+                6.0 GB Engine
               </span>
             </div>
 
@@ -195,7 +195,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
             <HardDrive size={13} className="text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-sm font-black text-slate-900 dark:text-white font-mono">
-            4.0 GB High-Speed
+            6.0 GB High-Speed
           </div>
           <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">Zero data-loss cache</p>
         </div>
@@ -231,7 +231,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
             <Cpu size={13} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div className="text-sm font-black text-blue-800 dark:text-blue-300 font-mono">
-            v.6.5.5.0 Stable
+            v.5.5.5.0 Stable
           </div>
           <p className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold">Offline PWA native</p>
         </div>
@@ -318,7 +318,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-teal-600 dark:text-teal-400 font-bold">•</span>
-                <span><strong>4.0 GB High-Throughput Vault:</strong> Zero data-loss persistent memory architecture across offline and cloud sessions.</span>
+                <span><strong>6.0 GB High-Throughput Vault:</strong> Zero data-loss persistent memory architecture with 5-second offline alerts and 404 recovery.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
