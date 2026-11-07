@@ -1,0 +1,20 @@
+{
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "data/**",
+      "maxDuration": 15
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/((?!api|assets|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+

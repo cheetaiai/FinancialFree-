@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#09251b">
+<title>404 • Connection Interrupted • FinancialFree</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg-gradient: radial-gradient(ellipse at 50% 10%, #1b5139 0%, #0b2b20 43%, #061810 100%);
+  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  --card-border: rgba(255, 255, 255, 0.18);
+  --card-shadow: 0 28px 80px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.2);
+  --mint: #a8f5ce;
+  --green: #55d99b;
+  --text: #f3fff8;
+  --heading: #ffffff;
+  --muted: #b2cfc0;
+  --status-bg: rgba(0, 0, 0, 0.25);
+  --status-border: rgba(255, 255, 255, 0.12);
+  --btn-home-bg: rgba(255, 255, 255, 0.08);
+  --btn-home-border: rgba(255, 255, 255, 0.25);
+  --btn-home-text: #effff6;
+  --footer-text: #88aa98;
+  --footer-border: rgba(255, 255, 255, 0.12);
+  --grid-color: #c6ffe0;
+}
+
+html.light {
+  color-scheme: light;
+  --bg-gradient: radial-gradient(ellipse at 50% 10%, #e6f9f0 0%, #d4f3e4 45%, #f1f8f5 100%);
+  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90));
+  --card-border: rgba(16, 185, 129, 0.25);
+  --card-shadow: 0 20px 50px rgba(16, 185, 129, 0.12), 0 8px 24px rgba(15, 23, 42, 0.08);
+  --mint: #059669;
+  --green: #10b981;
+  --text: #090d16;
+  --heading: #000000;
+  --muted: #1e293b;
+  --status-bg: rgba(16, 185, 129, 0.08);
+  --status-border: rgba(16, 185, 129, 0.25);
+  --btn-home-bg: rgba(15, 23, 42, 0.05);
+  --btn-home-border: rgba(15, 23, 42, 0.2);
+  --btn-home-text: #090d16;
+  --footer-text: #334155;
+  --footer-border: rgba(15, 23, 42, 0.1);
+  --grid-color: #10b981;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-x: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg-gradient);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.ambient { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.orb { position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.25; animation: float 10s ease-in-out infinite; }
+.orb.a { width: 280px; height: 280px; left: -80px; top: 8%; background: #69f5b1; }
+.orb.b { width: 340px; height: 340px; right: -100px; bottom: -80px; background: #36b98d; animation-delay: -4s; }
+@keyframes float { 50% { transform: translate(25px, -25px) scale(1.08); } }
+
+.grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(#000, transparent 85%);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: var(--status-bg);
+  border: 1px solid var(--status-border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+.theme-toggle:hover { opacity: 0.85; transform: scale(1.04); }
+
+.card {
+  position: relative;
+  width: min(100%, 520px);
+  padding: 34px 26px 28px;
+  text-align: center;
+  border: 1px solid var(--card-border);
+  border-radius: 30px;
+  background: var(--card-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--card-shadow);
+  animation: appear 0.7s ease both;
+}
+@keyframes appear { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-size: 17px;
+  color: var(--heading);
+}
+.brand img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.art {
+  height: 185px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  margin: 10px auto 0;
+}
+.ring {
+  position: absolute;
+  width: 145px;
+  height: 145px;
+  border: 1.5px solid rgba(168, 245, 206, 0.5);
+  border-radius: 50%;
+  animation: ring 3s ease-out infinite;
+}
+.ring:nth-child(2) { animation-delay: 1s; }
+.ring:nth-child(3) { animation-delay: 2s; }
+@keyframes ring {
+  0% { transform: scale(0.55); opacity: 0; }
+  25% { opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+svg { width: 190px; height: 145px; position: relative; z-index: 1; overflow: visible; }
+.wire {
+  fill: none;
+  stroke: #55d99b;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 5 8;
+  animation: flow 1.1s linear infinite;
+  filter: drop-shadow(0 0 5px #55d99b);
+}
+.wire.dim { opacity: 0.45; animation-duration: 1.8s; }
+@keyframes flow { to { stroke-dashoffset: -26; } }
+
+.node { fill: #a8f5ce; stroke: #ffffff; stroke-width: 2; }
+.server { fill: #123e2b; stroke: #55d99b; stroke-width: 2; }
+.pulse { fill: #64e5a7; filter: drop-shadow(0 0 5px #64e5a7); animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 0.25; } }
+
+.code {
+  font-size: clamp(66px, 16vw, 86px);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, #10b981, #55d99b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html.light .code {
+  background: linear-gradient(135deg, #047857, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h1 {
+  font-size: 24px;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+  color: var(--heading);
+  font-weight: 850;
+}
+.desc {
+  max-width: 420px;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--status-border);
+  border-radius: 30px;
+  background: var(--status-bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffc477;
+  box-shadow: 0 0 12px #ffc477;
+  transition: all 0.3s ease;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+button, a {
+  font: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.retry {
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+.retry:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45); }
+.retry:active { transform: translateY(0); }
+.retry:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.home {
+  border: 1px solid var(--btn-home-border);
+  border-radius: 14px;
+  padding: 12px 20px;
+  color: var(--btn-home-text);
+  background: var(--btn-home-bg);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.home:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-2px); }
+html.light .home:hover { background: rgba(15, 23, 42, 0.1); }
+
+#feedback {
+  min-height: 20px;
+  margin: 12px 0 0;
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.footer {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--footer-border);
+  color: var(--footer-text);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+@media(max-width: 440px) {
+  .card { padding: 26px 18px 22px; }
+  .art { height: 165px; }
+  h1 { font-size: 21px; }
+  .actions { flex-direction: column; width: 100%; }
+  .retry, .home { width: 100%; justify-content: center; }
+}
+@media(prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="ambient"><i class="orb a"></i><i class="orb b"></i></div>
+<div class="grid"></div>
+
+<main class="card">
+  <!-- Theme Toggle -->
+  <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle display theme">
+    <span id="themeIcon">🌓</span>
+    <span id="themeLabel">Mode</span>
+  </button>
+
+  <div class="brand">
+    <img src="/icon-192.png" onerror="this.src='/favicon.ico'" alt="FinancialFree Logo">
+    <span>FinancialFree</span>
+  </div>
+
+  <div class="art" aria-hidden="true">
+    <i class="ring"></i><i class="ring"></i><i class="ring"></i>
+    <svg viewBox="0 0 190 145" role="img">
+      <path class="wire dim" d="M26 34H74L98 58H151V94"/>
+      <path class="wire" d="M26 34H74L98 58H151V94"/>
+      <path class="wire" d="M26 110H65L87 88H125L151 94"/>
+      <rect class="server" x="128" y="92" width="46" height="38" rx="7"/>
+      <path d="M137 103H164M137 112H164" stroke="#a8f5ce" stroke-width="2" stroke-linecap="round"/>
+      <circle class="pulse" cx="165" cy="103" r="2.5"/>
+      <circle class="pulse" cx="165" cy="112" r="2.5" style="animation-delay:.4s"/>
+      <circle class="node" cx="26" cy="34" r="7"/>
+      <circle class="node" cx="74" cy="34" r="6"/>
+      <circle class="node" cx="98" cy="58" r="6"/>
+      <circle class="node" cx="26" cy="110" r="7"/>
+      <circle class="node" cx="87" cy="88" r="6"/>
+      <circle class="node" cx="125" cy="88" r="6"/>
+    </svg>
+  </div>
+
+  <div class="code">404</div>
+  <h1>Connection interrupted</h1>
+  <p class="desc">
+    We couldn’t reach FinancialFree right now. Check your internet connection and try again. Your saved financial records and ledgers are securely stored in your local vault.
+  </p>
+
+  <div class="status" role="status">
+    <span class="dot" id="dot"></span>
+    <span id="status">Checking network status…</span>
+  </div>
+
+  <div class="actions">
+    <button class="retry" id="retry" type="button">↻ &nbsp; Try again</button>
+    <button class="home" id="closeOrHome" type="button">✕ &nbsp; Close App / Back</button>
+  </div>
+
+  <p id="feedback" aria-live="polite"></p>
+
+  <div class="footer">FINANCIALFREE • SECURE LEDGER AUTO-RECOVERY</div>
+</main>
+
+<script>
+// Elements
+const status = document.getElementById('status');
+const dot = document.getElementById('dot');
+const feedback = document.getElementById('feedback');
+const retry = document.getElementById('retry');
+const closeOrHome = document.getElementById('closeOrHome');
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+
+// Synchronize Theme with app preference or system
+function initTheme() {
+  const savedTheme = localStorage.getItem('financialfree_theme');
+  const isLight = savedTheme === 'light';
+  if (isLight) {
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+    themeLabel.textContent = 'Dark';
+  } else {
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+    themeLabel.textContent = 'Light';
+  }
+}
+initTheme();
+
+themeToggle.addEventListener('click', () => {
+  const isCurrentlyLight = document.documentElement.classList.contains('light');
+  if (isCurrentlyLight) {
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('financialfree_theme', 'dark');
+    themeLabel.textContent = 'Light';
+  } else {
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('financialfree_theme', 'light');
+    themeLabel.textContent = 'Dark';
+  }
+});
+
+// Network status checking
+function updateStatusUI(online) {
+  if (online) {
+    dot.style.background = '#10b981';
+    dot.style.boxShadow = '0 0 14px #10b981';
+    status.textContent = 'Internet available · Ready to connect';
+  } else {
+    dot.style.background = '#ffc477';
+    dot.style.boxShadow = '0 0 14px #ffc477';
+    status.textContent = 'You appear to be offline';
+  }
+}
+
+function updateStatus() {
+  updateStatusUI(navigator.onLine);
+}
+
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);
+
+// "Try again" button checks connectivity and opens the app
+async function handleRetry() {
+  retry.disabled = true;
+  retry.textContent = 'Checking…';
+  feedback.textContent = 'Testing network connectivity…';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch('/api/health?t=' + Date.now(), {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok || res.status < 500) {
+      updateStatusUI(true);
+      feedback.textContent = 'Connection verified! Opening FinancialFree…';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
+      return;
+    }
+  } catch (err) {
+    // If local ping threw but browser reports online:
+    if (navigator.onLine) {
+      updateStatusUI(true);
+      feedback.textContent = 'Internet detected. Reloading…';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 600);
+      return;
+    }
+  }
+
+  // Still offline
+  updateStatusUI(false);
+  feedback.textContent = 'Still offline. Check your Wi-Fi or cellular data and tap Try again.';
+  retry.disabled = false;
+  retry.innerHTML = '↻ &nbsp; Try again';
+}
+
+retry.addEventListener('click', handleRetry);
+
+// "Go to back means closed the app" functionality
+closeOrHome.addEventListener('click', () => {
+  // 1. Attempt to close window (succeeds in standalone PWAs or opened tabs)
+  try {
+    window.close();
+  } catch (e) {}
+
+  // 2. If window did not close, navigate back in history or redirect to home
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = '/';
+  }
+});
+
+// Initial verification
+updateStatus();
+</script>
+</body>
+</html>

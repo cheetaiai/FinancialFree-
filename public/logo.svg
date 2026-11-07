@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <radialGradient id="greenBg" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#558a2d"/>
+      <stop offset="70%" stop-color="#477726"/>
+      <stop offset="100%" stop-color="#38601c"/>
+    </radialGradient>
+    <linearGradient id="billGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d5214"/>
+      <stop offset="100%" stop-color="#1f3d0a"/>
+    </linearGradient>
+    <filter id="subtleDrop" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Circle Frame -->
+  <circle cx="250" cy="250" r="230" fill="url(#greenBg)" filter="url(#subtleDrop)"/>
+
+  <!-- Top Curved Crescent Opening Cutout Effect -->
+  <path d="M 120 190 C 170 80, 330 80, 380 190 C 350 110, 150 110, 120 190 Z" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Fan of Banknotes / Money Bills -->
+  <!-- Left/Back bill -->
+  <path d="M 215 165 L 260 135 L 290 155 L 245 185 Z" fill="url(#billGrad)" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Middle bill -->
+  <path d="M 225 155 L 285 142 L 305 210 L 245 220 Z" fill="url(#billGrad)" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>
+  <!-- Front bill with Dollar Sign -->
+  <path d="M 240 160 L 302 165 L 300 238 L 238 232 Z" fill="#2d5516" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
+  <text x="270" y="215" fill="#ffffff" font-size="34" font-weight="900" font-family="Arial, Helvetica, sans-serif" text-anchor="middle" dominant-baseline="middle">$</text>
+
+  <!-- Stylized Hand Cupped Upward Holding Wealth -->
+  <!-- Wrist Base -->
+  <path d="M 155 220 L 170 220 L 170 285 L 155 285 Z" fill="#ffffff" rx="3"/>
+  <!-- Main Palm & Curving Fingers -->
+  <path d="M 172 248 C 172 232, 235 215, 260 226 C 295 242, 335 250, 360 252 C 375 254, 385 264, 372 278 C 342 305, 270 300, 238 275 C 205 272, 185 275, 172 284 Z" fill="#ffffff"/>
+
+  <!-- Bold Curved "FINANCE" Brand Typography -->
+  <text x="250" y="365" fill="#ffffff" font-size="52" font-weight="900" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" letter-spacing="4" text-anchor="middle">FINANCE</text>
+</svg>
