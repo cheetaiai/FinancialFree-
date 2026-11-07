@@ -1080,18 +1080,18 @@ export const ShoppingGroceriesPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setIsCameraOpen(true)}
-                        className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95"
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95"
                       >
-                        <Camera size={15} />
+                        <Camera size={14} />
                         <span>Take Photo with Camera</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setIsCameraOpen(true)}
-                        className="px-3.5 py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-400 flex items-center gap-1.5 cursor-pointer transition-colors"
+                        className="px-3 py-2 rounded-xl border border-dashed border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 hover:border-indigo-400 flex items-center gap-1.5 cursor-pointer transition-colors"
                       >
-                        <Sparkles size={14} className="text-amber-500" />
+                        <Sparkles size={13} className="text-amber-500" />
                         <span>Upload & AI Verify</span>
                       </button>
                     </div>

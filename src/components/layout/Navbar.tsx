@@ -189,19 +189,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* AI Assistant Button - Always Clean & Visible without crowding on top */}
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onOpenAiDrawer}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-900 dark:text-indigo-200 text-xs font-black cursor-pointer shadow-xs shrink-0 active:scale-95"
-            title="Open AI Financial Copilot"
-            aria-label="Open AI Financial Copilot"
-          >
-            <Sparkles size={14} className="animate-pulse text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span className="text-[11px] sm:text-xs tracking-wide">AI</span>
-          </motion.button>
-
           {/* App Update Button - ONLY shown when update is available and NOT yet installed! */}
           {hasUpdateAvailable && !isUpdateInstalled && (
             <motion.button
@@ -228,12 +215,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <LiquidThemeToggle />
 
           {/* User Account / Security Controls */}
-          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Quick Lock Vault Button */}
             {settings.enabled && (settings.pinHash || settings.credentialId) && (
               <button
                 onClick={lockApp}
-                className="p-1.5 sm:p-2 rounded-2xl hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 cursor-pointer transition-colors"
+                className="p-2 rounded-2xl hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 cursor-pointer transition-colors shrink-0"
                 title="Lock Vault Now (Face ID / Fingerprint / PIN)"
                 aria-label="Lock Vault"
               >
@@ -243,15 +230,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => setShowPasswordModal(true)}
-              className="p-1.5 sm:p-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 cursor-pointer hidden md:flex items-center justify-center"
+              className="p-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 cursor-pointer hidden md:flex items-center justify-center shrink-0"
               title="Change Password"
               aria-label="Change Password"
             >
               <Key size={16} />
             </button>
 
-            {/* Sign Out Button - Always Visible on Mobile and Desktop */}
+            {/* Sign Out Button - Prominently Displayed and Always Visible on Phones and Desktops */}
             <button
+              type="button"
               onClick={() => {
                 if (onLogoutRequest) {
                   onLogoutRequest();
@@ -259,11 +247,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   logout();
                 }
               }}
-              className="p-1.5 sm:p-2 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 cursor-pointer transition-all active:scale-95 shrink-0"
-              title="Sign Out"
-              aria-label="Sign Out"
+              className="p-2 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/30 text-rose-700 dark:text-rose-400 border border-rose-500/35 cursor-pointer transition-all active:scale-95 shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center shadow-xs"
+              title="Sign Out of FinancialFree"
+              aria-label="Sign Out of FinancialFree"
             >
-              <LogOut size={16} />
+              <LogOut size={16} className="shrink-0" />
             </button>
           </div>
         </div>

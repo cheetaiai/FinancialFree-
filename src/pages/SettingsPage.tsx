@@ -1057,7 +1057,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-teal-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/40 shadow-xs backdrop-blur-md flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
-                      v6.5.4.0 Pro • 4.0 GB Engine
+                      v6.5.5.0 Pro • 4.0 GB Engine
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1091,7 +1091,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/10 text-[10px]">
               <div className="p-2 rounded-xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/5 flex flex-col">
                 <span className="text-slate-400 uppercase tracking-wider font-bold text-[9px]">Build Version</span>
-                <span className="font-black text-slate-800 dark:text-slate-200 font-mono mt-0.5">v6.5.4.0-release</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 font-mono mt-0.5">v6.5.5.0-release</span>
               </div>
               <div className="p-2 rounded-xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/5 flex flex-col">
                 <span className="text-slate-400 uppercase tracking-wider font-bold text-[9px]">Storage Engine</span>

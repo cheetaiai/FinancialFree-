@@ -473,7 +473,7 @@ const MainApp: React.FC = () => {
             setIsLoggingOut(true);
           }}
           title="Sign Out of FinancialFree?"
-          message="FinancialFree v6.5.4.0 (4.0 GB Engine) — Are you sure you want to sign out? Your records and settings are safely synced in your secure Cloud vault."
+          message="FinancialFree v6.5.5.0 (4.0 GB Engine) — Are you sure you want to sign out? Your records and settings are safely synced in your secure Cloud vault."
           confirmText="Yes, Sign Out"
           isDestructive={true}
         />

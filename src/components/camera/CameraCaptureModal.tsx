@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, RefreshCw, X, Check, AlertTriangle, ShieldCheck, Zap, Upload } from 'lucide-react';
+import { Camera, RefreshCw, X, Check, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
 import { LiquidModal } from '../ui/LiquidModal';
 import { LiquidButton } from '../ui/LiquidButton';
 
@@ -17,8 +17,8 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   onCapture,
   title = 'Camera Receipt & Document Capture'
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileFallbackRef = useRef<HTMLInputElement>(null);
   const nativeCameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,9 +28,102 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isShutterActive, setIsShutterActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [showNotificationBanner, setShowNotificationBanner] = useState(true);
+  const [isStreamLoading, setIsStreamLoading] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Initialize camera when opened
+  // Bind video element to active media stream
+  const attachStreamToVideo = useCallback((mediaStream: MediaStream) => {
+    if (videoRef.current) {
+      try {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        videoRef.current.muted = true;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => setIsVideoPlaying(true))
+            .catch(() => setIsVideoPlaying(false));
+        }
+      } catch (e) {
+        console.warn('Error attaching media stream to video element:', e);
+      }
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (stream) {
+      try {
+        stream.getTracks().forEach(track => {
+          track.stop();
+          track.enabled = false;
+        });
+      } catch {}
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsVideoPlaying(false);
+  }, [stream]);
+
+  const startCamera = useCallback(async () => {
+    stopCamera();
+    setCameraError(null);
+    setIsStreamLoading(true);
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setPermissionStatus('unsupported');
+      setCameraError('Web camera API is restricted in this browser mode. Use the Phone Camera button below.');
+      setIsStreamLoading(false);
+      return;
+    }
+
+    // Try environment (back) camera first
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      setStream(mediaStream);
+      setPermissionStatus('granted');
+      setIsStreamLoading(false);
+      attachStreamToVideo(mediaStream);
+      return;
+    } catch (err1: any) {
+      console.warn('FacingMode camera failed, trying simple video constraint:', err1);
+    }
+
+    // Fallback: simple video constraint
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+
+      setStream(mediaStream);
+      setPermissionStatus('granted');
+      setIsStreamLoading(false);
+      attachStreamToVideo(mediaStream);
+    } catch (err2: any) {
+      console.warn('Fallback camera access denied or unsupported:', err2);
+      setIsStreamLoading(false);
+      if (err2.name === 'NotAllowedError' || err2.name === 'PermissionDeniedError' || err2.name === 'SecurityError') {
+        setPermissionStatus('denied');
+        setCameraError('Live browser webcam permission is blocked. Tap "Open Phone Camera Directly" below to photograph your bill.');
+      } else {
+        setPermissionStatus('unsupported');
+        setCameraError(err2.message || 'Unable to start camera stream. Use native phone camera or file upload.');
+      }
+    }
+  }, [facingMode, stopCamera, attachStreamToVideo]);
+
+  // Synchronize on open/close
   useEffect(() => {
     if (!isOpen) {
       stopCamera();
@@ -46,76 +139,13 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     };
   }, [isOpen, facingMode]);
 
-  const stopCamera = () => {
-    if (stream) {
-      try {
-        stream.getTracks().forEach(track => {
-          track.stop();
-          track.enabled = false;
-        });
-      } catch {}
-      setStream(null);
+  // Synchronize stream attachment when video element mounts
+  const setVideoElementRef = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && stream) {
+      attachStreamToVideo(stream);
     }
-  };
-
-  const startCamera = async () => {
-    stopCamera();
-    setCameraError(null);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setPermissionStatus('unsupported');
-      setCameraError('Web camera API is restricted in this browser or iframe. Tap "Open Native Camera" below to take a photo.');
-      return;
-    }
-
-    // Attempt 1: Optimal constraints with facingMode
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-
-      setStream(mediaStream);
-      setPermissionStatus('granted');
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play().catch(() => {});
-      }
-      return;
-    } catch (err1: any) {
-      console.warn('Initial camera constraints failed, attempting fallback constraints:', err1);
-    }
-
-    // Attempt 2: Minimal fallback constraints
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false
-      });
-
-      setStream(mediaStream);
-      setPermissionStatus('granted');
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play().catch(() => {});
-      }
-    } catch (err2: any) {
-      console.warn('Fallback camera access denied or unsupported:', err2);
-      if (err2.name === 'NotAllowedError' || err2.name === 'PermissionDeniedError' || err2.name === 'SecurityError') {
-        setPermissionStatus('denied');
-        setCameraError('Live browser camera permission is restricted in this preview window. Use the direct Native Camera or Upload button below to photograph your bill.');
-      } else {
-        setPermissionStatus('unsupported');
-        setCameraError(err2.message || 'Unable to access live webcam. Use native camera or file upload.');
-      }
-    }
-  };
+  }, [stream, attachStreamToVideo]);
 
   const toggleFacingMode = () => {
     setFacingMode(prev => (prev === 'environment' ? 'user' : 'environment'));
@@ -135,7 +165,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw frame to canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
     setCapturedPhoto(dataUrl);
@@ -168,41 +197,22 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
 
   return (
     <LiquidModal isOpen={isOpen} onClose={onClose} title={title} maxWidth="lg">
-      <div className="space-y-4">
-        {/* Camera Permission Notification Banner */}
-        <AnimatePresence>
-          {showNotificationBanner && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-blue-500/10 border border-emerald-500/25 text-emerald-950 dark:text-emerald-200 text-xs flex items-start gap-2.5 relative overflow-hidden"
-            >
-              <div className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0">
-                <ShieldCheck size={16} />
-              </div>
-              <div className="flex-1 pr-6">
-                <div className="font-bold flex items-center gap-1 text-[13px]">
-                  Camera Access Notification
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                </div>
-                <p className="mt-0.5 text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
-                  FinancialFree uses your device camera locally in your browser to photograph payment receipts, notes, and vouchers for instant transaction verification.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNotificationBanner(false)}
-                className="absolute top-2.5 right-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="space-y-3.5">
+        {/* Subtle Camera Notice */}
+        <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-[11px] sm:text-xs font-semibold">
+              Live scanner uses browser camera locally to read receipts with Gemini AI.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
+            Secure
+          </span>
+        </div>
 
-        {/* Viewfinder & Capture Window */}
-        <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-slate-700/50 shadow-2xl aspect-[4/3] flex items-center justify-center">
+        {/* Viewfinder Window */}
+        <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-slate-700/60 shadow-xl aspect-[4/3] flex items-center justify-center">
           {/* Shutter flash animation */}
           {isShutterActive && (
             <motion.div
@@ -213,95 +223,107 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
             />
           )}
 
+          {/* Captured Image Preview */}
           {capturedPhoto ? (
-            /* Captured Image Preview */
             <div className="relative w-full h-full">
               <img
                 src={capturedPhoto}
                 alt="Captured receipt"
-                className="w-full h-full object-contain bg-black/60"
+                className="w-full h-full object-contain bg-black/70"
               />
               <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-600/90 text-white text-[11px] font-bold backdrop-blur-md flex items-center gap-1 shadow-md">
                 <Check size={13} />
                 <span>Image Captured</span>
               </div>
             </div>
-          ) : stream ? (
-            /* Live Camera View */
-            <div className="relative w-full h-full">
+          ) : (
+            /* Live Camera Feed Container */
+            <div className="relative w-full h-full flex items-center justify-center">
               <video
-                ref={videoRef}
+                ref={setVideoElementRef}
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                onLoadedMetadata={() => {
+                  if (videoRef.current) {
+                    videoRef.current.play().then(() => setIsVideoPlaying(true)).catch(() => {});
+                  }
+                }}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  stream && isVideoPlaying ? 'opacity-100' : 'opacity-0'
+                }`}
               />
 
-              {/* Viewfinder crosshairs / guide */}
-              <div className="absolute inset-6 pointer-events-none border border-white/30 rounded-2xl">
-                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-emerald-400"></div>
-                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-emerald-400"></div>
-                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-emerald-400"></div>
-                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-emerald-400"></div>
-              </div>
+              {/* Viewfinder Guide Overlay */}
+              {stream && isVideoPlaying && (
+                <>
+                  <div className="absolute inset-4 sm:inset-6 pointer-events-none border border-emerald-400/40 rounded-2xl">
+                    <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-emerald-400"></div>
+                    <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-emerald-400"></div>
+                    <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-emerald-400"></div>
+                    <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-emerald-400"></div>
+                  </div>
 
-              {/* Top controls */}
-              <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
-                <button
-                  type="button"
-                  onClick={toggleFacingMode}
-                  className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md transition-all shadow-md cursor-pointer"
-                  title="Switch Camera (Front/Back)"
-                >
-                  <RefreshCw size={15} />
-                </button>
-              </div>
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      type="button"
+                      onClick={toggleFacingMode}
+                      className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all shadow-md cursor-pointer"
+                      title="Switch Camera (Front/Back)"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  </div>
 
-              <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/60 text-white/90 text-[10px] backdrop-blur-md font-mono flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Live Viewfinder</span>
-              </div>
-            </div>
-          ) : (
-            /* Camera Denied / Error / Unsupported State */
-            <div className="p-6 text-center text-slate-400 flex flex-col items-center max-w-xs">
-              <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-300 mb-3">
-                <Camera size={24} />
-              </div>
-              <div className="text-sm font-semibold text-white mb-1">
-                {permissionStatus === 'denied' ? 'Camera Access Required' : 'Live Camera Standby'}
-              </div>
-              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                {cameraError || 'Allow camera permission to scan receipts or pick an image file.'}
-              </p>
+                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/60 text-white/90 text-[10px] backdrop-blur-md font-mono flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Live Scanner Ready</span>
+                  </div>
+                </>
+              )}
 
-              <div className="flex flex-col gap-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => nativeCameraInputRef.current?.click()}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95"
-                >
-                  <Camera size={15} />
-                  <span>Open Phone Camera Directly</span>
-                </button>
+              {/* Loading or Permission / Fallback State */}
+              {(!stream || !isVideoPlaying) && (
+                <div className="absolute inset-0 p-5 text-center text-slate-300 flex flex-col items-center justify-center bg-slate-900/90 z-10">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mb-3">
+                    <Camera size={24} className={isStreamLoading ? 'animate-pulse' : ''} />
+                  </div>
+                  <h4 className="text-sm font-bold text-white mb-1">
+                    {isStreamLoading ? 'Starting Camera Scanner…' : 'Device Camera Access'}
+                  </h4>
+                  <p className="text-xs text-slate-400 mb-4 max-w-xs leading-relaxed">
+                    {cameraError || 'Point camera at receipt or use native phone camera directly.'}
+                  </p>
 
-                <button
-                  type="button"
-                  onClick={() => fileFallbackRef.current?.click()}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer border border-white/10"
-                >
-                  <Upload size={14} />
-                  <span>Choose from Gallery / Storage</span>
-                </button>
+                  <div className="flex flex-col gap-2 w-full max-w-xs">
+                    <button
+                      type="button"
+                      onClick={() => nativeCameraInputRef.current?.click()}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                    >
+                      <Camera size={14} />
+                      <span>Open Phone Camera Directly</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="text-[11px] text-slate-400 hover:text-emerald-400 font-medium py-1 transition-colors cursor-pointer"
-                >
-                  🔄 Retry Live Browser Viewfinder
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => fileFallbackRef.current?.click()}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer border border-white/10 active:scale-95 transition-all"
+                    >
+                      <Upload size={14} />
+                      <span>Choose from Gallery / Files</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="text-[11px] text-emerald-400 hover:underline font-semibold py-1 cursor-pointer transition-colors"
+                    >
+                      ↻ Reconnect Live Stream
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -323,24 +345,23 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
           />
         </div>
 
-        {/* Bottom Action Controls */}
-        <div className="flex items-center justify-between pt-2">
+        {/* Medium-Sized Bottom Action Controls */}
+        <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => nativeCameraInputRef.current?.click()}
-              className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Camera size={14} />
-              <span>Native Camera</span>
+              <Camera size={13} className="text-emerald-500" />
+              <span>Camera</span>
             </button>
-            <span className="text-slate-400 text-xs">•</span>
             <button
               type="button"
               onClick={() => fileFallbackRef.current?.click()}
-              className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-600 flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Upload size={14} />
+              <Upload size={13} className="text-blue-500" />
               <span>Gallery</span>
             </button>
           </div>
@@ -348,28 +369,33 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
           <div className="flex items-center gap-2">
             {capturedPhoto ? (
               <>
-                <LiquidButton variant="secondary" size="sm" onClick={retakePhoto}>
-                  Retake Photo
-                </LiquidButton>
-                <LiquidButton
-                  variant="primary"
-                  size="sm"
-                  onClick={confirmPhoto}
-                  icon={<Check size={16} />}
+                <button
+                  type="button"
+                  onClick={retakePhoto}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer border border-slate-300 dark:border-white/10"
                 >
-                  Use This Image
-                </LiquidButton>
+                  Retake
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmPhoto}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
+                >
+                  <Check size={14} />
+                  <span>Use Photo</span>
+                </button>
               </>
-            ) : stream ? (
-              <motion.button
-                whileTap={{ scale: 0.92 }}
+            ) : (
+              <button
+                type="button"
                 onClick={takePhoto}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-all"
+                disabled={!stream || !isVideoPlaying}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Camera size={16} />
+                <Camera size={14} />
                 <span>Capture Snapshot</span>
-              </motion.button>
-            ) : null}
+              </button>
+            )}
           </div>
         </div>
       </div>

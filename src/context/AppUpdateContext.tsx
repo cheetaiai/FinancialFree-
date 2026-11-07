@@ -78,23 +78,21 @@ const AppUpdateContext = createContext<AppUpdateContextType | undefined>(undefin
 
 export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const [latestVersion, setLatestVersion] = useState<string>('v.6.5.4.0');
-  const [currentVersion, setCurrentVersion] = useState<string>('v.6.5.3');
+  const [latestVersion, setLatestVersion] = useState<string>('v.6.5.5.0');
+  const [currentVersion, setCurrentVersion] = useState<string>('v.6.5.4');
   const [files, setFiles] = useState<AppUpdateFile[]>([]);
   const [totalSizeMB, setTotalSizeMB] = useState<number>(4096);
   const [totalSizeFormatted, setTotalSizeFormatted] = useState<string>('4.0 GB');
   const [advantages, setAdvantages] = useState<FeatureAdvantage[]>(DEFAULT_ADVANTAGES);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState<number>(0);
   const [releaseNotes, setReleaseNotes] = useState<string[]>([
-    'Official v.6.5.4.0 Launch (4.0 GB): High-contrast public statement rendering in light and dark mode with crisp text contrast.',
-    'Single Link Sharing: Fixed native share duplication so exactly one clean URL is shared on WhatsApp and messaging apps.',
-    'Paytm & Google Pay Audio Engine: Studio-grade ascending crystal bell chimes for money given transactions.',
-    'Liquid Glass Sign Out Effects: Specular glow aura, system telemetry specs, and high-fidelity GPU compositing.',
-    'Interactive Update Notification Mode: Never auto-updates silently without user notification and confirmation.',
-    'Admin Approval Diagnostics: Automated 6-phase end-to-end verification and diagnostic self-test suite for admins.',
-    '4.0 GB High-Speed Vault: Expanded persistent multi-tier cache ensuring zero data loss on refreshes, restarts, or offline usage.',
+    'Official v.6.5.5.0 Launch (4.0 GB): 404 Connection Loss Recovery screen with live ping, retry connection, and exit app controls.',
+    'Camera Receipt Scanner Fix: Video stream mounting bug resolved with instant viewfinder display and direct native camera trigger.',
+    'Medium-Sized Action Buttons: Optimized button geometry across scanner and grocery modals for comfortable one-hand touch.',
+    'Mobile Header Optimization: Removed top AI button to ensure Sign Out button is always 100% visible on mobile phones.',
+    'Universal Light & Dark Mode Contrast: All text, headings, badges, and labels render deep black in light mode and crisp white in dark mode.',
     'Immortal Public Share Links: Dynamic auto-updating settlement statement URLs with interactive UPI QR codes and multi-app deep links.',
-    'Dual-Mode Google Drive Storage: One-click Drive backup JSON, Google Auth cloud push, and Universal Hardware ZIP export.'
+    'Paytm & Google Pay Audio Engine: Studio-grade ascending crystal bell chimes for money given transactions.'
   ]);
 
   // Update Notification Mode: 'interactive' (prompts with notification, no silent update) vs 'automatic'
