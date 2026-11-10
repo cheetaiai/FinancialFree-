@@ -200,8 +200,57 @@ export const ShoppingGroceriesPage: React.FC = () => {
   // Preview Receipt Modal
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
 
+  const [autoAddOnScan, setAutoAddOnScan] = useState<boolean>(false);
+
+  // Directly add verified item and store in Firebase Firestore first
+  const handleDirectAddVerifiedItem = async (verified: VerifiedShoppingBill, receiptImg?: string) => {
+    const amount = Number(verified.total_amount) || Number(verified.mrp) || 100;
+    const now = new Date().toISOString();
+    const isHome = CATEGORY_CONFIG[verified.category]?.isHomeService ?? false;
+    const newSpend: ShoppingSpend = {
+      id: `sp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title: verified.title || (verified.brand ? `${verified.brand} Product` : 'Scanned Product'),
+      amount,
+      category: verified.category || 'groceries',
+      merchant: verified.merchant || verified.brand || 'Store / Merchant',
+      date: verified.date || now.split('T')[0],
+      payment_method: verified.payment_method || 'UPI',
+      notes: verified.notes || undefined,
+      receipt_image: receiptImg || formReceiptImage,
+      brand: verified.brand || undefined,
+      mrp: verified.mrp || amount,
+      net_quantity: verified.net_quantity || undefined,
+      expiry_date: verified.expiry_date || undefined,
+      mfg_date: verified.mfg_date || undefined,
+      batch_number: verified.batch_number || undefined,
+      is_product_scan: true,
+      is_home_service: isHome,
+      created_at: now,
+      updated_at: now
+    };
+
+    // Update state immediately
+    setSpends(prev => [newSpend, ...prev]);
+    setIsModalOpen(false);
+    playTickSound();
+    playGivenMoneySound();
+    setAddedSuccessItem({ title: newSpend.title, amount });
+    setTimeout(() => setAddedSuccessItem(null), 1800);
+
+    // Save directly to Firebase Firestore first for zero data loss
+    const ok = await storeShoppingSpendInFirestore(newSpend);
+    // Sync to server API
+    api.saveShoppingSpend(newSpend).catch(() => {});
+
+    if (ok) {
+      showToast(`✓ Added "${newSpend.title}" & backed up to Firebase Firestore!`, 'success');
+    } else {
+      showToast(`✓ Added "${newSpend.title}" to local vault and server!`, 'success');
+    }
+  };
+
   // AI Shopping Bill & Product Pack Verification Handler
-  const handleVerifyBill = async (imageDataUrl: string) => {
+  const handleVerifyBill = async (imageDataUrl: string, autoAdd: boolean = false) => {
     try {
       setIsVerifyingBill(true);
       showToast('AI Assistant is analyzing product pack, MRP & details with Gemini...', 'info');
@@ -228,6 +277,10 @@ export const ShoppingGroceriesPage: React.FC = () => {
       const label = result.is_product_scan ? 'Product Pack & MRP' : 'Bill';
       showToast(`✓ ${label} Analyzed! MRP: ₹${result.mrp || result.total_amount} | ${result.brand || result.merchant || 'Store'}`, 'success');
       playTickSound();
+
+      if (autoAdd || autoAddOnScan) {
+        await handleDirectAddVerifiedItem(result, imageDataUrl);
+      }
     } catch (err: any) {
       console.warn('AI verification notice:', err);
       showToast(err.message || 'Could not analyze with AI. Photo attached.', 'error');
@@ -517,12 +570,28 @@ export const ShoppingGroceriesPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => handleOpenAddModal(undefined, true)}
+            onClick={() => {
+              setAutoAddOnScan(false);
+              handleOpenAddModal(undefined, true);
+            }}
             className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-indigo-500/20 cursor-pointer transition-all active:scale-95"
             title="Scan and verify supermarket/grocery bill with AI Assistant"
           >
             <Sparkles size={15} className="text-amber-300 animate-pulse" />
             <span>AI Pack & MRP Scanner</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setAutoAddOnScan(true);
+              handleOpenAddModal(undefined, true);
+            }}
+            className="px-3 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
+            title="Scan product pack and immediately auto-add & store to Firebase Firestore"
+          >
+            <Zap size={14} className="text-yellow-300" />
+            <span>1-Tap Auto-Add</span>
           </button>
 
           <LiquidButton
@@ -1271,6 +1340,18 @@ export const ShoppingGroceriesPage: React.FC = () => {
                           <span>Re-Analyze Bill</span>
                         </button>
                       </div>
+
+                      {/* Immediate 1-Tap Save to List & Firestore */}
+                      <div className="pt-2 border-t border-emerald-500/25">
+                        <button
+                          type="button"
+                          onClick={() => handleDirectAddVerifiedItem(verifiedBillData, formReceiptImage)}
+                          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95 transition-all"
+                        >
+                          <Sparkles size={15} className="text-amber-300 animate-pulse" />
+                          <span>✨ Add Scanned Product to List (Auto-Saves to Firebase)</span>
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1372,7 +1453,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
           onCapture={(dataUrl) => {
             setFormReceiptImage(dataUrl);
             setIsCameraOpen(false);
-            handleVerifyBill(dataUrl);
+            handleVerifyBill(dataUrl, autoAddOnScan);
           }}
         />
       )}

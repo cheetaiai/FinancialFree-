@@ -44,7 +44,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
   const [diagComplete, setDiagComplete] = useState(false);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
 
-  const displayVersion = 'v.5.5.5.0';
+  const displayVersion = 'v.6.0.1.0';
 
   // Run 6-phase Admin Approval Diagnostic self-test
   const runAdminDiagnostic = async () => {
@@ -231,7 +231,7 @@ export const LiquidGlassVersionCard: React.FC = () => {
             <Cpu size={13} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div className="text-sm font-black text-blue-800 dark:text-blue-300 font-mono">
-            v.5.5.5.0 Stable
+            v.6.0.1.0 Stable
           </div>
           <p className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold">Offline PWA native</p>
         </div>

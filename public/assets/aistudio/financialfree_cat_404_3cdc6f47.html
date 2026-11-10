@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10241d">
+<title>404 · Lost Connection | FinancialFree</title>
+<style>
+:root{--mint:#c5ffe0;--green:#63dfa5;--ink:#10241d;--muted:#b7d0c3;--glass:rgba(255,255,255,.105)}
+*{box-sizing:border-box}
+html{min-height:100%;background:#10241d}
+body{margin:0;min-height:100svh;display:grid;place-items:center;padding:22px 15px;color:#f4fff8;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% 12%,#37664d 0%,#1b3d2d 38%,#10241d 78%);overflow-x:hidden}
+button{font:inherit}
+.ambient{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.grid{position:absolute;inset:0;opacity:.10;background-image:linear-gradient(#d4ffe5 1px,transparent 1px),linear-gradient(90deg,#d4ffe5 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(#000,transparent 85%)}
+.orb{position:absolute;border-radius:50%;filter:blur(4px);opacity:.24;animation:float 12s ease-in-out infinite}
+.orb.a{width:300px;height:300px;left:-130px;top:3%;background:radial-gradient(circle,#b7ffd5,transparent 70%)}
+.orb.b{width:360px;height:360px;right:-150px;bottom:-120px;background:radial-gradient(circle,#65dba2,transparent 70%);animation-delay:-5s}
+@keyframes float{50%{transform:translate(22px,-25px) scale(1.08)}}
+.card{position:relative;width:min(100%,550px);padding:clamp(23px,5vw,36px);text-align:center;border:1px solid rgba(239,255,246,.2);border-radius:34px;background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.055));backdrop-filter:blur(28px) saturate(155%);-webkit-backdrop-filter:blur(28px) saturate(155%);box-shadow:0 30px 90px rgba(0,0,0,.4),inset 0 1px rgba(255,255,255,.28);animation:arrive .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes arrive{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;letter-spacing:.035em;font-size:15px}
+.brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#c5ffe0,#58d99d);color:#12432e;font-weight:900;box-shadow:0 5px 18px #55d99b55}
+.illustration{height:250px;position:relative;display:grid;place-items:center;margin:5px auto 0}
+.art{width:min(100%,340px);height:240px;overflow:visible;position:relative;z-index:1}
+.spark{fill:#d7ffe9;transform-origin:center;animation:twinkle 2s ease-in-out infinite}
+.spark:nth-child(2){animation-delay:.7s}.spark:nth-child(3){animation-delay:1.3s}
+@keyframes twinkle{50%{opacity:.2;transform:scale(.65)}}
+.cable{fill:none;stroke:#d6f9e5;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 5px #0004)}
+.cable-inner{fill:none;stroke:#6fdfa8;stroke-width:2;stroke-linecap:round;stroke-dasharray:4 9;animation:signal 1.3s linear infinite}
+@keyframes signal{to{stroke-dashoffset:-26}}
+.plug{fill:#e9fff2;stroke:#b8f6d3;stroke-width:2}
+.socket{fill:#183c2c;stroke:#b9f5d1;stroke-width:3}
+.cat-body{fill:#f3eee1;stroke:#d4d7c9;stroke-width:2}
+.cat-patch{fill:#6f806f}
+.cat-ear{fill:#f3eee1;stroke:#d4d7c9;stroke-width:2}
+.cat-eye{fill:#294d39;animation:blink 4.5s infinite;transform-origin:center}
+@keyframes blink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.12)}}
+.cat-cheek{fill:#f3a8a0;opacity:.8}
+.cat-tail{fill:none;stroke:#f3eee1;stroke-width:13;stroke-linecap:round;transform-origin:112px 164px;animation:tail 2.4s ease-in-out infinite}
+@keyframes tail{50%{transform:rotate(-12deg)}}
+.cat-paw{fill:#f3eee1;stroke:#d4d7c9;stroke-width:1.5}
+.bubble{fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3);stroke-width:1.5}
+.code{font-size:clamp(72px,17vw,94px);font-weight:900;letter-spacing:-.085em;line-height:1;background:linear-gradient(180deg,#fff,#a8f0c5);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1{margin:12px 0 9px;font-size:clamp(21px,5vw,25px);letter-spacing:-.035em}
+.desc{max-width:390px;margin:0 auto;color:var(--muted);font-size:14px;line-height:1.75}
+.status{display:inline-flex;align-items:center;gap:9px;margin:19px 0;padding:10px 14px;border:1px solid rgba(255,255,255,.16);border-radius:99px;background:rgba(0,0,0,.15);font-size:12px;color:#e0f5e8}
+.dot{width:8px;height:8px;border-radius:50%;background:#ffc477;box-shadow:0 0 12px #ffc477}
+.actions{display:flex;justify-content:center;gap:11px;flex-wrap:wrap}
+.btn{min-height:46px;padding:0 20px;border:1px solid rgba(255,255,255,.2);border-radius:14px;cursor:pointer;transition:transform .2s,background .2s}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:scale(.98)}.btn:focus-visible{outline:3px solid #c5ffe0;outline-offset:3px}
+.primary{border:0;color:#073b28;font-weight:850;background:linear-gradient(135deg,#c5ffe0,#59d99d);box-shadow:0 8px 25px #4bd99b38}
+.secondary{color:#f1fff7;background:rgba(255,255,255,.075)}
+.btn:disabled{opacity:.65;cursor:wait;transform:none}
+.feedback{min-height:22px;margin:12px 0 0;color:#c3f8d9;font-size:12px;line-height:1.6}
+.footer{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.14);color:#9bbba8;font-size:10px;letter-spacing:.15em}
+@media(max-width:420px){.card{border-radius:27px}.illustration{height:220px}.art{height:215px}.actions{flex-direction:column}.btn{width:100%}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><div class="grid"></div><i class="orb a"></i><i class="orb b"></i></div>
+<main class="card">
+  <div class="brand"><span class="brand-mark">F</span><span>FinancialFree</span></div>
+
+  <div class="illustration" aria-hidden="true">
+    <svg class="art" viewBox="0 0 340 240">
+      <path class="spark" d="M45 40l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+      <path class="spark" d="M286 34l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>
+      <path class="spark" d="M302 157l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+      <!-- disconnected cable, plug and wall socket -->
+      <path class="cable" d="M24 174 C65 174 66 208 110 208 C137 208 140 184 164 184"/>
+      <path class="cable-inner" d="M24 174 C65 174 66 208 110 208 C137 208 140 184 164 184"/>
+      <g transform="translate(155 165) rotate(-13)">
+        <rect class="plug" x="0" y="0" width="38" height="30" rx="9"/>
+        <path d="M10 1V-13M28 1V-13" stroke="#e9fff2" stroke-width="6" stroke-linecap="round"/>
+        <path d="M13 15H25" stroke="#6bbf91" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <rect class="socket" x="222" y="151" width="62" height="68" rx="14"/>
+      <rect x="237" y="170" width="7" height="20" rx="3.5" fill="#c5ffe0"/>
+      <rect x="261" y="170" width="7" height="20" rx="3.5" fill="#c5ffe0"/>
+      <path d="M245 203h16" stroke="#74dca8" stroke-width="3" stroke-linecap="round"/>
+      <path class="cable" d="M284 185 C309 185 313 202 330 202"/>
+      <!-- cute sitting cat -->
+      <path class="cat-tail" d="M111 164 C79 159 82 125 104 124"/>
+      <ellipse class="cat-body" cx="143" cy="164" rx="49" ry="49"/>
+      <path class="cat-patch" d="M119 139c-9 8-12 25-6 38 7 15 21 22 35 18 9-3 13-11 13-19-15 5-25-7-24-21-1-9-7-16-18-16z" opacity=".75"/>
+      <path class="cat-ear" d="M105 91L108 48Q110 39 118 47L145 76Z"/>
+      <path class="cat-ear" d="M157 75L183 47Q191 40 193 51L194 98Z"/>
+      <path d="M114 61l3 23 16-10zM174 76l14-16 1 26z" fill="#efa9a1"/>
+      <ellipse class="cat-body" cx="151" cy="103" rx="48" ry="43"/>
+      <path class="cat-patch" d="M113 81Q125 58 143 65Q132 80 137 99Q122 105 113 81Z"/>
+      <path class="cat-patch" d="M169 65Q190 68 195 87Q184 98 171 92Q179 80 169 65Z"/>
+      <ellipse class="cat-eye" cx="135" cy="104" rx="4" ry="6"/>
+      <ellipse class="cat-eye" cx="168" cy="104" rx="4" ry="6"/>
+      <path d="M147 115q4-5 8 0l-4 5z" fill="#df8e91"/>
+      <path d="M151 120q-7 8-13 1M151 120q7 8 13 1" fill="none" stroke="#718274" stroke-width="2" stroke-linecap="round"/>
+      <ellipse class="cat-cheek" cx="124" cy="116" rx="8" ry="4"/>
+      <ellipse class="cat-cheek" cx="179" cy="116" rx="8" ry="4"/>
+      <ellipse class="cat-paw" cx="119" cy="199" rx="19" ry="9"/>
+      <ellipse class="cat-paw" cx="164" cy="200" rx="19" ry="9"/>
+      <!-- small floating glass speech bubble -->
+      <rect class="bubble" x="206" y="30" width="72" height="42" rx="15"/>
+      <path d="M221 72l-4 10 14-10" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+      <path d="M225 51h34" stroke="#d8ffea" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="216" cy="51" r="3" fill="#d8ffea"/>
+    </svg>
+  </div>
+
+  <div class="code">404</div>
+  <h1>Oops! The internet cable got unplugged.</h1>
+  <p class="desc">Our little connection helper found a loose link. Check your internet connection and try again to get FinancialFree back online.</p>
+
+  <div class="status"><span class="dot" id="dot"></span><span id="status">Checking network status…</span></div>
+  <div class="actions">
+    <button class="btn primary" id="retry" type="button">↻ &nbsp; Reconnect</button>
+    <button class="btn secondary" id="back" type="button">← &nbsp; Back to app</button>
+  </div>
+  <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+  <div class="footer">FINANCIALFREE · CONNECTION SUPPORT</div>
+</main>
+<script>
+/* Set these routes to match your deployment. */
+const APP_HOME_URL = "/";
+const HEALTH_CHECK_URL = ""; // Example: "/api/health" — must return HTTP 200.
+const $ = id => document.getElementById(id);
+const statusEl=$("status"),dot=$("dot"),feedback=$("feedback"),retry=$("retry"),back=$("back");
+
+function setStatus(message,online){
+  statusEl.textContent=message;
+  dot.style.background=online?"#64e5a7":"#ffc477";
+  dot.style.boxShadow=online?"0 0 12px #64e5a7":"0 0 12px #ffc477";
+}
+function updateNetwork(){
+  setStatus(navigator.onLine?"Internet available · Server not verified":"You appear to be offline",navigator.onLine);
+}
+window.addEventListener("online",updateNetwork);
+window.addEventListener("offline",updateNetwork);
+
+async function checkServer(){
+  if(!navigator.onLine) throw new Error("Offline");
+  const target=HEALTH_CHECK_URL||APP_HOME_URL;
+  const url=new URL(target,location.href);
+  if(url.origin!==location.origin) throw new Error("Health check must be same-origin");
+  url.searchParams.set("_ff_check",Date.now());
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch(url.href,{method:"GET",cache:"no-store",credentials:"same-origin",redirect:"follow",signal:controller.signal});
+    if(!response.ok) throw new Error("HTTP "+response.status);
+    return true;
+  }finally{clearTimeout(timer);}
+}
+retry.addEventListener("click",async()=>{
+  if(retry.disabled)return;
+  retry.disabled=true;retry.textContent="Checking connection…";
+  feedback.textContent="Checking your internet and FinancialFree server…";
+  setStatus("Trying to reconnect…",navigator.onLine);
+  try{
+    await checkServer();
+    setStatus("FinancialFree server is reachable",true);
+    feedback.textContent="Connected! Opening FinancialFree…";
+    setTimeout(()=>location.assign(new URL(APP_HOME_URL,location.href).href),500);
+  }catch(error){
+    setStatus(navigator.onLine?"Server could not be verified":"You appear to be offline",false);
+    feedback.textContent=navigator.onLine
+      ?"Internet is available, but the app server did not respond. Please try again."
+      :"No internet connection. Reconnect and try again.";
+    retry.disabled=false;retry.textContent="↻  Reconnect";
+  }
+});
+back.addEventListener("click",()=>{
+  let safeReferrer=false;
+  try{safeReferrer=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(_){}
+  if(history.length>1&&safeReferrer) history.back();
+  else location.assign(new URL(APP_HOME_URL,location.href).href);
+});
+updateNetwork();
+</script>
+</body>
+</html>

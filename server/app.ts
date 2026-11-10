@@ -1350,10 +1350,10 @@ function getAppUpdatePayload() {
   const totalSizeMB = 6144;
 
   return {
-    currentVersion: 'v.5.5.4',
-    latestVersion: 'v.5.5.5.0',
-    releaseDate: '2026-11-07',
-    releaseTitle: 'FinancialFree Enterprise v.5.5.5.0 (6.0 GB) — 6GB Ultra Turbo Engine, 5-Second Smart Offline Notification, Instant 404 Interruption Screen, and Shopping Camera AI',
+    currentVersion: 'v.6.0.0',
+    latestVersion: 'v.6.0.1.0',
+    releaseDate: '2026-11-10',
+    releaseTitle: 'FinancialFree Enterprise v.6.0.1 (6.0 GB) — 2s Dual-Design 404 Recovery, AI Packaging & MRP Auto-Add, and Cloud Vault Hardening',
     isAvailable: true,
     totalBytes,
     totalSizeMB,
@@ -1362,33 +1362,31 @@ function getAppUpdatePayload() {
     files: analyzedFiles,
     advantages: [
       {
+        title: '2-Second Alternating Dual 404 Engine',
+        desc: 'Dynamic 2-second dual UI switching between Advanced Network and Cat Helper 404 designs with live ping and reconnect.'
+      },
+      {
+        title: 'AI Product Label & MRP Auto-Add',
+        desc: 'Scan FMCG front/back product packaging, MRP, brand, net quantity, expiry, and instantly store to Firebase without data loss.'
+      },
+      {
+        title: 'Firebase Vault Field Sanitation',
+        desc: 'Automatic undefined field sanitization preventing Firestore write rejections and guaranteeing permanent persistence.'
+      },
+      {
         title: '6.0 GB Ultra Turbo Engine',
         desc: 'Expanded 6.0 GB high-throughput persistent data buffer with zero latency memory architecture and instant atomic writes.'
       },
       {
-        title: '5-Second Smart Offline Notification',
-        desc: 'Non-intrusive network indicator that auto-dismisses after 5 seconds to prevent permanent screen obstruction.'
-      },
-      {
-        title: 'Instant 404 Connection Loss Screen',
-        desc: 'Automatic touch detection to launch interactive 404 connection diagnostics, server ping, retry, and close app options.'
-      },
-      {
-        title: 'Receipt Scanner & Gemini AI Bill Verification',
-        desc: 'Camera receipt scanner with live video mounting, direct phone camera fallback, and automated itemized spend parsing.'
-      },
-      {
-        title: 'Medium-Sized Touch Controls',
-        desc: 'Balanced medium ergonomic buttons across all camera and spend workflows for seamless one-handed operation.'
+        title: 'Universal Contrast & Medium Geometry',
+        desc: 'Ergonomic medium-sized buttons with pitch black text in light mode and luminescent white in dark mode.'
       }
     ],
     releaseNotes: [
-      'Official v.5.5.5.0 Launch (6.0 GB): 6GB Ultra Turbo Engine with expanded persistent buffer and atomic vault sync.',
-      '5-Second Offline Notification: Smart connection status alert automatically fades away after 5 seconds.',
-      'Instant 404 Connection Screen: Touching actions when offline automatically opens the interactive 404 error screen.',
-      'Shopping Camera & AI Bill Verification: Fixed camera viewfinder mounting and integrated OCR bill verification.',
-      'Refined Button Geometry: Medium button sizing across forms and modal actions for clean tactile interaction.',
-      'Universal Light & Dark Mode Contrast: High-visibility black text in light mode and bright luminescent white in dark mode.'
+      'Official v.6.0.1 Release: 2-second dual-design 404 recovery cycling between Advanced Network and Cat Helper UIs.',
+      'AI Product Pack & MRP Scanner: Instant extraction of Brand, MRP, Net Qty, Expiry, and Batch with 1-Tap Auto-Add directly to Firebase.',
+      'Cloud Vault Hardening: Strict undefined-field sanitization preventing Firestore serialization drops.',
+      'High-Contrast Theme Sync: Pure black typography on light backgrounds and crisp white typography on dark backgrounds.'
     ]
   };
 }
@@ -1418,7 +1416,7 @@ apiRouter.post('/app-update/acknowledge', (req: Request, res: Response) => {
   try {
     res.json({
       success: true,
-      message: 'App version v.5.5.5.0 acknowledged as installed.',
+      message: 'App version v.6.0.1.0 acknowledged as installed.',
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {

@@ -95,7 +95,7 @@ export const AppBrandFooter: React.FC<AppBrandFooterProps> = ({ className = '' }
         {/* Clean Version Number (Matching the Paytm footer attachment) */}
         <div className="pt-1">
           <span className="font-mono text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
-            v.5.5.5.0
+            v.6.0.1.0
           </span>
         </div>
       </div>

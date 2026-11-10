@@ -77,21 +77,18 @@ const AppUpdateContext = createContext<AppUpdateContextType | undefined>(undefin
 
 export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
-  const [latestVersion, setLatestVersion] = useState<string>('v.5.5.5.0');
-  const [currentVersion, setCurrentVersion] = useState<string>('v.5.5.4');
+  const [latestVersion, setLatestVersion] = useState<string>('v.6.0.1.0');
+  const [currentVersion, setCurrentVersion] = useState<string>('v.6.0.0');
   const [files, setFiles] = useState<AppUpdateFile[]>([]);
   const [totalSizeMB, setTotalSizeMB] = useState<number>(6144);
   const [totalSizeFormatted, setTotalSizeFormatted] = useState<string>('6.0 GB');
   const [advantages, setAdvantages] = useState<FeatureAdvantage[]>(DEFAULT_ADVANTAGES);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState<number>(0);
   const [releaseNotes, setReleaseNotes] = useState<string[]>([
-    'Official v.5.5.5.0 Launch (6.0 GB): 6GB Ultra Turbo Engine with expanded persistent buffer and atomic vault sync.',
-    '5-Second Offline Notification: Smart connection status alert automatically fades away after 5 seconds.',
-    'Instant 404 Connection Screen: Touching actions when offline automatically opens the interactive 404 error screen.',
-    'Shopping Camera & AI Bill Verification: Fixed camera viewfinder mounting and integrated OCR bill verification.',
-    'Refined Button Geometry: Medium button sizing across forms and modal actions for clean tactile interaction.',
-    'Universal Light & Dark Mode Contrast: High-visibility black text in light mode and bright luminescent white in dark mode.',
-    'Paytm & Google Pay Audio Engine: Studio-grade ascending crystal bell chimes for money given transactions.'
+    'Official v.6.0.1.0 Release: 2-second dual-design 404 recovery cycling between Advanced Network and Cat Helper UIs.',
+    'AI Product Pack & MRP Scanner: Instant extraction of Brand, MRP, Net Qty, Expiry, and Batch with 1-Tap Auto-Add directly to Firebase.',
+    'Cloud Vault Hardening: Strict undefined-field sanitization preventing Firestore serialization drops.',
+    'High-Contrast Theme Sync: Pure black typography on light backgrounds and crisp white typography on dark backgrounds.'
   ]);
 
   // Update Notification Mode: 'interactive' (prompts with notification, no silent update) vs 'automatic'
@@ -175,10 +172,10 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
   const triggerUpdateNotification = useCallback(() => {
     playTickSound();
     showToast(
-      '✨ Version v.5.5.5.0 (6.0 GB) is ready! 6GB Ultra Turbo Engine, 5-Second Offline Alert, 404 Auto-Recovery & Camera AI.',
+      '✨ Version v.6.0.1.0 (6.0 GB) is ready! 2s Dual 404 Recovery, AI Packaging & MRP Scanner, and Firebase Zero-Loss Vault.',
       'info',
       {
-        title: 'App Update Available (v.5.5.5.0)',
+        title: 'App Update Available (v.6.0.1.0)',
         action: {
           label: 'Update Now (6.0 GB)',
           onClick: () => {
@@ -190,13 +187,13 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     );
   }, [showToast]);
 
-  // In-app release announcement notification for v.5.5.5.0 launch - Prompts with Liquid-Glass Notification
+  // In-app release announcement notification for v.6.0.1.0 launch - Prompts with Liquid-Glass Notification
   useEffect(() => {
-    const sessionKey = 'financialfree_v5550_notified';
+    const sessionKey = 'financialfree_v6010_notified';
     if (!sessionStorage.getItem(sessionKey)) {
       const timer = setTimeout(() => {
         const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
-        if (stored !== 'v.5.5.5.0' && stored !== 'v5.5.5.0' && stored !== '5.5.5.0') {
+        if (stored !== 'v.6.0.1.0' && stored !== 'v6.0.1.0' && stored !== '6.0.1.0' && stored !== 'v6.0.1') {
           triggerUpdateNotification();
           sessionStorage.setItem(sessionKey, 'true');
         }
@@ -210,7 +207,7 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       const info = await api.getAppUpdateInfo();
       if (info) {
-        setLatestVersion(info.latestVersion || 'v.5.5.5.0');
+        setLatestVersion(info.latestVersion || 'v.6.0.1.0');
         if (info.currentVersion) setCurrentVersion(info.currentVersion);
         if (info.totalSizeMB) setTotalSizeMB(info.totalSizeMB);
         if (info.totalSizeFormatted) setTotalSizeFormatted(info.totalSizeFormatted);
@@ -220,10 +217,10 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
         const stored = localStorage.getItem(INSTALLED_VERSION_KEY);
         // Strictly manual update enforcement: Only marked installed if user manually confirmed installation
-        if (stored === (info.latestVersion || 'v.5.5.5.0')) {
+        if (stored === (info.latestVersion || 'v.6.0.1.0') || stored === 'v.6.0.1' || stored === 'v6.0.1.0') {
           setIsUpdateInstalled(true);
           setHasUpdateAvailable(false);
-          setCurrentVersion(info.latestVersion || 'v.5.5.5.0');
+          setCurrentVersion(info.latestVersion || 'v.6.0.1.0');
           let savedDate = localStorage.getItem(LAST_UPDATED_AT_KEY);
           if (!savedDate) {
             savedDate = new Date().toISOString();
@@ -233,14 +230,14 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
         } else {
           setIsUpdateInstalled(false);
           setHasUpdateAvailable(true);
-          setCurrentVersion('v.5.5.4');
+          setCurrentVersion('v.6.0.0');
         }
       }
     } catch {
       // Fallback: Keep update available for manual user review
       setIsUpdateInstalled(false);
       setHasUpdateAvailable(true);
-      setCurrentVersion('v.5.5.4');
+      setCurrentVersion('v.6.0.0');
     }
   }, []);
 
@@ -265,9 +262,9 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       const verificationStages = [
         'Inspecting local vault storage and device compatibility...',
-        'Validating cryptographic integrity for v.5.5.5.0 package...',
+        'Validating cryptographic integrity for v.6.0.1.0 package...',
         'Allocating 6.0 GB high-speed offline cache buffer...',
-        'Package verified: Ready to stream v.5.5.5.0 update package.'
+        'Package verified: Ready to stream v.6.0.1.0 update package.'
       ];
 
       const stageDelay = isTurboMode ? 150 : 450;
@@ -311,13 +308,13 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
         if (currentProg < 25) {
           stageText = `Streaming 6.0 GB Ultra Turbo Engine & GPU Shaders (${formatted} / 6.0 GB)...`;
         } else if (currentProg < 50) {
-          stageText = `Deploying 5-Second Offline Monitor & 404 Interruption Screen (${formatted} / 6.0 GB)...`;
+          stageText = `Deploying 2s Dual 404 Recovery & Server Health Engine (${formatted} / 6.0 GB)...`;
         } else if (currentProg < 75) {
-          stageText = `Configuring Camera Receipt Scanner & Gemini OCR Parsing (${formatted} / 6.0 GB)...`;
+          stageText = `Configuring AI FMCG Product Packaging & MRP Scanner (${formatted} / 6.0 GB)...`;
         } else if (currentProg < 92) {
-          stageText = `Synchronizing Authentic Paytm & Google Pay Chimes (${formatted} / 6.0 GB)...`;
+          stageText = `Hardening Firebase Cloud Vault & Undefined Field Sanitation (${formatted} / 6.0 GB)...`;
         } else {
-          stageText = `Finalizing Package Integrity & Activating v.5.5.5.0 (${formatted} / 6.0 GB)...`;
+          stageText = `Finalizing Package Integrity & Activating v.6.0.1.0 (${formatted} / 6.0 GB)...`;
         }
 
         setDownloadProgress(currentProg);
@@ -399,12 +396,12 @@ export const AppUpdateProvider: React.FC<{ children: ReactNode }> = ({ children 
     playTickSound();
     localStorage.removeItem(INSTALLED_VERSION_KEY);
     localStorage.removeItem(LAST_UPDATED_AT_KEY);
-    sessionStorage.removeItem('financialfree_v5550_notified');
+    sessionStorage.removeItem('financialfree_v6010_notified');
     setIsUpdateInstalled(false);
     setHasUpdateAvailable(true);
-    setCurrentVersion('v.5.5.4');
+    setCurrentVersion('v.6.0.0');
     setInstalledAt(null);
-    showToast('Update reset to v.5.5.4. Update to v.5.5.5.0 (6.0 GB) is ready for manual testing.', 'info');
+    showToast('Update reset to v.6.0.0. Update to v.6.0.1.0 (6.0 GB) is ready for manual testing.', 'info');
   };
 
   return (

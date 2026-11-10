@@ -1,116 +1,167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#09251b">
-<title>404 • Connection Interrupted • FinancialFree</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071c15">
+<title>404 · Connection Interrupted · FinancialFree v6.0.1</title>
 <style>
 :root {
   color-scheme: dark;
   --bg-gradient: radial-gradient(ellipse at 50% 10%, #1b5139 0%, #0b2b20 43%, #061810 100%);
-  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  --card-border: rgba(255, 255, 255, 0.18);
-  --card-shadow: 0 28px 80px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.2);
-  --mint: #a8f5ce;
-  --green: #55d99b;
+  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  --card-border: rgba(255, 255, 255, 0.22);
+  --card-shadow: 0 32px 100px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.25);
+  --mint: #b4ffda;
+  --green: #58e0a0;
   --text: #f3fff8;
   --heading: #ffffff;
-  --muted: #b2cfc0;
-  --status-bg: rgba(0, 0, 0, 0.25);
-  --status-border: rgba(255, 255, 255, 0.12);
-  --btn-home-bg: rgba(255, 255, 255, 0.08);
-  --btn-home-border: rgba(255, 255, 255, 0.25);
-  --btn-home-text: #effff6;
-  --footer-text: #88aa98;
-  --footer-border: rgba(255, 255, 255, 0.12);
-  --grid-color: #c6ffe0;
+  --muted: #b7d1c4;
+  --status-bg: rgba(0, 0, 0, 0.3);
+  --status-border: rgba(255, 255, 255, 0.16);
+  --btn-sec-bg: rgba(255, 255, 255, 0.09);
+  --btn-sec-border: rgba(255, 255, 255, 0.25);
+  --btn-sec-text: #effff6;
+  --footer-text: #8fb59f;
+  --footer-border: rgba(255, 255, 255, 0.14);
+  --grid-color: rgba(202, 255, 223, 0.12);
 }
 
 html.light {
   color-scheme: light;
-  --bg-gradient: radial-gradient(ellipse at 50% 10%, #e6f9f0 0%, #d4f3e4 45%, #f1f8f5 100%);
-  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.90));
-  --card-border: rgba(16, 185, 129, 0.25);
-  --card-shadow: 0 20px 50px rgba(16, 185, 129, 0.12), 0 8px 24px rgba(15, 23, 42, 0.08);
+  --bg-gradient: radial-gradient(ellipse at 50% 10%, #e6f9f0 0%, #d1f2e2 45%, #f0f7f4 100%);
+  --card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+  --card-border: rgba(16, 185, 129, 0.28);
+  --card-shadow: 0 24px 60px rgba(16, 185, 129, 0.14), 0 8px 24px rgba(15, 23, 42, 0.08);
   --mint: #059669;
   --green: #10b981;
-  --text: #090d16;
+  --text: #0b1324;
   --heading: #000000;
   --muted: #1e293b;
-  --status-bg: rgba(16, 185, 129, 0.08);
-  --status-border: rgba(16, 185, 129, 0.25);
-  --btn-home-bg: rgba(15, 23, 42, 0.05);
-  --btn-home-border: rgba(15, 23, 42, 0.2);
-  --btn-home-text: #090d16;
+  --status-bg: rgba(16, 185, 129, 0.1);
+  --status-border: rgba(16, 185, 129, 0.3);
+  --btn-sec-bg: rgba(15, 23, 42, 0.06);
+  --btn-sec-border: rgba(15, 23, 42, 0.24);
+  --btn-sec-text: #090d16;
   --footer-text: #334155;
-  --footer-border: rgba(15, 23, 42, 0.1);
-  --grid-color: #10b981;
+  --footer-border: rgba(15, 23, 42, 0.12);
+  --grid-color: rgba(16, 185, 129, 0.12);
 }
 
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: 22px 16px;
   overflow-x: hidden;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
   background: var(--bg-gradient);
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-.ambient { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
-.orb { position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.25; animation: float 10s ease-in-out infinite; }
-.orb.a { width: 280px; height: 280px; left: -80px; top: 8%; background: #69f5b1; }
-.orb.b { width: 340px; height: 340px; right: -100px; bottom: -80px; background: #36b98d; animation-delay: -4s; }
-@keyframes float { 50% { transform: translate(25px, -25px) scale(1.08); } }
+button { font: inherit; }
 
+.bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
 .grid {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  pointer-events: none;
-  opacity: 0.1;
   background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: linear-gradient(#000, transparent 85%);
 }
 
-.theme-toggle {
+.glow {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.26;
+  animation: float 12s ease-in-out infinite;
+}
+.g1 { width: 300px; height: 300px; left: -130px; top: 5%; background: radial-gradient(circle, #71ffc0, transparent 70%); }
+.g2 { width: 390px; height: 390px; right: -170px; bottom: -130px; background: radial-gradient(circle, #3dc995, transparent 70%); animation-delay: -5s; }
+@keyframes float { 50% { transform: translate(22px, -24px) scale(1.08); } }
+
+/* Controls Top Bar */
+.top-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.design-pills {
+  display: inline-flex;
+  background: var(--status-bg);
+  border: 1px solid var(--status-border);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 3px;
+}
+.pill-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pill-btn.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+.pill-timer {
+  font-size: 10px;
+  font-weight: 800;
+  color: #10b981;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.theme-toggle {
   background: var(--status-bg);
   border: 1px solid var(--status-border);
   color: var(--text);
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 5px 11px;
+  border-radius: 18px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: all 0.2s ease;
 }
-.theme-toggle:hover { opacity: 0.85; transform: scale(1.04); }
+.theme-toggle:hover { transform: scale(1.04); }
 
+/* Main Card */
 .card {
   position: relative;
-  width: min(100%, 520px);
-  padding: 34px 26px 28px;
+  width: min(100%, 550px);
+  padding: clamp(24px, 5vw, 36px);
   text-align: center;
   border: 1px solid var(--card-border);
-  border-radius: 30px;
+  border-radius: 32px;
   background: var(--card-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
   box-shadow: var(--card-shadow);
-  animation: appear 0.7s ease both;
+  animation: enter 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-@keyframes appear { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes enter {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
 
 .brand {
   display: flex;
@@ -118,184 +169,242 @@ body {
   justify-content: center;
   gap: 10px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  font-size: 17px;
+  letter-spacing: 0.03em;
+  font-size: 15px;
   color: var(--heading);
 }
-.brand img {
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
-  border-radius: 14px;
-  background: #ffffff;
-  padding: 3px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #c5ffe0, #58d99d);
+  color: #12432e;
+  font-weight: 900;
+  font-size: 17px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
 }
 
-.art {
-  height: 185px;
+/* Dual Design Slides */
+.design-view {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.design-view.hidden {
+  display: none;
+  opacity: 0;
+  transform: scale(0.96);
+}
+.design-view.visible {
+  display: block;
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Design 1 Visuals (Advanced Halo & Server) */
+.visual-adv {
+  height: 200px;
   display: grid;
   place-items: center;
   position: relative;
   margin: 10px auto 0;
 }
-.ring {
+.halo {
   position: absolute;
   width: 145px;
   height: 145px;
-  border: 1.5px solid rgba(168, 245, 206, 0.5);
+  border: 1px solid rgba(174, 255, 215, 0.45);
   border-radius: 50%;
-  animation: ring 3s ease-out infinite;
+  animation: halo 3s ease-out infinite;
 }
-.ring:nth-child(2) { animation-delay: 1s; }
-.ring:nth-child(3) { animation-delay: 2s; }
-@keyframes ring {
-  0% { transform: scale(0.55); opacity: 0; }
+.halo:nth-child(2) { animation-delay: 1s; }
+.halo:nth-child(3) { animation-delay: 2s; }
+@keyframes halo {
+  0% { transform: scale(0.6); opacity: 0; }
   25% { opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.65); opacity: 0; }
 }
-
-svg { width: 190px; height: 145px; position: relative; z-index: 1; overflow: visible; }
-.wire {
+.adv-svg {
+  position: relative;
+  z-index: 1;
+  width: 220px;
+  height: 160px;
+  overflow: visible;
+  filter: drop-shadow(0 8px 24px rgba(57, 225, 151, 0.25));
+}
+.route {
   fill: none;
-  stroke: #55d99b;
+  stroke: #9af4c5;
   stroke-width: 2.4;
   stroke-linecap: round;
-  stroke-dasharray: 5 8;
+  stroke-dasharray: 5 9;
   animation: flow 1.1s linear infinite;
-  filter: drop-shadow(0 0 5px #55d99b);
 }
-.wire.dim { opacity: 0.45; animation-duration: 1.8s; }
-@keyframes flow { to { stroke-dashoffset: -26; } }
+.route.alt { opacity: 0.5; animation-duration: 1.8s; animation-direction: reverse; }
+@keyframes flow { to { stroke-dashoffset: -28; } }
+.node { fill: #b4ffda; stroke: #ffffff; stroke-width: 1.8; }
+.server { fill: #093625; stroke: #a9f5ce; stroke-width: 2; }
+.led { fill: #68e9a9; filter: drop-shadow(0 0 5px #68e9a9); animation: blink 1.2s infinite; }
+@keyframes blink { 50% { opacity: 0.2; } }
 
-.node { fill: #a8f5ce; stroke: #ffffff; stroke-width: 2; }
-.server { fill: #123e2b; stroke: #55d99b; stroke-width: 2; }
-.pulse { fill: #64e5a7; filter: drop-shadow(0 0 5px #64e5a7); animation: blink 1s ease-in-out infinite; }
-@keyframes blink { 50% { opacity: 0.25; } }
+/* Design 2 Visuals (Cute Cat & Unplugged Cable) */
+.visual-cat {
+  height: 220px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 6px auto 0;
+}
+.cat-svg {
+  width: min(100%, 330px);
+  height: 215px;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.spark { fill: #d7ffe9; transform-origin: center; animation: twinkle 2s ease-in-out infinite; }
+.spark:nth-child(2) { animation-delay: 0.7s; }
+.spark:nth-child(3) { animation-delay: 1.3s; }
+@keyframes twinkle { 50% { opacity: 0.2; transform: scale(0.65); } }
+.cable { fill: none; stroke: #d6f9e5; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.25)); }
+.cable-inner { fill: none; stroke: #6fdfa8; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 4 9; animation: signal 1.3s linear infinite; }
+@keyframes signal { to { stroke-dashoffset: -26; } }
+.plug { fill: #e9fff2; stroke: #b8f6d3; stroke-width: 2; }
+.socket { fill: #183c2c; stroke: #b9f5d1; stroke-width: 3; }
+.cat-body { fill: #f3eee1; stroke: #d4d7c9; stroke-width: 2; }
+.cat-patch { fill: #6f806f; }
+.cat-ear { fill: #f3eee1; stroke: #d4d7c9; stroke-width: 2; }
+.cat-eye { fill: #294d39; animation: catBlink 4.5s infinite; transform-origin: center; }
+@keyframes catBlink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(0.12); } }
+.cat-cheek { fill: #f3a8a0; opacity: 0.8; }
+.cat-tail { fill: none; stroke: #f3eee1; stroke-width: 13; stroke-linecap: round; transform-origin: 111px 164px; animation: tail 2.4s ease-in-out infinite; }
+@keyframes tail { 50% { transform: rotate(-12deg); } }
+.cat-paw { fill: #f3eee1; stroke: #d4d7c9; stroke-width: 1.5; }
+.bubble { fill: rgba(255, 255, 255, 0.16); stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.5; }
 
+/* Text & Headings */
 .code {
-  font-size: clamp(66px, 16vw, 86px);
+  font-size: clamp(74px, 17vw, 98px);
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.085em;
   line-height: 1;
-  margin: 0 0 8px;
-  background: linear-gradient(135deg, #10b981, #55d99b);
+  background: linear-gradient(180deg, #ffffff, #a8f0c5);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
 html.light .code {
-  background: linear-gradient(135deg, #047857, #10b981);
+  background: linear-gradient(180deg, #047857, #10b981);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
 
 h1 {
-  font-size: 24px;
-  margin: 0 0 10px;
-  letter-spacing: -0.02em;
+  margin: 12px 0 10px;
+  font-size: clamp(21px, 5vw, 25px);
+  letter-spacing: -0.03em;
   color: var(--heading);
   font-weight: 850;
 }
 .desc {
-  max-width: 420px;
+  max-width: 410px;
   margin: 0 auto;
   color: var(--muted);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   font-weight: 500;
 }
 
+/* Status Indicator */
 .status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 20px 0 14px;
-  padding: 8px 14px;
+  gap: 9px;
+  margin: 20px 0 16px;
+  padding: 8px 15px;
   border: 1px solid var(--status-border);
-  border-radius: 30px;
+  border-radius: 99px;
   background: var(--status-bg);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
 }
 .dot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #ffc477;
   box-shadow: 0 0 12px #ffc477;
   transition: all 0.3s ease;
 }
 
+/* Action Buttons */
 .actions {
   display: flex;
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 6px;
 }
-button, a {
-  font: inherit;
-  text-decoration: none;
-  touch-action: manipulation;
-}
-.retry {
-  border: 0;
+.btn {
+  min-height: 46px;
+  padding: 0 20px;
   border-radius: 14px;
-  padding: 13px 22px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
-  transition: all 0.2s ease;
-}
-.retry:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45); }
-.retry:active { transform: translateY(0); }
-.retry:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-.home {
-  border: 1px solid var(--btn-home-border);
-  border-radius: 14px;
-  padding: 12px 20px;
-  color: var(--btn-home-text);
-  background: var(--btn-home-bg);
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 750;
+  font-size: 14px;
 }
-.home:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-2px); }
-html.light .home:hover { background: rgba(15, 23, 42, 0.1); }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(0.98); }
+.primary {
+  border: 0;
+  color: #063d29;
+  font-weight: 850;
+  background: linear-gradient(135deg, #c0ffe0, #53d99c);
+  box-shadow: 0 8px 24px rgba(70, 220, 153, 0.35);
+}
+.secondary {
+  color: var(--btn-sec-text);
+  background: var(--btn-sec-bg);
+  border: 1px solid var(--btn-sec-border);
+}
+.btn:disabled { opacity: 0.65; cursor: wait; transform: none; }
 
-#feedback {
-  min-height: 20px;
+.feedback {
+  min-height: 22px;
   margin: 12px 0 0;
-  color: var(--mint);
-  font-size: 13px;
+  color: #a7f5ce;
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.6;
+}
+html.light .feedback {
+  color: #047857;
 }
 
 .footer {
   margin-top: 22px;
-  padding-top: 14px;
+  padding-top: 15px;
   border-top: 1px solid var(--footer-border);
   color: var(--footer-text);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  font-weight: 750;
 }
 
 @media(max-width: 440px) {
-  .card { padding: 26px 18px 22px; }
-  .art { height: 165px; }
-  h1 { font-size: 21px; }
+  .card { padding: 24px 18px 20px; border-radius: 26px; }
+  .visual-adv { height: 175px; }
+  .visual-cat { height: 195px; }
+  .cat-svg { height: 190px; }
   .actions { flex-direction: column; width: 100%; }
-  .retry, .home { width: 100%; justify-content: center; }
+  .btn { width: 100%; }
 }
 @media(prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -306,75 +415,199 @@ html.light .home:hover { background: rgba(15, 23, 42, 0.1); }
 </style>
 </head>
 <body>
-<div class="ambient"><i class="orb a"></i><i class="orb b"></i></div>
-<div class="grid"></div>
+<div class="bg" aria-hidden="true">
+  <div class="grid"></div>
+  <i class="glow g1"></i>
+  <i class="glow g2"></i>
+</div>
 
 <main class="card">
-  <!-- Theme Toggle -->
-  <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle display theme">
-    <span id="themeIcon">🌓</span>
-    <span id="themeLabel">Mode</span>
-  </button>
+  <!-- Top Controls: 2s Dual Design Switcher & Dark/Light Toggle -->
+  <div class="top-controls">
+    <div class="design-pills" role="tablist" aria-label="404 Design Switcher">
+      <button type="button" class="pill-btn active" id="btnDesign1" aria-selected="true">🛰️ Advanced</button>
+      <button type="button" class="pill-btn" id="btnDesign2" aria-selected="false">🐱 Cat Helper</button>
+      <span class="pill-timer" id="autoTimerBadge">⚡ 2s</span>
+    </div>
+
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle display theme">
+      <span id="themeIcon">🌓</span>
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
 
   <div class="brand">
-    <img src="/icon-192.png" onerror="this.src='/favicon.ico'" alt="FinancialFree Logo">
+    <span class="brand-mark">F</span>
     <span>FinancialFree</span>
   </div>
 
-  <div class="art" aria-hidden="true">
-    <i class="ring"></i><i class="ring"></i><i class="ring"></i>
-    <svg viewBox="0 0 190 145" role="img">
-      <path class="wire dim" d="M26 34H74L98 58H151V94"/>
-      <path class="wire" d="M26 34H74L98 58H151V94"/>
-      <path class="wire" d="M26 110H65L87 88H125L151 94"/>
-      <rect class="server" x="128" y="92" width="46" height="38" rx="7"/>
-      <path d="M137 103H164M137 112H164" stroke="#a8f5ce" stroke-width="2" stroke-linecap="round"/>
-      <circle class="pulse" cx="165" cy="103" r="2.5"/>
-      <circle class="pulse" cx="165" cy="112" r="2.5" style="animation-delay:.4s"/>
-      <circle class="node" cx="26" cy="34" r="7"/>
-      <circle class="node" cx="74" cy="34" r="6"/>
-      <circle class="node" cx="98" cy="58" r="6"/>
-      <circle class="node" cx="26" cy="110" r="7"/>
-      <circle class="node" cx="87" cy="88" r="6"/>
-      <circle class="node" cx="125" cy="88" r="6"/>
-    </svg>
+  <!-- SLIDE 1: Advanced Network Halo & Route UI (shows 2s) -->
+  <div class="design-view visible" id="viewDesign1">
+    <div class="visual-adv" aria-hidden="true">
+      <i class="halo"></i><i class="halo"></i><i class="halo"></i>
+      <svg class="adv-svg" viewBox="0 0 220 160">
+        <path class="route alt" d="M25 34H78L104 57H164V95"/>
+        <path class="route" d="M25 34H78L104 57H164V95"/>
+        <path class="route" d="M25 119H68L91 91H132L164 95"/>
+        <path class="route alt" d="M78 34L91 91"/>
+        <circle class="node" cx="25" cy="34" r="7"/>
+        <circle class="node" cx="78" cy="34" r="6"/>
+        <circle class="node" cx="104" cy="57" r="6"/>
+        <circle class="node" cx="25" cy="119" r="7"/>
+        <circle class="node" cx="91" cy="91" r="6"/>
+        <circle class="node" cx="132" cy="91" r="6"/>
+        <rect class="server" x="143" y="94" width="52" height="46" rx="9"/>
+        <path d="M154 107H181M154 117H181M154 127H174" stroke="#b4ffda" stroke-width="2" stroke-linecap="round"/>
+        <circle class="led" cx="183" cy="107" r="2.7"/>
+        <circle class="led" cx="183" cy="117" r="2.7" style="animation-delay:.4s"/>
+      </svg>
+    </div>
+
+    <div class="code">404</div>
+    <h1>We lost the connection</h1>
+    <p class="desc">This page couldn’t be reached or FinancialFree is temporarily unavailable. Check your connection and try again.</p>
   </div>
 
-  <div class="code">404</div>
-  <h1>Connection interrupted</h1>
-  <p class="desc">
-    We couldn’t reach FinancialFree right now. Check your internet connection and try again. Your saved financial records and ledgers are securely stored in your local vault.
-  </p>
+  <!-- SLIDE 2: Cute Cat & Unplugged Cable UI (shows 2s) -->
+  <div class="design-view hidden" id="viewDesign2">
+    <div class="visual-cat" aria-hidden="true">
+      <svg class="cat-svg" viewBox="0 0 340 240">
+        <path class="spark" d="M45 40l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+        <path class="spark" d="M286 34l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>
+        <path class="spark" d="M302 157l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+        <!-- disconnected cable, plug and wall socket -->
+        <path class="cable" d="M24 174 C65 174 66 208 110 208 C137 208 140 184 164 184"/>
+        <path class="cable-inner" d="M24 174 C65 174 66 208 110 208 C137 208 140 184 164 184"/>
+        <g transform="translate(155 165) rotate(-13)">
+          <rect class="plug" x="0" y="0" width="38" height="30" rx="9"/>
+          <path d="M10 1V-13M28 1V-13" stroke="#e9fff2" stroke-width="6" stroke-linecap="round"/>
+          <path d="M13 15H25" stroke="#6bbf91" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+        <rect class="socket" x="222" y="151" width="62" height="68" rx="14"/>
+        <rect x="237" y="170" width="7" height="20" rx="3.5" fill="#c5ffe0"/>
+        <rect x="261" y="170" width="7" height="20" rx="3.5" fill="#c5ffe0"/>
+        <path d="M245 203h16" stroke="#74dca8" stroke-width="3" stroke-linecap="round"/>
+        <path class="cable" d="M284 185 C309 185 313 202 330 202"/>
+        <!-- cute sitting cat -->
+        <path class="cat-tail" d="M111 164 C79 159 82 125 104 124"/>
+        <ellipse class="cat-body" cx="143" cy="164" rx="49" ry="49"/>
+        <path class="cat-patch" d="M119 139c-9 8-12 25-6 38 7 15 21 22 35 18 9-3 13-11 13-19-15 5-25-7-24-21-1-9-7-16-18-16z" opacity=".75"/>
+        <path class="cat-ear" d="M105 91L108 48Q110 39 118 47L145 76Z"/>
+        <path class="cat-ear" d="M157 75L183 47Q191 40 193 51L194 98Z"/>
+        <path d="M114 61l3 23 16-10zM174 76l14-16 1 26z" fill="#efa9a1"/>
+        <ellipse class="cat-body" cx="151" cy="103" rx="48" ry="43"/>
+        <path class="cat-patch" d="M113 81Q125 58 143 65Q132 80 137 99Q122 105 113 81Z"/>
+        <path class="cat-patch" d="M169 65Q190 68 195 87Q184 98 171 92Q179 80 169 65Z"/>
+        <ellipse class="cat-eye" cx="135" cy="104" rx="4" ry="6"/>
+        <ellipse class="cat-eye" cx="168" cy="104" rx="4" ry="6"/>
+        <path d="M147 115q4-5 8 0l-4 5z" fill="#df8e91"/>
+        <path d="M151 120q-7 8-13 1M151 120q7 8 13 1" fill="none" stroke="#718274" stroke-width="2" stroke-linecap="round"/>
+        <ellipse class="cat-cheek" cx="124" cy="116" rx="8" ry="4"/>
+        <ellipse class="cat-cheek" cx="179" cy="116" rx="8" ry="4"/>
+        <ellipse class="cat-paw" cx="119" cy="199" rx="19" ry="9"/>
+        <ellipse class="cat-paw" cx="164" cy="200" rx="19" ry="9"/>
+        <!-- small floating speech bubble -->
+        <rect class="bubble" x="206" y="30" width="72" height="42" rx="15"/>
+        <path d="M221 72l-4 10 14-10" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+        <path d="M225 51h34" stroke="#d8ffea" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="216" cy="51" r="3" fill="#d8ffea"/>
+      </svg>
+    </div>
 
+    <div class="code">404</div>
+    <h1>Oops! The internet cable got unplugged.</h1>
+    <p class="desc">Our connection helper found a loose link. Check your internet connection and tap Reconnect to get FinancialFree back online.</p>
+  </div>
+
+  <!-- Shared Status & Buttons -->
   <div class="status" role="status">
     <span class="dot" id="dot"></span>
     <span id="status">Checking network status…</span>
   </div>
 
   <div class="actions">
-    <button class="retry" id="retry" type="button">↻ &nbsp; Try again</button>
-    <button class="home" id="closeOrHome" type="button">✕ &nbsp; Close App / Back</button>
+    <button class="btn primary" id="retry" type="button">↻ &nbsp; <span id="retryLabel">Try again</span></button>
+    <button class="btn secondary" id="closeOrHome" type="button">← &nbsp; <span id="backLabel">Go back to app</span></button>
   </div>
 
-  <p id="feedback" aria-live="polite"></p>
+  <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
 
-  <div class="footer">FINANCIALFREE • SECURE LEDGER AUTO-RECOVERY</div>
+  <div class="footer" id="footerText">FINANCIALFREE · SECURE DIGITAL EXPERIENCE</div>
 </main>
 
 <script>
-// Elements
-const status = document.getElementById('status');
+const statusEl = document.getElementById('status');
 const dot = document.getElementById('dot');
 const feedback = document.getElementById('feedback');
 const retry = document.getElementById('retry');
+const retryLabel = document.getElementById('retryLabel');
 const closeOrHome = document.getElementById('closeOrHome');
+const backLabel = document.getElementById('backLabel');
+const footerText = document.getElementById('footerText');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
 
-// Synchronize Theme with app preference or system
+const viewDesign1 = document.getElementById('viewDesign1');
+const viewDesign2 = document.getElementById('viewDesign2');
+const btnDesign1 = document.getElementById('btnDesign1');
+const btnDesign2 = document.getElementById('btnDesign2');
+const autoTimerBadge = document.getElementById('autoTimerBadge');
+
+// 1. Dual-Design 2-Second Alternating Engine
+let activeDesign = 1;
+let autoCycleActive = true;
+let cycleTimer = null;
+
+function setDesign(designIndex, isManual = false) {
+  activeDesign = designIndex;
+  if (designIndex === 1) {
+    viewDesign1.classList.remove('hidden');
+    viewDesign1.classList.add('visible');
+    viewDesign2.classList.remove('visible');
+    viewDesign2.classList.add('hidden');
+    btnDesign1.classList.add('active');
+    btnDesign1.setAttribute('aria-selected', 'true');
+    btnDesign2.classList.remove('active');
+    btnDesign2.setAttribute('aria-selected', 'false');
+    retryLabel.textContent = 'Try again';
+    backLabel.textContent = 'Go back to app';
+    footerText.textContent = 'FINANCIALFREE · SECURE DIGITAL EXPERIENCE';
+  } else {
+    viewDesign2.classList.remove('hidden');
+    viewDesign2.classList.add('visible');
+    viewDesign1.classList.remove('visible');
+    viewDesign1.classList.add('hidden');
+    btnDesign2.classList.add('active');
+    btnDesign2.setAttribute('aria-selected', 'true');
+    btnDesign1.classList.remove('active');
+    btnDesign1.setAttribute('aria-selected', 'false');
+    retryLabel.textContent = 'Reconnect';
+    backLabel.textContent = 'Back to app';
+    footerText.textContent = 'FINANCIALFREE · CONNECTION SUPPORT';
+  }
+
+  if (isManual) {
+    autoCycleActive = false;
+    autoTimerBadge.textContent = '⏸ Paused';
+    clearInterval(cycleTimer);
+  }
+}
+
+// 2-second continuous auto-switch as requested:
+// "the 2 html file is are show on 2sec remain 1 first show advanced html and 2sec after show cat html"
+cycleTimer = setInterval(() => {
+  if (autoCycleActive) {
+    setDesign(activeDesign === 1 ? 2 : 1, false);
+  }
+}, 2000);
+
+btnDesign1.addEventListener('click', () => setDesign(1, true));
+btnDesign2.addEventListener('click', () => setDesign(2, true));
+
+// 2. High-Contrast Light / Dark Theme Sync
 function initTheme() {
-  const savedTheme = localStorage.getItem('financialfree_theme');
-  const isLight = savedTheme === 'light';
+  const saved = localStorage.getItem('financialfree_theme');
+  const isLight = saved === 'light';
   if (isLight) {
     document.documentElement.classList.add('light');
     document.documentElement.classList.remove('dark');
@@ -388,8 +621,8 @@ function initTheme() {
 initTheme();
 
 themeToggle.addEventListener('click', () => {
-  const isCurrentlyLight = document.documentElement.classList.contains('light');
-  if (isCurrentlyLight) {
+  const isLight = document.documentElement.classList.contains('light');
+  if (isLight) {
     document.documentElement.classList.remove('light');
     document.documentElement.classList.add('dark');
     localStorage.setItem('financialfree_theme', 'dark');
@@ -402,31 +635,30 @@ themeToggle.addEventListener('click', () => {
   }
 });
 
-// Network status checking
+// 3. Network Detection & Health Check Ping
 function updateStatusUI(online) {
   if (online) {
     dot.style.background = '#10b981';
     dot.style.boxShadow = '0 0 14px #10b981';
-    status.textContent = 'Internet available · Ready to connect';
+    statusEl.textContent = 'Internet available · Ready to connect';
   } else {
     dot.style.background = '#ffc477';
     dot.style.boxShadow = '0 0 14px #ffc477';
-    status.textContent = 'You appear to be offline';
+    statusEl.textContent = 'You appear to be offline';
   }
 }
 
 function updateStatus() {
   updateStatusUI(navigator.onLine);
 }
-
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);
 
-// "Try again" button checks connectivity and opens the app
 async function handleRetry() {
+  if (retry.disabled) return;
   retry.disabled = true;
   retry.textContent = 'Checking…';
-  feedback.textContent = 'Testing network connectivity…';
+  feedback.textContent = 'Testing connection with FinancialFree server…';
 
   try {
     const controller = new AbortController();
@@ -440,41 +672,36 @@ async function handleRetry() {
 
     if (res.ok || res.status < 500) {
       updateStatusUI(true);
-      feedback.textContent = 'Connection verified! Opening FinancialFree…';
+      feedback.textContent = 'Connected! Opening FinancialFree…';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 450);
+      return;
+    }
+  } catch (err) {
+    if (navigator.onLine) {
+      updateStatusUI(true);
+      feedback.textContent = 'Internet detected. Reloading app…';
       setTimeout(() => {
         window.location.href = '/';
       }, 500);
       return;
     }
-  } catch (err) {
-    // If local ping threw but browser reports online:
-    if (navigator.onLine) {
-      updateStatusUI(true);
-      feedback.textContent = 'Internet detected. Reloading…';
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 600);
-      return;
-    }
   }
 
-  // Still offline
   updateStatusUI(false);
-  feedback.textContent = 'Still offline. Check your Wi-Fi or cellular data and tap Try again.';
+  feedback.textContent = 'Still offline. Check Wi-Fi or mobile data and tap Try again.';
   retry.disabled = false;
-  retry.innerHTML = '↻ &nbsp; Try again';
+  retry.innerHTML = activeDesign === 1 ? '↻ &nbsp; Try again' : '↻ &nbsp; Reconnect';
 }
 
 retry.addEventListener('click', handleRetry);
 
-// "Go to back means closed the app" functionality
+// "Go to back means closed the app"
 closeOrHome.addEventListener('click', () => {
-  // 1. Attempt to close window (succeeds in standalone PWAs or opened tabs)
   try {
     window.close();
   } catch (e) {}
-
-  // 2. If window did not close, navigate back in history or redirect to home
   if (window.history.length > 1) {
     window.history.back();
   } else {
@@ -482,7 +709,6 @@ closeOrHome.addEventListener('click', () => {
   }
 });
 
-// Initial verification
 updateStatus();
 </script>
 </body>

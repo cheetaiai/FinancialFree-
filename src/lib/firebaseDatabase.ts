@@ -43,6 +43,27 @@ export const FIRESTORE_COLLECTIONS = {
 } as const;
 
 /**
+ * Recursively strips undefined values so Firebase Firestore setDoc never throws
+ * "Function setDoc() called with invalid data. Unsupported field value: undefined"
+ */
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  if (!obj || typeof obj !== 'object') return obj;
+  const cleaned: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined) {
+      if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+        cleaned[key] = cleanForFirestore(val);
+      } else if (Array.isArray(val)) {
+        cleaned[key] = val.map(item => (item && typeof item === 'object' && !(item instanceof Date) ? cleanForFirestore(item) : item));
+      } else {
+        cleaned[key] = val;
+      }
+    }
+  }
+  return cleaned;
+}
+
+/**
  * =========================================================================
  * 1. USER & ADMIN APPROVAL MANAGEMENT
  * =========================================================================
@@ -155,10 +176,11 @@ export async function storePersonInFirestore(person: Person): Promise<boolean> {
   if (!firestore) return false;
   try {
     const personRef = doc(firestore, FIRESTORE_COLLECTIONS.PEOPLE, person.id);
-    await setDoc(personRef, {
+    const cleaned = cleanForFirestore({
       ...person,
       firestore_synced_at: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(personRef, cleaned, { merge: true });
     return true;
   } catch (err) {
     console.warn('Firestore storePerson warning:', err);
@@ -212,10 +234,11 @@ export async function storeTransactionInFirestore(tx: Transaction): Promise<bool
   if (!firestore) return false;
   try {
     const txRef = doc(firestore, FIRESTORE_COLLECTIONS.TRANSACTIONS, tx.id);
-    await setDoc(txRef, {
+    const cleaned = cleanForFirestore({
       ...tx,
       firestore_synced_at: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(txRef, cleaned, { merge: true });
     return true;
   } catch (err) {
     console.warn('Firestore storeTransaction warning:', err);
@@ -269,10 +292,11 @@ export async function storeReminderInFirestore(reminder: Reminder): Promise<bool
   if (!firestore) return false;
   try {
     const rRef = doc(firestore, FIRESTORE_COLLECTIONS.REMINDERS, reminder.id);
-    await setDoc(rRef, {
+    const cleaned = cleanForFirestore({
       ...reminder,
       firestore_synced_at: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(rRef, cleaned, { merge: true });
     return true;
   } catch (err) {
     console.warn('Firestore storeReminder warning:', err);
@@ -361,13 +385,14 @@ export async function storeShoppingSpendInFirestore(spend: ShoppingSpend): Promi
   if (!firestore) return false;
   try {
     const sRef = doc(firestore, FIRESTORE_COLLECTIONS.SHOPPING, spend.id);
-    await setDoc(sRef, {
+    const cleaned = cleanForFirestore({
       ...spend,
       firestore_synced_at: new Date().toISOString()
-    }, { merge: true });
+    });
+    await setDoc(sRef, cleaned, { merge: true });
     return true;
-  } catch (err) {
-    console.warn('Firestore storeShoppingSpend warning:', err);
+  } catch (err: any) {
+    console.error('Firestore storeShoppingSpend error:', err);
     return false;
   }
 }
