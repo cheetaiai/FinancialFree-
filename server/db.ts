@@ -262,6 +262,7 @@ class DatabaseService {
       const cloudPeople = (await firestoreRest.getCollection('people')) as Person[];
       const cloudTransactions = (await firestoreRest.getCollection('transactions')) as Transaction[];
       const cloudReminders = (await firestoreRest.getCollection('reminders')) as Reminder[];
+      const cloudShopping = (await firestoreRest.getCollection('shopping')) as any[];
 
       // Merge people safely (do not delete local data if cloud is empty)
       if (Array.isArray(cloudPeople) && cloudPeople.length > 0) {
@@ -317,6 +318,24 @@ class DatabaseService {
         }
       }
 
+      // Merge shopping spends & scanned products safely
+      if (Array.isArray(cloudShopping) && cloudShopping.length > 0) {
+        if (!this.data.shopping_spends) this.data.shopping_spends = [];
+        for (const cs of cloudShopping) {
+          if (!cs || !cs.id) continue;
+          const idx = this.data.shopping_spends.findIndex(s => s.id === cs.id);
+          if (idx === -1) {
+            this.data.shopping_spends.push(cs);
+          } else {
+            const localUpdated = new Date(this.data.shopping_spends[idx].updated_at || 0).getTime();
+            const cloudUpdated = new Date(cs.updated_at || 0).getTime();
+            if (cloudUpdated >= localUpdated) {
+              this.data.shopping_spends[idx] = cs;
+            }
+          }
+        }
+      }
+
       this.ensureAdminCredentials();
       this.saveToFile();
 
@@ -345,6 +364,12 @@ class DatabaseService {
       // Push reminders
       for (const r of this.data.reminders) {
         await firestoreRest.setDoc('reminders', r.id, r);
+      }
+      // Push shopping spends & scanned products
+      if (this.data.shopping_spends && Array.isArray(this.data.shopping_spends)) {
+        for (const s of this.data.shopping_spends) {
+          await firestoreRest.setDoc('shopping', s.id, s);
+        }
       }
       this.isCloudSynced = true;
     } catch (err: any) {
@@ -2332,6 +2357,7 @@ class DatabaseService {
       people_count: people.length,
       tx_count: transactions.length,
       reminder_count: reminders.length,
+      shopping_count: (this.data.shopping_spends || []).length,
       total_given: totalGiven,
       total_returned: totalReturned,
       people_preview: people.slice(0, 10).map(p => ({ id: p.id, name: p.full_name, balance: p.remaining_balance })),
@@ -2341,7 +2367,8 @@ class DatabaseService {
         user: { email: 'Financial@free.com' },
         people,
         transactions,
-        reminders
+        reminders,
+        shopping_spends: this.data.shopping_spends || []
       })
     };
 
@@ -2526,6 +2553,9 @@ class DatabaseService {
     this.data.people = payload.people || [];
     this.data.transactions = payload.transactions || [];
     this.data.reminders = payload.reminders || [];
+    if (payload.shopping_spends && Array.isArray(payload.shopping_spends)) {
+      this.data.shopping_spends = payload.shopping_spends;
+    }
     this.saveToFile();
 
     // Mirror all restored records back to Firestore documents
@@ -2704,7 +2734,17 @@ class DatabaseService {
       title: spend.title || 'Untitled Spend',
       amount: Number(spend.amount) || 0,
       category: spend.category || 'groceries',
-      merchant: spend.merchant || '',
+      merchant: spend.merchant || spend.brand || '',
+      brand: spend.brand || undefined,
+      mrp: typeof spend.mrp === 'number' ? spend.mrp : (spend.mrp ? parseFloat(spend.mrp) : undefined),
+      selling_price: typeof spend.selling_price === 'number' ? spend.selling_price : undefined,
+      discount_amount: typeof spend.discount_amount === 'number' ? spend.discount_amount : undefined,
+      net_quantity: spend.net_quantity || undefined,
+      mfg_date: spend.mfg_date || undefined,
+      expiry_date: spend.expiry_date || undefined,
+      batch_number: spend.batch_number || undefined,
+      fssai_lic_no: spend.fssai_lic_no || undefined,
+      is_product_scan: Boolean(spend.is_product_scan),
       date: spend.date || now.split('T')[0],
       payment_method: spend.payment_method || 'UPI',
       notes: spend.notes || '',
@@ -2722,6 +2762,12 @@ class DatabaseService {
     }
 
     this.saveToFile();
+
+    // Immediately persist to Cloud Firestore for permanent cross-session safety
+    firestoreRest.setDoc('shopping', newSpend.id, newSpend).catch((err) => {
+      console.warn('Firestore setDoc notice for shopping spend:', err.message || err);
+    });
+
     return newSpend;
   }
 
@@ -2746,6 +2792,8 @@ class DatabaseService {
       } else {
         this.data.shopping_spends.push(item);
       }
+      // Push each to Cloud Firestore
+      firestoreRest.setDoc('shopping', id, item).catch(() => {});
     }
 
     this.saveToFile();
@@ -2758,6 +2806,7 @@ class DatabaseService {
     this.data.shopping_spends = this.data.shopping_spends.filter(s => s.id !== spendId);
     if (this.data.shopping_spends.length !== initialLen) {
       this.saveToFile();
+      firestoreRest.deleteDoc('shopping', spendId).catch(() => {});
       return true;
     }
     return false;

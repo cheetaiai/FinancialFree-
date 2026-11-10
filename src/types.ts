@@ -247,6 +247,7 @@ export interface BackupData {
   people: Person[];
   transactions: Transaction[];
   reminders: Reminder[];
+  shopping_spends?: ShoppingSpend[];
 }
 
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'discrepancy' | 'offline' | 'error';
@@ -320,16 +321,27 @@ export type ShoppingCategory =
 export interface ShoppingSpend {
   id: string;
   user_id?: string;
-  title: string; // e.g., "Weekly Vegetables & Dairy", "House Deep Cleaning", "Electrician repair"
-  amount: number;
+  title: string; // e.g., "Tata Salt 1kg", "Fortune Sunlite Oil", "Weekly Vegetables & Dairy"
+  amount: number; // Final purchase amount paid (in ₹)
   category: ShoppingCategory;
-  merchant?: string; // e.g. "Walmart", "Supermarket", "Urban Company", "Local Store"
+  merchant?: string; // Store or seller name (e.g. "DMart", "Kirana Store", "Blinkit")
+  brand?: string; // Brand / Manufacturer (e.g. "Tata", "Amul", "Nestle", "Fortune", "Dettol")
+  mrp?: number; // Maximum Retail Price printed on package/tag (in ₹)
+  selling_price?: number; // Discounted or retail purchase price
+  discount_amount?: number; // Discount/savings (mrp - amount)
+  net_quantity?: string; // Net weight or volume (e.g. "1 kg", "500 ml", "Pack of 2")
+  mfg_date?: string; // Manufacturing date (e.g. "2026-08" or "08/2026")
+  expiry_date?: string; // Expiry or Best Before date (e.g. "2027-02" or "02/2027")
+  batch_number?: string; // Batch or Barcode number
+  fssai_lic_no?: string; // FSSAI License number if scanned
   date: string; // YYYY-MM-DD
   payment_method: PaymentMethod;
   notes?: string;
-  receipt_image?: string;
+  receipt_image?: string; // Photo of product packaging, back MRP tag, or bill
   is_home_service: boolean; // Flag to filter Home Services separately
   is_settled?: boolean; // Completed / Settled checkmark status
+  is_product_scan?: boolean; // True if scanned from product pack/MRP
+  firestore_synced_at?: string; // Timestamp when synced to Cloud Firestore
   created_at: string;
   updated_at: string;
 }
@@ -343,6 +355,12 @@ export interface VerifiedShoppingBillItem {
 export interface VerifiedShoppingBill {
   title: string;
   total_amount: number;
+  mrp?: number;
+  brand?: string;
+  net_quantity?: string;
+  expiry_date?: string;
+  mfg_date?: string;
+  batch_number?: string;
   category: ShoppingCategory;
   merchant: string;
   date: string;
@@ -350,6 +368,7 @@ export interface VerifiedShoppingBill {
   notes: string;
   items: VerifiedShoppingBillItem[];
   is_verified_bill: boolean;
+  is_product_scan?: boolean; // True if photo was a product back/front pack or MRP label
   confidence_score: number;
   summary: string;
   raw_text?: string;

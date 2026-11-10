@@ -29,7 +29,7 @@ import {
   sendPasswordResetEmail as fbSendPasswordResetEmail
 } from 'firebase/auth';
 import { firestore, auth, isFirebaseConfigured, firebaseConfig } from './firebase';
-import { Person, Transaction, Reminder, User } from '../types';
+import { Person, Transaction, Reminder, User, ShoppingSpend } from '../types';
 import { localVault } from './api';
 
 // --- FIRESTORE COLLECTION DEFINITIONS ---
@@ -350,23 +350,96 @@ export async function sendFirebasePasswordResetEmailDirect(email: string): Promi
 
 /**
  * =========================================================================
- * 6. SILENT LOCAL VAULT TO FIRESTORE BACKGROUND RECONCILIATION
+ * 6. SHOPPING & PRODUCT DETAILS FIRESTORE STORAGE (ZERO DATA LOSS)
  * =========================================================================
  */
 
 /**
- * Syncs all local phone storage data to Firebase Firestore silently in background
+ * Save single shopping spend / scanned product to Firebase Firestore
+ */
+export async function storeShoppingSpendInFirestore(spend: ShoppingSpend): Promise<boolean> {
+  if (!firestore) return false;
+  try {
+    const sRef = doc(firestore, FIRESTORE_COLLECTIONS.SHOPPING, spend.id);
+    await setDoc(sRef, {
+      ...spend,
+      firestore_synced_at: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('Firestore storeShoppingSpend warning:', err);
+    return false;
+  }
+}
+
+/**
+ * Retrieve shopping spends & scanned products from Firebase Firestore
+ */
+export async function getShoppingSpendsFromFirestore(userId?: string): Promise<ShoppingSpend[]> {
+  if (!firestore) return [];
+  try {
+    const col = collection(firestore, FIRESTORE_COLLECTIONS.SHOPPING);
+    const snap = await getDocs(col);
+    const list = snap.docs.map(d => d.data() as ShoppingSpend);
+    if (userId) {
+      return list.filter(s => !s.user_id || s.user_id === userId);
+    }
+    return list;
+  } catch (err) {
+    console.warn('Firestore getShoppingSpends warning:', err);
+    return [];
+  }
+}
+
+/**
+ * Delete shopping spend from Firebase Firestore
+ */
+export async function deleteShoppingSpendFromFirestore(spendId: string): Promise<boolean> {
+  if (!firestore) return false;
+  try {
+    await deleteDoc(doc(firestore, FIRESTORE_COLLECTIONS.SHOPPING, spendId));
+    return true;
+  } catch (err) {
+    console.error('Firestore deleteShoppingSpend error:', err);
+    return false;
+  }
+}
+
+/**
+ * Batch save shopping spends to Firebase Firestore
+ */
+export async function batchStoreShoppingSpendsInFirestore(spends: ShoppingSpend[]): Promise<number> {
+  if (!firestore || !Array.isArray(spends)) return 0;
+  let count = 0;
+  for (const s of spends) {
+    if (!s || !s.id) continue;
+    const ok = await storeShoppingSpendInFirestore(s);
+    if (ok) count++;
+  }
+  return count;
+}
+
+/**
+ * =========================================================================
+ * 7. SILENT LOCAL VAULT TO FIRESTORE BACKGROUND RECONCILIATION
+ * =========================================================================
+ */
+
+/**
+ * Syncs all local phone storage data (people, txs, reminders, shopping) to Firebase Firestore
  */
 export async function syncAllLocalVaultToFirestore(userId?: string): Promise<{
   peopleSynced: number;
   txsSynced: number;
   remindersSynced: number;
+  shoppingSynced: number;
 }> {
-  if (!firestore) return { peopleSynced: 0, txsSynced: 0, remindersSynced: 0 };
+  if (!firestore) return { peopleSynced: 0, txsSynced: 0, remindersSynced: 0, shoppingSynced: 0 };
 
   let peopleSynced = 0;
   let txsSynced = 0;
   let remindersSynced = 0;
+  let shoppingSynced = 0;
 
   try {
     const localPeople = localVault.getPeople();
@@ -389,11 +462,127 @@ export async function syncAllLocalVaultToFirestore(userId?: string): Promise<{
       const ok = await storeReminderInFirestore(r);
       if (ok) remindersSynced++;
     }
+
+    // Also sync local shopping spends to Firestore
+    try {
+      const shoppingStored = localStorage.getItem('financialfree_shopping_spends');
+      if (shoppingStored) {
+        const spends = JSON.parse(shoppingStored);
+        if (Array.isArray(spends)) {
+          for (const s of spends) {
+            if (userId && !s.user_id) s.user_id = userId;
+            const ok = await storeShoppingSpendInFirestore(s);
+            if (ok) shoppingSynced++;
+          }
+        }
+      }
+    } catch {}
   } catch (err) {
     console.warn('syncAllLocalVaultToFirestore warning:', err);
   }
 
-  return { peopleSynced, txsSynced, remindersSynced };
+  return { peopleSynced, txsSynced, remindersSynced, shoppingSynced };
+}
+
+/**
+ * Hydrates local browser storage directly from Firebase Firestore when user returns
+ * Ensures ZERO data loss across browser tabs, device restarts, and reloads
+ */
+export async function syncAllFirestoreToLocalVault(userId?: string): Promise<{
+  peopleHydrated: number;
+  txsHydrated: number;
+  remindersHydrated: number;
+  shoppingHydrated: number;
+}> {
+  if (!firestore) return { peopleHydrated: 0, txsHydrated: 0, remindersHydrated: 0, shoppingHydrated: 0 };
+
+  let peopleHydrated = 0;
+  let txsHydrated = 0;
+  let remindersHydrated = 0;
+  let shoppingHydrated = 0;
+
+  try {
+    // 1. People
+    const cloudPeople = await getPeopleFromFirestore(userId);
+    if (cloudPeople.length > 0) {
+      const local = localVault.getPeople();
+      const map = new Map<string, Person>();
+      for (const p of local) map.set(p.id, p);
+      for (const p of cloudPeople) {
+        const ex = map.get(p.id);
+        if (!ex) {
+          map.set(p.id, p);
+          peopleHydrated++;
+        } else {
+          const exTime = new Date(ex.updated_at || 0).getTime();
+          const clTime = new Date(p.updated_at || 0).getTime();
+          if (clTime >= exTime) map.set(p.id, p);
+        }
+      }
+      localVault.savePeople(Array.from(map.values()));
+    }
+
+    // 2. Transactions
+    const cloudTxs = await getTransactionsFromFirestore(userId);
+    if (cloudTxs.length > 0) {
+      const local = localVault.getTransactions();
+      const map = new Map<string, Transaction>();
+      for (const t of local) map.set(t.id, t);
+      for (const t of cloudTxs) {
+        const ex = map.get(t.id);
+        if (!ex) {
+          map.set(t.id, t);
+          txsHydrated++;
+        } else {
+          const exTime = new Date(ex.updated_at || 0).getTime();
+          const clTime = new Date(t.updated_at || 0).getTime();
+          if (clTime >= exTime) map.set(t.id, t);
+        }
+      }
+      localVault.saveTransactions(Array.from(map.values()));
+    }
+
+    // 3. Reminders
+    const cloudReminders = await getRemindersFromFirestore(userId);
+    if (cloudReminders.length > 0) {
+      const local = localVault.getReminders();
+      const map = new Map<string, Reminder>();
+      for (const r of local) map.set(r.id, r);
+      for (const r of cloudReminders) {
+        map.set(r.id, r);
+        remindersHydrated++;
+      }
+      localVault.saveReminders(Array.from(map.values()));
+    }
+
+    // 4. Shopping Spends
+    const cloudSpends = await getShoppingSpendsFromFirestore(userId);
+    if (cloudSpends.length > 0) {
+      let localSpends: ShoppingSpend[] = [];
+      try {
+        const raw = localStorage.getItem('financialfree_shopping_spends');
+        if (raw) localSpends = JSON.parse(raw);
+      } catch {}
+      const map = new Map<string, ShoppingSpend>();
+      for (const s of localSpends) map.set(s.id, s);
+      for (const s of cloudSpends) {
+        const ex = map.get(s.id);
+        if (!ex) {
+          map.set(s.id, s);
+          shoppingHydrated++;
+        } else {
+          const exTime = new Date(ex.updated_at || ex.created_at || 0).getTime();
+          const clTime = new Date(s.updated_at || s.created_at || 0).getTime();
+          if (clTime >= exTime) map.set(s.id, s);
+        }
+      }
+      localStorage.setItem('financialfree_shopping_spends', JSON.stringify(Array.from(map.values())));
+    }
+  } catch (err) {
+    console.warn('syncAllFirestoreToLocalVault error:', err);
+  }
+
+  return { peopleHydrated, txsHydrated, remindersHydrated, shoppingHydrated };
 }
 
 /**

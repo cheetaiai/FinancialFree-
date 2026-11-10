@@ -15,7 +15,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   isOpen,
   onClose,
   onCapture,
-  title = 'Camera Receipt & Document Capture'
+  title = 'AI Camera: Product Pack, MRP & Bill Capture'
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -203,7 +203,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
           <div className="flex items-center gap-2">
             <ShieldCheck size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span className="text-[11px] sm:text-xs font-semibold">
-              Live scanner uses browser camera locally to read receipts with Gemini AI.
+              Point camera at product packaging (back MRP tag & details) or store receipt for AI analysis.
             </span>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">

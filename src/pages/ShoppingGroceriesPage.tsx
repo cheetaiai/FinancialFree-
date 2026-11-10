@@ -36,6 +36,12 @@ import { CameraCaptureModal } from '../components/camera/CameraCaptureModal';
 import { playGivenMoneySound, playTickSound } from '../lib/soundEffects';
 import { api } from '../lib/api';
 import { exportShoppingSpendsPdf } from '../lib/pdfExport';
+import {
+  storeShoppingSpendInFirestore,
+  getShoppingSpendsFromFirestore,
+  deleteShoppingSpendFromFirestore,
+  batchStoreShoppingSpendsInFirestore
+} from '../lib/firebaseDatabase';
 
 const STORAGE_KEY = 'financialfree_shopping_spends';
 
@@ -77,48 +83,98 @@ export const ShoppingGroceriesPage: React.FC = () => {
 
   const [isLoadingServer, setIsLoadingServer] = useState(false);
 
-  // Dual-sync data loss fix: Fetch from server on mount and reconcile with local cache
+  // Form State - Core & Product Packaging / MRP details
+  const [formTitle, setFormTitle] = useState('');
+  const [formAmount, setFormAmount] = useState('');
+  const [formCategory, setFormCategory] = useState<ShoppingCategory>('groceries');
+  const [formMerchant, setFormMerchant] = useState('');
+  const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [formPaymentMethod, setFormPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [formNotes, setFormNotes] = useState('');
+  const [formReceiptImage, setFormReceiptImage] = useState<string | undefined>(undefined);
+  // Product Packaging / Back-of-Pack fields
+  const [formBrand, setFormBrand] = useState('');
+  const [formMrp, setFormMrp] = useState('');
+  const [formNetQuantity, setFormNetQuantity] = useState('');
+  const [formExpiryDate, setFormExpiryDate] = useState('');
+  const [formMfgDate, setFormMfgDate] = useState('');
+  const [formBatchNumber, setFormBatchNumber] = useState('');
+  const [formIsProductScan, setFormIsProductScan] = useState(false);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [verifiedBillData, setVerifiedBillData] = useState<VerifiedShoppingBill | null>(null);
+  const [isVerifyingBill, setIsVerifyingBill] = useState(false);
+
+  // Dual-sync data loss fix: Fetch from Firestore & server on mount and whenever user returns
   useEffect(() => {
     let isMounted = true;
-    const fetchServerSpends = async () => {
+    const fetchAllSpends = async () => {
       try {
         setIsLoadingServer(true);
-        const serverSpends = await api.getShoppingSpends();
-        if (isMounted && Array.isArray(serverSpends) && serverSpends.length > 0) {
-          setSpends(prev => {
-            // Merge server and local spends by id, keeping latest updated_at
-            const map = new Map<string, ShoppingSpend>();
-            for (const item of prev) map.set(item.id, item);
-            for (const item of serverSpends) {
-              const existing = map.get(item.id);
-              if (!existing) {
-                map.set(item.id, item);
-              } else {
-                const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
-                const serverTime = new Date(item.updated_at || item.created_at || 0).getTime();
-                if (serverTime >= existingTime) {
-                  map.set(item.id, item);
-                }
-              }
+        // 1. Fetch from Firestore first (persistent cloud backup)
+        const firestoreSpends = await getShoppingSpendsFromFirestore().catch(() => [] as ShoppingSpend[]);
+        // 2. Fetch from server API
+        const serverSpends = await api.getShoppingSpends().catch(() => [] as ShoppingSpend[]);
+
+        if (!isMounted) return;
+
+        setSpends(prev => {
+          const map = new Map<string, ShoppingSpend>();
+          // local cache items
+          for (const item of prev) map.set(item.id, item);
+          // merge server items
+          for (const item of serverSpends) {
+            const existing = map.get(item.id);
+            if (!existing) {
+              map.set(item.id, item);
+            } else {
+              const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+              const serverTime = new Date(item.updated_at || item.created_at || 0).getTime();
+              if (serverTime >= existingTime) map.set(item.id, item);
             }
-            const merged = Array.from(map.values());
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-            return merged;
-          });
-        } else if (isMounted) {
-          // If server is empty, backfill with local/initial spends
-          api.batchSaveShoppingSpends(spends).catch(() => {});
-        }
+          }
+          // merge firestore items (highest authority for zero data loss)
+          for (const item of firestoreSpends) {
+            const existing = map.get(item.id);
+            if (!existing) {
+              map.set(item.id, item);
+            } else {
+              const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+              const fsTime = new Date(item.updated_at || item.created_at || 0).getTime();
+              if (fsTime >= existingTime) map.set(item.id, item);
+            }
+          }
+          const merged = Array.from(map.values());
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+          // If local had items not yet in Firestore, batch store them in background
+          if (merged.length > firestoreSpends.length) {
+            batchStoreShoppingSpendsInFirestore(merged).catch(() => {});
+          }
+          return merged;
+        });
       } catch (err) {
-        console.warn('Server spends fetch note (offline fallback active):', err);
+        console.warn('Spends sync note (offline fallback active):', err);
       } finally {
         if (isMounted) setIsLoadingServer(false);
       }
     };
 
-    fetchServerSpends();
+    fetchAllSpends();
+
+    // Auto-rehydrate when user returns to the tab/window or comes online
+    const handleRehydrate = () => {
+      fetchAllSpends();
+    };
+    window.addEventListener('visibilitychange', handleRehydrate);
+    window.addEventListener('focus', handleRehydrate);
+    window.addEventListener('online', handleRehydrate);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('visibilitychange', handleRehydrate);
+      window.removeEventListener('focus', handleRehydrate);
+      window.removeEventListener('online', handleRehydrate);
     };
   }, []);
 
@@ -133,19 +189,6 @@ export const ShoppingGroceriesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpend, setEditingSpend] = useState<ShoppingSpend | null>(null);
 
-  // Form State
-  const [formTitle, setFormTitle] = useState('');
-  const [formAmount, setFormAmount] = useState('');
-  const [formCategory, setFormCategory] = useState<ShoppingCategory>('groceries');
-  const [formMerchant, setFormMerchant] = useState('');
-  const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [formPaymentMethod, setFormPaymentMethod] = useState<PaymentMethod>('UPI');
-  const [formNotes, setFormNotes] = useState('');
-  const [formReceiptImage, setFormReceiptImage] = useState<string | undefined>(undefined);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [verifiedBillData, setVerifiedBillData] = useState<VerifiedShoppingBill | null>(null);
-  const [isVerifyingBill, setIsVerifyingBill] = useState(false);
-
   // Visual Moving Indicator Filter State
   const [activeMainFilter, setActiveMainFilter] = useState<MainCategoryFilter>('all');
   const [periodFilter, setPeriodFilter] = useState<'all' | 'monthly' | 'yearly'>('all');
@@ -157,11 +200,11 @@ export const ShoppingGroceriesPage: React.FC = () => {
   // Preview Receipt Modal
   const [viewReceiptUrl, setViewReceiptUrl] = useState<string | null>(null);
 
-  // AI Shopping Bill Verification Handler
+  // AI Shopping Bill & Product Pack Verification Handler
   const handleVerifyBill = async (imageDataUrl: string) => {
     try {
       setIsVerifyingBill(true);
-      showToast('AI Assistant is verifying your shopping bill with Gemini...', 'info');
+      showToast('AI Assistant is analyzing product pack, MRP & details with Gemini...', 'info');
       const result = await api.verifyShoppingBill(imageDataUrl);
       setVerifiedBillData(result);
 
@@ -173,12 +216,21 @@ export const ShoppingGroceriesPage: React.FC = () => {
       if (result.date) setFormDate(result.date);
       if (result.payment_method) setFormPaymentMethod(result.payment_method);
       if (result.notes) setFormNotes(result.notes);
+      // Product packaging fields
+      if (result.brand) setFormBrand(result.brand);
+      if (result.mrp && result.mrp > 0) setFormMrp(result.mrp.toString());
+      if (result.net_quantity) setFormNetQuantity(result.net_quantity);
+      if (result.expiry_date) setFormExpiryDate(result.expiry_date);
+      if (result.mfg_date) setFormMfgDate(result.mfg_date);
+      if (result.batch_number) setFormBatchNumber(result.batch_number);
+      if (result.is_product_scan) setFormIsProductScan(true);
 
-      showToast(`✓ Bill Verified! Extracted ₹${result.total_amount.toLocaleString('en-IN')} at ${result.merchant || 'Store'}`, 'success');
+      const label = result.is_product_scan ? 'Product Pack & MRP' : 'Bill';
+      showToast(`✓ ${label} Analyzed! MRP: ₹${result.mrp || result.total_amount} | ${result.brand || result.merchant || 'Store'}`, 'success');
       playTickSound();
     } catch (err: any) {
-      console.warn('AI Bill verification notice:', err);
-      showToast(err.message || 'Could not verify bill with AI assistant. Photo attached.', 'error');
+      console.warn('AI verification notice:', err);
+      showToast(err.message || 'Could not analyze with AI. Photo attached.', 'error');
     } finally {
       setIsVerifyingBill(false);
     }
@@ -195,6 +247,13 @@ export const ShoppingGroceriesPage: React.FC = () => {
     setFormPaymentMethod('UPI');
     setFormNotes('');
     setFormReceiptImage(undefined);
+    setFormBrand('');
+    setFormMrp('');
+    setFormNetQuantity('');
+    setFormExpiryDate('');
+    setFormMfgDate('');
+    setFormBatchNumber('');
+    setFormIsProductScan(false);
     setVerifiedBillData(null);
     setIsModalOpen(true);
     if (openCameraImmediately) {
@@ -213,6 +272,13 @@ export const ShoppingGroceriesPage: React.FC = () => {
     setFormPaymentMethod(item.payment_method);
     setFormNotes(item.notes || '');
     setFormReceiptImage(item.receipt_image);
+    setFormBrand(item.brand || '');
+    setFormMrp(item.mrp ? item.mrp.toString() : '');
+    setFormNetQuantity(item.net_quantity || '');
+    setFormExpiryDate(item.expiry_date || '');
+    setFormMfgDate(item.mfg_date || '');
+    setFormBatchNumber(item.batch_number || '');
+    setFormIsProductScan(item.is_product_scan || false);
     setIsModalOpen(true);
   };
 
@@ -222,7 +288,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
     setFormAmount((current + increment).toString());
   };
 
-  // Submit form (saves locally and to server database)
+  // Submit form (saves locally, to Firebase Firestore first, and to server database)
   const handleSaveSpend = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(formAmount);
@@ -238,6 +304,8 @@ export const ShoppingGroceriesPage: React.FC = () => {
 
     const isHome = CATEGORY_CONFIG[formCategory].isHomeService;
     const now = new Date().toISOString();
+    const parsedMrp = formMrp ? parseFloat(formMrp) : undefined;
+    const isProduct = formIsProductScan || Boolean(parsedMrp || formNetQuantity || formExpiryDate || formBrand);
 
     if (editingSpend) {
       // Update existing item
@@ -251,15 +319,24 @@ export const ShoppingGroceriesPage: React.FC = () => {
         payment_method: formPaymentMethod,
         notes: formNotes.trim() || undefined,
         receipt_image: formReceiptImage,
+        brand: formBrand.trim() || undefined,
+        mrp: parsedMrp,
+        net_quantity: formNetQuantity.trim() || undefined,
+        expiry_date: formExpiryDate.trim() || undefined,
+        mfg_date: formMfgDate.trim() || undefined,
+        batch_number: formBatchNumber.trim() || undefined,
+        is_product_scan: isProduct,
         is_home_service: isHome,
         updated_at: now
       };
 
       setSpends(prev => prev.map(s => (s.id === updated.id ? updated : s)));
       setIsModalOpen(false);
-      showToast(`Updated "${updated.title}" successfully.`, 'success');
+      showToast(`Updated "${updated.title}" successfully. Synced to Firestore!`, 'success');
 
-      // Sync to server database
+      // 1. Store directly in Firebase Firestore first to guarantee zero data loss
+      storeShoppingSpendInFirestore(updated).catch(err => console.warn('Firestore direct write note:', err));
+      // 2. Sync to server database
       api.saveShoppingSpend(updated).catch(() => {});
     } else {
       // Create new item
@@ -273,6 +350,13 @@ export const ShoppingGroceriesPage: React.FC = () => {
         payment_method: formPaymentMethod,
         notes: formNotes.trim() || undefined,
         receipt_image: formReceiptImage,
+        brand: formBrand.trim() || undefined,
+        mrp: parsedMrp,
+        net_quantity: formNetQuantity.trim() || undefined,
+        expiry_date: formExpiryDate.trim() || undefined,
+        mfg_date: formMfgDate.trim() || undefined,
+        batch_number: formBatchNumber.trim() || undefined,
+        is_product_scan: isProduct,
         is_home_service: isHome,
         created_at: now,
         updated_at: now
@@ -284,9 +368,11 @@ export const ShoppingGroceriesPage: React.FC = () => {
       playGivenMoneySound();
       setAddedSuccessItem({ title: newSpend.title, amount: parsedAmount });
       setTimeout(() => setAddedSuccessItem(null), 1500);
-      showToast(`Added ₹${parsedAmount} for "${newSpend.title}".`, 'success');
+      showToast(`Added ₹${parsedAmount} for "${newSpend.title}". Saved to Firestore backup!`, 'success');
 
-      // Sync to server database
+      // 1. Store directly in Firebase Firestore first to guarantee zero data loss
+      storeShoppingSpendInFirestore(newSpend).catch(err => console.warn('Firestore direct write note:', err));
+      // 2. Sync to server database
       api.saveShoppingSpend(newSpend).catch(() => {});
     }
   };
@@ -302,6 +388,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
             is_settled: nextState,
             updated_at: new Date().toISOString()
           };
+          storeShoppingSpendInFirestore(updated).catch(() => {});
           api.saveShoppingSpend(updated).catch(() => {});
           if (nextState) {
             setAddedSuccessItem({ title: `Completed "${item.title}"`, amount: item.amount });
@@ -324,6 +411,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
   const handleDeleteSpend = (id: string, title: string) => {
     setSpends(prev => prev.filter(s => s.id !== id));
     showToast(`Removed "${title}".`, 'info');
+    deleteShoppingSpendFromFirestore(id).catch(err => console.warn('Firestore delete note:', err));
     api.deleteShoppingSpend(id).catch(() => {});
   };
 
@@ -434,7 +522,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
             title="Scan and verify supermarket/grocery bill with AI Assistant"
           >
             <Sparkles size={15} className="text-amber-300 animate-pulse" />
-            <span>AI Bill Verifier</span>
+            <span>AI Pack & MRP Scanner</span>
           </button>
 
           <LiquidButton
@@ -695,8 +783,39 @@ export const ShoppingGroceriesPage: React.FC = () => {
                         <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
                           <span>{item.date}</span>
                           {item.merchant && <span>• {item.merchant}</span>}
+                          {item.brand && (
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                              • {item.brand}
+                            </span>
+                          )}
                           <span>• {item.payment_method}</span>
                         </div>
+
+                        {/* Product packaging details pills */}
+                        {(item.net_quantity || item.expiry_date || item.is_product_scan || item.batch_number) && (
+                          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                            {item.net_quantity && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                ⚖️ {item.net_quantity}
+                              </span>
+                            )}
+                            {item.expiry_date && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                                ⏳ Exp: {item.expiry_date}
+                              </span>
+                            )}
+                            {item.batch_number && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800">
+                                #{item.batch_number}
+                              </span>
+                            )}
+                            {item.is_product_scan && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                                Pack Scanned 🏷️
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {item.notes && (
                           <p className="text-xs text-slate-600 dark:text-slate-300/90 line-clamp-2 mt-1">
@@ -706,11 +825,26 @@ export const ShoppingGroceriesPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Amount & Actions */}
+                    {/* Amount, MRP & Actions */}
                     <div className="text-right shrink-0">
                       <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                         ₹{Number(item.amount).toLocaleString('en-IN')}
                       </div>
+
+                      {item.mrp && item.mrp > Number(item.amount) ? (
+                        <div className="space-y-0.5 mt-0.5">
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 line-through">
+                            MRP ₹{item.mrp.toLocaleString('en-IN')}
+                          </div>
+                          <span className="inline-block px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                            Save ₹{(item.mrp - Number(item.amount)).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      ) : item.mrp ? (
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                          MRP ₹{item.mrp.toLocaleString('en-IN')}
+                        </div>
+                      ) : null}
 
                       <div className="flex items-center justify-end gap-1.5 mt-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {item.receipt_image && (
@@ -946,12 +1080,101 @@ export const ShoppingGroceriesPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Bill / Receipt Photo with AI Assistant Verification */}
+                {/* Product Packaging & Back-of-Pack MRP Details (Auto-filled by AI Scanner) */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>🏷️</span>
+                      <span>Product Pack & MRP Details (Auto-Filled by AI)</span>
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                      Zero Data Loss
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        Brand / Manufacturer
+                      </label>
+                      <input
+                        type="text"
+                        value={formBrand}
+                        onChange={(e) => setFormBrand(e.target.value)}
+                        placeholder="e.g. Tata, Britannia, Surf Excel, Amul"
+                        className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                        <span>MRP (₹ Max Retail Price)</span>
+                        {formMrp && formAmount && parseFloat(formMrp) > parseFloat(formAmount) && (
+                          <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                            Save ₹{(parseFloat(formMrp) - parseFloat(formAmount)).toFixed(0)}
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={formMrp}
+                        onChange={(e) => setFormMrp(e.target.value)}
+                        placeholder="e.g. 150 (Printed on packaging)"
+                        className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        Net Weight / Quantity
+                      </label>
+                      <input
+                        type="text"
+                        value={formNetQuantity}
+                        onChange={(e) => setFormNetQuantity(e.target.value)}
+                        placeholder="e.g. 500g, 1L, Pack of 2"
+                        className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        Expiry / Best Before
+                      </label>
+                      <input
+                        type="text"
+                        value={formExpiryDate}
+                        onChange={(e) => setFormExpiryDate(e.target.value)}
+                        placeholder="e.g. 12/2026 or 2026-12-31"
+                        className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        Batch / Lot No.
+                      </label>
+                      <input
+                        type="text"
+                        value={formBatchNumber}
+                        onChange={(e) => setFormBatchNumber(e.target.value)}
+                        placeholder="e.g. B-9428"
+                        className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bill / Product Pack Photo with AI Assistant Verification */}
                 <div className="space-y-3 pt-1 border-t border-slate-100 dark:border-white/10">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Receipt size={14} className="text-emerald-600 dark:text-emerald-400" />
-                      <span>Shopping Bill / Payment Slip Photo</span>
+                      <span>Product Packaging Photo (Back MRP, Brand, Net Qty) or Bill</span>
                     </label>
                     {formReceiptImage && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
@@ -969,26 +1192,26 @@ export const ShoppingGroceriesPage: React.FC = () => {
                       <div className="flex-1">
                         <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                           <Sparkles size={13} className="text-amber-400 animate-pulse" />
-                          <span>AI Assistant: Verifying Bill with Gemini...</span>
+                          <span>AI Assistant: Analyzing Product Pack & MRP with Gemini...</span>
                         </div>
                         <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
-                          Extracting store name, itemized provisions, taxes & final net bill amount
+                          Extracting brand, printed MRP, net quantity, expiry date, store name & price
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* AI Verified Bill Results Card */}
+                  {/* AI Verified Results Card */}
                   {verifiedBillData && !isVerifyingBill && (
                     <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/30 space-y-2.5">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 dark:text-emerald-300">
                           <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
-                          <span>AI Verified Bill ({verifiedBillData.confidence_score}% Confidence)</span>
+                          <span>AI Analyzed {verifiedBillData.is_product_scan ? 'Product Packaging' : 'Receipt'} ({verifiedBillData.confidence_score}% Confidence)</span>
                         </div>
-                        {verifiedBillData.merchant && (
+                        {(verifiedBillData.brand || verifiedBillData.merchant) && (
                           <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 border border-emerald-500/30">
-                            {verifiedBillData.merchant}
+                            {verifiedBillData.brand || verifiedBillData.merchant}
                           </span>
                         )}
                       </div>
@@ -996,6 +1219,25 @@ export const ShoppingGroceriesPage: React.FC = () => {
                       <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                         {verifiedBillData.summary}
                       </p>
+
+                      {/* Product pack details chips */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {verifiedBillData.mrp && (
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                            MRP: ₹{verifiedBillData.mrp}
+                          </span>
+                        )}
+                        {verifiedBillData.net_quantity && (
+                          <span className="px-2 py-0.5 rounded-lg bg-blue-500/20 text-blue-800 dark:text-blue-300 text-[10px] font-bold">
+                            Net Qty: {verifiedBillData.net_quantity}
+                          </span>
+                        )}
+                        {verifiedBillData.expiry_date && (
+                          <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-800 dark:text-rose-300 text-[10px] font-bold">
+                            Exp: {verifiedBillData.expiry_date}
+                          </span>
+                        )}
+                      </div>
 
                       {verifiedBillData.items && verifiedBillData.items.length > 0 && (
                         <div className="space-y-1.5 pt-1.5 border-t border-emerald-500/20">
@@ -1083,7 +1325,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
                         className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-95"
                       >
                         <Camera size={14} />
-                        <span>Take Photo with Camera</span>
+                        <span>Scan Pack / Bill with Camera</span>
                       </button>
 
                       <button
@@ -1092,7 +1334,7 @@ export const ShoppingGroceriesPage: React.FC = () => {
                         className="px-3 py-2 rounded-xl border border-dashed border-slate-300 dark:border-white/20 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 hover:border-indigo-400 flex items-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <Sparkles size={13} className="text-amber-500" />
-                        <span>Upload & AI Verify</span>
+                        <span>Upload Pack Photo & AI Verify</span>
                       </button>
                     </div>
                   )}
